@@ -155,6 +155,9 @@ checks from the logs in `Scripts/check_live.py`, four screenshots),
   Workaround in the scripts: `MSYS_NO_PATHCONV=1`.
 - Problem: a first attempt to write several files with one long shell command failed
   (command line too long on Windows); files are written one by one.
+- Final check on a **fresh clone** of `main` (includes the LFS map): build, tests 11/11 and
+  live run 68/68. It found one bug – `Scripts/build.sh` failed without an existing `Saved/`
+  folder – fixed.
 
 **Not done / left open in M1:** nothing from the roadmap list. No packaged build was made
 (not asked for in M1; `Hydra.Build.cs` already stages the data copy for it).
