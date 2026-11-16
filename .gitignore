@@ -23,3 +23,6 @@ Config/Hydra/
 # OS
 .DS_Store
 Thumbs.db
+
+# Blender exports (build products of Art/scripts, imported into Content/ by Scripts/import_art.py)
+Art/export/
