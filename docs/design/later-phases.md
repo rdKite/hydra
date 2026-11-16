@@ -38,6 +38,9 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
 - [ ] Factions, reputation, friendly fire; three relations, reputation levels, Shifters and
       Demons (trading posts as safe zones), defense towers with a warning.
 - [ ] Dungeons in the world (floors, loot chests, cores).
+- [ ] Building materials: regional look of settlements from local materials; a small base
+      set per material tier (T1–T3) for walls and roofs, also for building at the camp
+      (see [strategy.md](strategy.md#building-materials-regional-look)).
 - [ ] Unlocking species with in-game currency.
 - [ ] **Mod support** for private dedicated servers (PC): content and server mods,
       automatic download, scripting language with a sandbox, mod guidelines, maybe mod.io or
@@ -49,7 +52,8 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
 - [ ] Persistent, large world; a server solution for large worlds (own server,
       SpacetimeDB …).
 - [ ] Changing world: fixed building sites with states and tiers (fields, farms, outposts,
-      settlements), changing through population, control, war and time.
+      settlements), changing through population, control, war and time; building tiers need
+      a minimum material tier, more stone and wood kinds, import of materials by trade.
 - [ ] Strategy layer: territories and rule through seals, a hierarchy in tiers, control and
       patrols, economy with overextension, war with lead time and time windows (NPC units
       against towers), following for leaders; coat of arms and colors of the ruling guild

@@ -68,6 +68,60 @@ Inspired by Crusader Kings, but much simpler. Terms follow `GLOSSARY.md`. Back t
 - **Free building** exists only in the survival part – at your own camp or nest, with
   limits.
 
+## Building materials: regional look
+
+Buildings are made from what is available nearby, so regions get their own look: clay brick
+houses near clay pits, houses of the local stone near a quarry, log houses or timber framing
+in the forest – with the kind of stone and wood showing too. You can read a region from its
+houses ("sandstone houses – a quarry must be close").
+
+**A building material has exactly three properties:**
+
+| Property | Values |
+|---|---|
+| **Material tier** | T1–T3, by quality and robustness – one single value, no strengths or weaknesses against attack types |
+| **Use** | **wall** (includes struts, posts, timber framing etc.) or **roof** |
+| **Look** | how it looks – the regional character |
+
+Example (proposal for the assignment):
+
+| Material | Material tier | Use | Look |
+|---|---|---|---|
+| Clay | T1 | wall | warm, reddish brown |
+| Reed / straw | T1 | roof | light, soft |
+| Pine | T1 | wall | light wood |
+| Oak | T2 | wall | dark timber framing |
+| Wood shingles | T2 | roof | brown, scaled |
+| Rubble stone | T2 | wall | grey, irregular |
+| Granite / sandstone | T3 | wall | massive grey / yellowish |
+| Slate / clay tiles | T3 | roof | dark / red |
+
+- **No strengths and weaknesses against attack types** (e.g. no "wood burns", no "clay is
+  weak against blunt") – too complex for the use case. The material tier alone decides how
+  robust a building is.
+- **Coupled to building tiers:** a building's tier (1–3, see above) needs a **minimum
+  material tier** – a tier-3 building needs T3 material. A region without T3 material needs
+  trade to build up.
+- **Changing world makes it visible:** the old town centre is clay; since the quarry opened,
+  new buildings are stone. Whoever controls a trade route builds with imported material
+  (wealth becomes visible). If the quarry is destroyed or exhausted, rebuilding falls back to
+  wood or clay.
+- **Sources are strategic targets:** a quarry or clay pit decides which tiers a territory
+  can build without trade (fits the economy with overextension).
+- **Faction colors and coats of arms** lie on top as their own layer – a sandstone house can
+  still carry the ruling guild's banners.
+- **Technology:** buildings are a kit of parts (foundation, walls, roof) with **two material
+  slots: wall and roof**. One set of models per building tier gives many variants by swapping
+  materials – cheap in performance and modelling. Each material is a procedural texture
+  script in Blender (variants for color, weathering, joints), in line with the texture
+  workflow ([Blender pipeline](../tech/blender-pipeline.md)). Data-driven: a
+  `materials.json` holds material tier, use, look and where it occurs; a building site picks
+  from what is available nearby or arrives by trade. Unreal's PCG framework can help with
+  placement.
+- **Scope:** Phase 2 – a small base set per material tier for walls and roofs (regional look
+  of settlements, also for building at the camp); Phase 3 – more stone and wood kinds, import
+  by trade, coupling to building tiers in the changing world.
+
 ## Economy
 
 - Territories supply resources of different rarity. Taxes pay the upkeep (NPC units,

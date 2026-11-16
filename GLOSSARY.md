@@ -161,6 +161,8 @@ crafting plans, because that is Unreal's visual scripting).
 | Lager / Nest / Rasthaus | **camp** / **nest** / **inn** |
 | fahrender Händler | **travelling merchant** |
 | Bauplatz / Zustand / Ausbaustufe | **building site** / **state** / **tier** |
+| Baumaterial / Material-Tier (T1–T3) | **building material** / **material tier** – not the building's tier |
+| Wand / Dach (Anwendung eines Baumaterials) | **wall** (includes struts, posts, timber framing) / **roof** |
 
 ## Development
 

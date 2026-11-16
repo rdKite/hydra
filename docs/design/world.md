@@ -122,6 +122,8 @@ no longer apply, or are even reversed. This needs many players.
   placeholder.
 - **Textures** are made procedurally in Blender by script; hand-painted detail only if the
   look needs it (see [Blender pipeline](../tech/blender-pipeline.md)).
+- **Buildings get their look from local materials** (clay, stone, wood kinds; material tier
+  T1–T3, wall or roof) – see [building materials](strategy.md#building-materials-regional-look).
 
 ## Expansion in three stages
 

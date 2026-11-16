@@ -352,3 +352,9 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
     drawing a bow).
   - **Milestone keys away from WASD:** evolve on **J**, imprint on **K** (instead of E and R,
     which stay free for later actions).
+- **Building materials give buildings a regional look** (content from Phase 2): buildings use
+  what is available nearby. A material has only three properties: **material tier**
+  (T1–T3, quality and robustness), **use** (wall – including struts and posts – or roof) and
+  **look**. No strengths or weaknesses against attack types (too complex for the use case).
+  A building tier needs a minimum material tier (tier 3 needs T3), so regions without T3
+  material need trade.
