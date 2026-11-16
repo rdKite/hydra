@@ -29,14 +29,17 @@ Git Bash from the repository root.
 | `Scripts/build.sh` | builds the editor target (used for tests and for playing) |
 | `Scripts/run_tests.sh` | build + automation tests, headless |
 | `Scripts/create_arena_map.sh` | recreates `Content/Maps/Arena.umap` (only if the map is lost) |
-| `Scripts/play.sh` | **play:** host window plus a client window (`host` / `client` for one only) |
-| `Scripts/run_live.sh` | scripted live run: host + client, automated input, screenshots, checks |
+| `Scripts/play.sh` | **play:** host window plus a client window (`host` / `client` for one only); `HOST_FORM=slime Scripts/play.sh` to play the slime |
+| `Scripts/run_live.sh` | scripted live run, combat: host + client, automated input, screenshots, checks |
+| `Scripts/run_live_slime.sh` | scripted live run, slime and magic |
+| `Scripts/run_all.sh` | tests and both live runs |
+| `Scripts/build_art.sh` | Blender builds models, rigs and textures, Unreal imports them (needs Blender) |
 
 Without the script, from any shell (after a build):
 
 ```
-"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "C:\code\hydra\Hydra.uproject" "/Game/Maps/Arena?listen" -game -windowed -ResX=1280 -ResY=720
-"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "C:\code\hydra\Hydra.uproject" 127.0.0.1 -game -windowed -ResX=1280 -ResY=720
+"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "C:\code\hydra\Hydra.uproject" "/Game/Maps/Arena?listen?Form=humanoid" -game -windowed -ResX=1280 -ResY=720
+"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "C:\code\hydra\Hydra.uproject" "127.0.0.1?Form=slime" -game -windowed -ResX=1280 -ResY=720
 ```
 
 Controls (one button per hand):
@@ -45,7 +48,7 @@ Controls (one button per hand):
 |---|---|---|
 | Move / look | WASD / mouse | left / right stick |
 | Weapon hand: press = light attack, hold = heavy attack | left mouse | right shoulder |
-| Shield hand: hold = directional block | right mouse | left shoulder |
+| Off hand – humanoid: hold = directional block; slime: press = bolt, hold = charge it | right mouse | left shoulder |
 | Jump | Space | A / cross |
 | Dodge | Left Alt | B / circle |
 | Lock-on | Q or middle mouse | right stick click |
@@ -54,8 +57,11 @@ Controls (one button per hand):
 F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console:
 `Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`
 (AI opponent passive / active, on the host), `Hydra.LagCompensation [0|1]`, `HydraStats`,
-`HydraResetAll`, `HydraTeleport x y yaw`. The blade shows the telegraph: yellow in the
-wind-up, towards red while a heavy attack charges.
+`HydraResetAll`, `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraFire 1`
+(fire awakened: the slime's bolt carries fire, leaves a fire field and causes burning; M4
+will earn this in play). The humanoid's blade shows the telegraph: yellow in the wind-up,
+towards red while a heavy attack charges. The AI opponent is rough on a slime – `Hydra.AI 0`
+makes it stand still.
 
 ## Where things are
 
@@ -70,9 +76,11 @@ wind-up, towards red while a heavy attack charges.
   in the game, with stable IDs (no numbers; those are in `values.json`, per ID).
 - [`Source/Hydra/`](Source/Hydra) – the C++ game module: `Data/` (values and definitions),
   `Abilities/` (GAS helper layer, stamina and health, attack / block / dodge),
-  `Character/` (combat rules, hit resolution, lag compensation), `AI/` (practice opponent),
+  `Character/` (combat rules, hit resolution, lag compensation), `Combat/` (bolt, fire
+  field), `AI/` (practice opponent),
   `Core/` (game mode, network emulation, controller, HUD, dev tools), `Arena/`, `Tests/`.
-- [`Scripts/`](Scripts) – build, test, map and run scripts.
+- [`Scripts/`](Scripts) – build, test, map, art and run scripts.
+- [`Art/`](Art) – Blender scripts and the .blend files they write (models, rigs, textures).
 - [`docs/tech/`](docs/tech) – tech-test findings, Blender pipeline.
 - [`docs/dev-log.md`](docs/dev-log.md) – sessions, interventions, assumptions.
 

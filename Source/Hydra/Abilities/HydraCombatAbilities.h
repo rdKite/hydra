@@ -32,8 +32,7 @@ public:
 	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
-	/** The hand's button was released (owning client and server). */
-	void OnInputReleased();
+	virtual void OnInputReleased() override;
 
 protected:
 	virtual float GetStaminaCost(const FHydraCombatStats& Stats) const override;
@@ -57,6 +56,41 @@ private:
 	double StartWorldTime = 0.0;
 	int32 HitCount = 0;
 	TArray<TWeakObjectPtr<AHydraCharacter>> AlreadyHit;
+};
+
+/**
+ * Cast the bolt (Phase 1: the slime's projectile, a body skill): press = cast after the
+ * wind-up, hold = charge - stronger and costlier - until release or bolt.max_charge_ms.
+ * Costs mana, not stamina. The caster turns towards the aim direction at its turn rate
+ * during the wind-up; the bolt leaves along its facing when it is released. Binds like an
+ * attack until the bolt is out. The server spawns the bolt (AHydraProjectile).
+ */
+UCLASS()
+class HYDRA_API UHydraGA_Cast : public UHydraGameplayAbility
+{
+	GENERATED_BODY()
+
+public:
+	UHydraGA_Cast();
+
+	virtual bool CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, FGameplayTagContainer* OptionalRelevantTags = nullptr) const override;
+	virtual void ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
+	virtual void ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData) override;
+	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
+	virtual void OnInputReleased() override;
+
+private:
+	enum class EPhase : uint8 { None, Windup, Charging, Released };
+
+	void OnWindupOver();
+	void Release(float ChargeAlpha);
+	void SetCommitted(bool bCommitted);
+	float HeldMs() const;
+
+	EPhase Phase = EPhase::None;
+	bool bHeld = false;
+	bool bCommittedTag = false;
+	double StartWorldTime = 0.0;
 };
 
 /**

@@ -191,6 +191,127 @@ void UHydraGA_Attack::EndAbility(const FGameplayAbilitySpecHandle Handle, const 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
 }
 
+// --- Cast --------------------------------------------------------------------------------
+
+UHydraGA_Cast::UHydraGA_Cast()
+{
+	SetAssetTags(FGameplayTagContainer(HydraTags::Ability_Cast));
+	ActivationOwnedTags.AddTag(HydraTags::State_Attacking);
+	ActivationBlockedTags.AddTag(HydraTags::State_Attacking);
+	ActivationBlockedTags.AddTag(HydraTags::State_Blocking);
+	ActivationBlockedTags.AddTag(HydraTags::State_Dodging);
+	ActivationBlockedTags.AddTag(HydraTags::State_Dead);
+}
+
+bool UHydraGA_Cast::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, FGameplayTagContainer* OptionalRelevantTags) const
+{
+	const AHydraCharacter* C = ActorInfo ? Cast<AHydraCharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
+	return C && C->GetStats().bValid && C->GetStats().bCanCast
+		&& HydraGas::CanAffordMana(C->GetAbilitySystemComponent(), UHydraValuesSubsystem::Get(C).bolt.mana_cost);
+}
+
+void UHydraGA_Cast::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
+{
+	const AHydraCharacter* C = ActorInfo ? Cast<AHydraCharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
+	if (C && C->HasAuthority())
+	{
+		HydraGas::SpendMana(C->GetAbilitySystemComponent(), UHydraValuesSubsystem::Get(C).bolt.mana_cost);
+	}
+}
+
+float UHydraGA_Cast::HeldMs() const
+{
+	return static_cast<float>((GetWorld()->GetTimeSeconds() - StartWorldTime) * 1000.0);
+}
+
+void UHydraGA_Cast::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
+{
+	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
+	{
+		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);
+		return;
+	}
+	AHydraCharacter* C = GetHydraCharacter();
+	const FHydraBoltValues& B = GetValues().bolt;
+	Phase = EPhase::Windup;
+	bHeld = true;
+	StartWorldTime = GetWorld()->GetTimeSeconds();
+	SetCommitted(true);
+	C->BeginCastFacing();
+	C->SetAction(EHydraAction::CastWindup, B.windup_ms / 1000.f);
+	C->OnAttackStarted();
+	StartTimer(B.windup_ms / 1000.f, [this]() { OnWindupOver(); });
+}
+
+void UHydraGA_Cast::OnInputReleased()
+{
+	bHeld = false;
+	if (Phase == EPhase::Charging)
+	{
+		Release(HydraCombatMath::BoltChargeAlpha(GetValues().bolt, HeldMs()));
+	}
+}
+
+void UHydraGA_Cast::OnWindupOver()
+{
+	if (!bHeld)
+	{
+		Release(0.f);   // a tap: the plain bolt
+		return;
+	}
+	const FHydraBoltValues& B = GetValues().bolt;
+	Phase = EPhase::Charging;
+	const float RemainingS = FMath::Max(0.f, (B.max_charge_ms - HeldMs()) / 1000.f);
+	GetHydraCharacter()->SetAction(EHydraAction::CastCharge, RemainingS);
+	StartTimer(RemainingS, [this]() { Release(1.f); });
+}
+
+void UHydraGA_Cast::Release(float ChargeAlpha)
+{
+	ClearTimers();
+	AHydraCharacter* C = GetHydraCharacter();
+	const FHydraBoltValues& B = GetValues().bolt;
+	Phase = EPhase::Released;
+	if (IsServer())
+	{
+		C->ServerFireBolt(ChargeAlpha);
+	}
+	SetCommitted(false);
+	C->EndAttackFacing();
+	C->SetAction(EHydraAction::CastRelease, B.recovery_ms / 1000.f);
+	StartTimer(B.recovery_ms / 1000.f, [this]() { FinishAbility(); });
+}
+
+void UHydraGA_Cast::SetCommitted(bool bCommitted)
+{
+	UAbilitySystemComponent* ASC = GetAbilitySystemComponentFromActorInfo();
+	if (!ASC || bCommitted == bCommittedTag)
+	{
+		return;
+	}
+	bCommittedTag = bCommitted;
+	if (bCommitted)
+	{
+		ASC->AddLooseGameplayTag(HydraTags::State_AttackCommitted);
+	}
+	else
+	{
+		ASC->RemoveLooseGameplayTag(HydraTags::State_AttackCommitted);
+	}
+}
+
+void UHydraGA_Cast::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
+{
+	SetCommitted(false);
+	Phase = EPhase::None;
+	if (AHydraCharacter* C = GetHydraCharacter())
+	{
+		C->EndAttackFacing();
+		C->ClearAction({ EHydraAction::CastWindup, EHydraAction::CastCharge, EHydraAction::CastRelease });
+	}
+	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
+}
+
 // --- Block -------------------------------------------------------------------------------
 
 UHydraGA_Block::UHydraGA_Block()
@@ -248,6 +369,7 @@ UHydraGA_Dodge::UHydraGA_Dodge()
 	ActivationBlockedTags.AddTag(HydraTags::State_Dodging);
 	ActivationBlockedTags.AddTag(HydraTags::State_Dead);
 	CancelAbilitiesWithTag.AddTag(HydraTags::Ability_Attack);
+	CancelAbilitiesWithTag.AddTag(HydraTags::Ability_Cast);
 	CancelAbilitiesWithTag.AddTag(HydraTags::Ability_Block);
 }
 

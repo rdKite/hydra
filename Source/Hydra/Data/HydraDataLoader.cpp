@@ -181,9 +181,20 @@ void HydraDataLoader::ValidateValues(const FHydraValues& V, const FHydraDefiniti
 		{
 			OutProblems.Add(FString::Printf(TEXT("values.json: no numbers for form '%s' (section forms)"), *F.id.ToString()));
 		}
-		else if (N->body_weight <= 0.f || N->strength <= 0.f || N->hp_max <= 0.f || N->stamina_max <= 0.f || N->stamina_regen_per_s < 0.f)
+		else if (N->body_weight <= 0.f || N->strength <= 0.f || N->hp_max <= 0.f || N->stamina_max <= 0.f || N->stamina_regen_per_s < 0.f
+			|| N->body_radius_m <= 0.f || N->body_height_m < 2.f * N->body_radius_m || N->mana_max < 0.f || N->mana_regen_per_s < 0.f)
 		{
-			OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has implausible numbers (weight, strength, hp, stamina > 0)"), *F.id.ToString()));
+			OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has implausible numbers (weight, strength, hp, stamina, radius > 0; height >= 2 x radius; mana >= 0)"), *F.id.ToString()));
+		}
+		else
+		{
+			for (const float R : { N->resistance.slash, N->resistance.pierce, N->resistance.blunt, N->resistance.fire })
+			{
+				if (R < -1.f || R > 0.95f)
+				{
+					OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has a resistance outside -1 .. 0.95"), *F.id.ToString()));
+				}
+			}
 		}
 	}
 	for (const FHydraWeaponDef& W : Defs.weapons.weapons)

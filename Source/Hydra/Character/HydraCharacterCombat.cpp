@@ -8,6 +8,7 @@
 #include "Abilities/HydraTags.h"
 #include "AbilitySystemComponent.h"
 #include "Character/HydraMovementComponent.h"
+#include "Combat/HydraProjectile.h"
 #include "Components/CapsuleComponent.h"
 #include "Core/HydraDevSubsystem.h"
 #include "Data/HydraValuesSubsystem.h"
@@ -138,6 +139,8 @@ void AHydraCharacter::ResolveHit(AHydraCharacter* Target, const FHydraPoseSample
 	// Chain: every further hit of a chain deals more damage.
 	const int32 ChainBefore = GetChainHitsNow();
 	float Damage = (bHeavy ? Stats.Weapon.heavy.damage * ChargeFactor : Stats.Weapon.light.damage) * HydraCombatMath::ChainMultiplier(V.chain, ChainBefore);
+	// Resistance of the target against this damage type (the slime shrugs off slash and pierce).
+	Damage = HydraCombatMath::ResistedDamage(Damage, HydraCombatMath::ResistanceTo(TargetStats.Resistance, bHeavy ? Stats.HeavyDamageType : Stats.LightDamageType));
 
 	// Directional block: only if the target was blocking and the attacker stood inside its
 	// block arc - both as the attacker saw it (rewound pose).
@@ -206,6 +209,136 @@ void AHydraCharacter::ResolveHit(AHydraCharacter* Target, const FHydraPoseSample
 		Target->GetHealth(), Target->GetStamina(), GetStamina());
 }
 
+float AHydraCharacter::ServerDealDamage(AHydraCharacter* Source, AHydraCharacter* Target, float RawDamage, FName DamageType)
+{
+	if (!Target || !Target->HasAuthority() || !Target->IsAlive())
+	{
+		return 0.f;
+	}
+	const float Dealt = HydraCombatMath::ResistedDamage(RawDamage, HydraCombatMath::ResistanceTo(Target->GetStats().Resistance, DamageType));
+	HydraGas::DealDamage(Target->GetAbilitySystemComponent(), Dealt, Source ? Source->GetAbilitySystemComponent() : nullptr);
+	return Dealt;
+}
+
+void AHydraCharacter::ServerFireBolt(float WantedChargeAlpha)
+{
+	check(HasAuthority());
+	const FHydraBoltValues& B = UHydraValuesSubsystem::Get(this).bolt;
+	// The base cost was paid at the press; the charge costs extra, as far as the mana reaches.
+	const float Charge = HydraCombatMath::AffordableBoltCharge(B, WantedChargeAlpha, GetMana());
+	HydraGas::SpendMana(AbilitySystem, HydraCombatMath::BoltManaCost(B, Charge) - B.mana_cost);
+
+	// Along the facing, level, from the middle of the body.
+	const FVector Direction = FRotator(0.f, GetActorRotation().Yaw, 0.f).Vector();
+	const FVector Start = GetActorLocation() + Direction * (Stats.BodyRadiusCm + B.radius_m * 100.f + 5.f);
+	AHydraProjectile* Bolt = GetWorld()->SpawnActorDeferred<AHydraProjectile>(AHydraProjectile::StaticClass(), FTransform(Start), this, this,
+		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
+	if (Bolt)
+	{
+		Bolt->Launch(this, Direction, HydraCombatMath::BoltDamage(B, Charge), bFireImprint, Charge);
+		Bolt->FinishSpawning(FTransform(Start));
+	}
+	UE_LOG(LogHydra, Log, TEXT("HydraCast t=%.2f attacker=%s charge=%.2f wanted=%.2f fire=%d yaw=%.1f mana=%.2f"),
+		HydraCombat::DevClock(this), *GetLogId(), Charge, WantedChargeAlpha, bFireImprint ? 1 : 0, GetActorRotation().Yaw, GetMana());
+}
+
+// --- Burning -----------------------------------------------------------------------------
+
+void AHydraCharacter::SetBurningStacks(int32 NewStacks, const TCHAR* Reason)
+{
+	const uint8 Clamped = static_cast<uint8>(FMath::Clamp(NewStacks, 0, FMath::Max(0, UHydraValuesSubsystem::Get(this).burning.max_stacks)));
+	if (Clamped == BurningStacks)
+	{
+		return;
+	}
+	if (BurningStacks == 0)
+	{
+		NextBurningTick = GetWorld()->GetTimeSeconds() + UHydraValuesSubsystem::Get(this).burning.tick_interval_ms / 1000.0;
+	}
+	BurningStacks = Clamped;
+	AbilitySystem->SetLooseGameplayTagCount(HydraTags::State_Burning, BurningStacks > 0 ? 1 : 0);
+	UE_LOG(LogHydra, Log, TEXT("HydraBurn t=%.2f who=%s stacks=%d reason=%s"), HydraCombat::DevClock(this), *GetLogId(), BurningStacks, Reason);
+}
+
+void AHydraCharacter::ServerTouchFireField(AHydraCharacter* Source)
+{
+	LastInFireFieldTime = GetWorld()->GetTimeSeconds();
+	if (Source)
+	{
+		BurningSource = Source;
+	}
+}
+
+void AHydraCharacter::ServerAddBurning(int32 Stacks, AHydraCharacter* Source, const TCHAR* Reason)
+{
+	if (!IsAlive() || Stacks <= 0)
+	{
+		return;
+	}
+	if (BurningStacks == 0)
+	{
+		NextBurningStackChange = GetWorld()->GetTimeSeconds() + HydraCombatMath::BurningIntervalS(UHydraValuesSubsystem::Get(this).burning, Stats.Resistance.fire);
+	}
+	BurningSource = Source;
+	SetBurningStacks(BurningStacks + Stacks, Reason);
+}
+
+void AHydraCharacter::UpdateBurning()
+{
+	// In a fire field the stack rises by one per interval (the first at once); outside it
+	// drops by one per interval - burning goes on for a while after leaving the field.
+	// Fire resistance lengthens the interval. Each stack deals damage over time.
+	if (!IsAlive())
+	{
+		return;
+	}
+	const FHydraBurningValues& B = UHydraValuesSubsystem::Get(this).burning;
+	const double Now = GetWorld()->GetTimeSeconds();
+	const double Interval = HydraCombatMath::BurningIntervalS(B, Stats.Resistance.fire);
+	const bool bInField = Now - LastInFireFieldTime < 0.25;
+	if (bInField)
+	{
+		if (BurningStacks == 0)
+		{
+			NextBurningStackChange = Now + Interval;
+			SetBurningStacks(1, TEXT("field"));
+		}
+		else if (Now >= NextBurningStackChange)
+		{
+			NextBurningStackChange = Now + Interval;
+			SetBurningStacks(BurningStacks + 1, TEXT("field"));
+		}
+	}
+	else if (BurningStacks > 0 && Now >= NextBurningStackChange)
+	{
+		NextBurningStackChange = Now + Interval;
+		SetBurningStacks(BurningStacks - 1, TEXT("decay"));
+	}
+	if (BurningStacks > 0 && Now >= NextBurningTick)
+	{
+		const float TickS = FMath::Max(0.05f, B.tick_interval_ms / 1000.f);
+		NextBurningTick = Now + TickS;
+		ServerDealDamage(BurningSource.Get(), this, B.damage_per_s_per_stack * BurningStacks * TickS, TEXT("fire"));
+	}
+}
+
+void AHydraCharacter::ServerSetForm(FName NewFormId)
+{
+	check(HasAuthority());
+	if (NewFormId.IsNone() || NewFormId == FormId)
+	{
+		return;
+	}
+	AbilitySystem->CancelAllAbilities();
+	ActionState = FHydraActionState();
+	FormId = NewFormId;
+	bAttributesInitialized = false;   // full bars of the new form
+	RebuildStats();
+	ClearChain();
+	SetBurningStacks(0, TEXT("form"));
+	PoseHistory.Reset();
+}
+
 void AHydraCharacter::ServerInterruptAttack()
 {
 	const FGameplayTagContainer AttackTag(HydraTags::Ability_Attack);
@@ -251,6 +384,7 @@ void AHydraCharacter::Die()
 	AbilitySystem->SetLooseGameplayTagCount(HydraTags::State_Dead, 1);
 	ActionState = FHydraActionState();
 	ClearChain();
+	SetBurningStacks(0, TEXT("death"));
 	SetLockOnTarget(nullptr);
 	const float DelayS = FMath::Max(0.1f, UHydraValuesSubsystem::Get(this).character.respawn_delay_ms / 1000.f);
 	GetWorldTimerManager().SetTimer(RespawnTimer, this, &AHydraCharacter::Respawn, DelayS, false);
@@ -273,7 +407,10 @@ void AHydraCharacter::ServerResetState()
 	AbilitySystem->SetLooseGameplayTagCount(HydraTags::State_Dead, 0);
 	HydraGas::ApplyHealthValues(AbilitySystem, Stats.HpMax, true);
 	HydraGas::ApplyStaminaValues(AbilitySystem, Stats.StaminaMax, Stats.StaminaRegenPerS, StaminaRegenHandle, true);
+	HydraGas::ApplyManaValues(AbilitySystem, Stats.ManaMax, Stats.ManaRegenPerS, ManaRegenHandle, true);
 	ClearChain();
+	SetBurningStacks(0, TEXT("reset"));
+	LastInFireFieldTime = -1000.0;
 }
 
 void AHydraCharacter::ServerTeleport(const FVector& Location, float Yaw)

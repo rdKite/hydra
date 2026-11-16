@@ -174,4 +174,9 @@ crafting plans, because that is Unreal's visual scripting).
 | – | **strike** – the hit window of an attack, between wind-up and recovery |
 | – | **an attack binds** – from the press to the end of the strike it cannot be dodged out of or blocked from (German: "Angriffe binden") |
 | Blockbruch | **block break** – a block that fails because the stamina is empty |
+| Schlag (Schleim) | **slam** – the slime's melee body attack |
+| Geschoss (Körper-Skill) | **projectile** – the slime's body skill; it casts the spell form **bolt** |
+| Feuerfeld | **fire field** – the element field of fire |
+| – | **off hand** / **weapon hand** – the two hand buttons; each does what the hand holds |
+| – | **model** – a form's skeletal mesh from the Blender pipeline (as opposed to the placeholder body) |
 | – | **scripted live run** – host plus client window driven by automated input, checked from logs and screenshots |

@@ -13,6 +13,20 @@
 // Adding a value: data/values.json (bump version, changelog line) plus a member here; the
 // automation tests Hydra.Values.* fail if the two drift apart.
 
+/**
+ * Resistance per damage type: the share of that damage a form shrugs off (0.5 = half).
+ * Negative = vulnerable (-0.25 = a quarter more).
+ */
+USTRUCT()
+struct FHydraResistanceValues
+{
+	GENERATED_BODY()
+	UPROPERTY() float slash = 0.f;
+	UPROPERTY() float pierce = 0.f;
+	UPROPERTY() float blunt = 0.f;
+	UPROPERTY() float fire = 0.f;
+};
+
 /** Numbers of one form. body_weight and strength share a unit with the weapon weights. */
 USTRUCT()
 struct FHydraFormValues
@@ -21,9 +35,16 @@ struct FHydraFormValues
 	/** Weight of the body (weight = body plus load). */
 	UPROPERTY() float body_weight = 0.f;
 	UPROPERTY() float strength = 0.f;
+	/** Size of the body for movement and hit areas (a capsule). */
+	UPROPERTY() float body_radius_m = 0.f;
+	UPROPERTY() float body_height_m = 0.f;
 	UPROPERTY() float hp_max = 0.f;
 	UPROPERTY() float stamina_max = 0.f;
 	UPROPERTY() float stamina_regen_per_s = 0.f;
+	/** 0 = the form has no mana bar. */
+	UPROPERTY() float mana_max = 0.f;
+	UPROPERTY() float mana_regen_per_s = 0.f;
+	UPROPERTY() FHydraResistanceValues resistance;
 };
 
 /** Light attack of a weapon: press the hand's button. */
@@ -178,6 +199,8 @@ struct FHydraBlockValues
 	UPROPERTY() float weapon_half_arc_deg = 0.f;
 	/** Rebound: share of its own attack cost the attacker loses extra, at equal weights. */
 	UPROPERTY() float rebound_attacker_stamina_ratio = 0.f;
+	/** Share of a bolt's damage that still gets through a plain shield. */
+	UPROPERTY() float projectile_damage_through = 0.f;
 };
 
 USTRUCT()
@@ -227,33 +250,49 @@ struct FHydraAiPracticeValues
 	UPROPERTY() float block_hold_ms = 0.f;
 };
 
+/**
+ * The spell form bolt (Phase 1: the slime's projectile). Press = cast after the wind-up,
+ * hold = charge: stronger and costlier up to max_charge_ms. Without an element it deals
+ * blunt damage; with fire it deals fire damage, adds burning and leaves a fire field.
+ */
 USTRUCT()
-struct FHydraManaValues
-{
-	GENERATED_BODY()
-	UPROPERTY() float max = 0.f;
-	UPROPERTY() float regen_per_s = 0.f;
-};
-
-USTRUCT()
-struct FHydraFireBoltValues
+struct FHydraBoltValues
 {
 	GENERATED_BODY()
 	UPROPERTY() float mana_cost = 0.f;
 	UPROPERTY() float damage = 0.f;
+	UPROPERTY() float windup_ms = 0.f;
+	UPROPERTY() float max_charge_ms = 0.f;
+	UPROPERTY() float full_charge_damage_factor = 0.f;
+	UPROPERTY() float full_charge_cost_factor = 0.f;
+	UPROPERTY() float recovery_ms = 0.f;
 	UPROPERTY() float speed_m_s = 0.f;
 	UPROPERTY() float range_m = 0.f;
-	UPROPERTY() float field_radius_m = 0.f;
-	UPROPERTY() float field_duration_ms = 0.f;
+	UPROPERTY() float radius_m = 0.f;
 };
 
+/** The fire element field a fire bolt leaves where it lands. */
+USTRUCT()
+struct FHydraFireFieldValues
+{
+	GENERATED_BODY()
+	UPROPERTY() float radius_m = 0.f;
+	UPROPERTY() float duration_ms = 0.f;
+};
+
+/**
+ * Burning (stacking debuff of fire). In a fire field the stack rises by one every
+ * stack_interval_ms (the first at once); outside it drops by one per interval. Fire
+ * resistance lengthens the interval. Damage over time per stack.
+ */
 USTRUCT()
 struct FHydraBurningValues
 {
 	GENERATED_BODY()
 	UPROPERTY() float damage_per_s_per_stack = 0.f;
 	UPROPERTY() int32 max_stacks = 0;
-	UPROPERTY() float duration_ms = 0.f;
+	UPROPERTY() float stack_interval_ms = 0.f;
+	/** Stacks a fire bolt adds on a hit. */
 	UPROPERTY() int32 stacks_per_hit = 0;
 	UPROPERTY() float tick_interval_ms = 0.f;
 };
@@ -293,8 +332,8 @@ struct FHydraValues
 	UPROPERTY() FHydraWeakPointValues weak_point;
 	UPROPERTY() FHydraLagCompensationValues lag_compensation;
 	UPROPERTY() FHydraAiPracticeValues ai_practice;
-	UPROPERTY() FHydraManaValues mana;
-	UPROPERTY() FHydraFireBoltValues fire_bolt;
+	UPROPERTY() FHydraBoltValues bolt;
+	UPROPERTY() FHydraFireFieldValues fire_field;
 	UPROPERTY() FHydraBurningValues burning;
 	UPROPERTY() FHydraNetSimulationValues net_simulation;
 };

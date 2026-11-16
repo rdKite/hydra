@@ -13,7 +13,7 @@
 	GAMEPLAYATTRIBUTE_VALUE_INITTER(PropertyName)
 
 /**
- * Attributes of a character: health and stamina (mana follows with M3). Changed on the
+ * Attributes of a character: health, stamina and mana. Changed on the
  * server only and replicated to everyone (both sides see the bars). Damage arrives through
  * the meta attribute IncomingDamage.
  */
@@ -39,6 +39,12 @@ public:
 	UPROPERTY(ReplicatedUsing = OnRep_MaxStamina) FGameplayAttributeData MaxStamina;
 	HYDRA_ATTRIBUTE_ACCESSORS(UHydraAttributeSet, MaxStamina)
 
+	UPROPERTY(ReplicatedUsing = OnRep_Mana) FGameplayAttributeData Mana;
+	HYDRA_ATTRIBUTE_ACCESSORS(UHydraAttributeSet, Mana)
+
+	UPROPERTY(ReplicatedUsing = OnRep_MaxMana) FGameplayAttributeData MaxMana;
+	HYDRA_ATTRIBUTE_ACCESSORS(UHydraAttributeSet, MaxMana)
+
 	/** Meta attribute (server only, not replicated): damage to take from Health. */
 	UPROPERTY() FGameplayAttributeData IncomingDamage;
 	HYDRA_ATTRIBUTE_ACCESSORS(UHydraAttributeSet, IncomingDamage)
@@ -48,4 +54,6 @@ protected:
 	UFUNCTION() void OnRep_MaxHealth(const FGameplayAttributeData& Old);
 	UFUNCTION() void OnRep_Stamina(const FGameplayAttributeData& Old);
 	UFUNCTION() void OnRep_MaxStamina(const FGameplayAttributeData& Old);
+	UFUNCTION() void OnRep_Mana(const FGameplayAttributeData& Old);
+	UFUNCTION() void OnRep_MaxMana(const FGameplayAttributeData& Old);
 };

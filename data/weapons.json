@@ -1,5 +1,5 @@
 {
-  "_note": "Weapons and shields. IDs are stable (lower snake_case). Damage types: slash, pierce, blunt (empty = none). Numbers live in values.json.",
+  "_note": "Weapons, shields and the body attacks of monsters (family body). IDs are stable (lower snake_case). Damage types: slash, pierce, blunt (empty = none). Numbers live in values.json.",
   "weapons": [
     {
       "id": "longsword",
@@ -18,6 +18,15 @@
       "light_damage_type": "",
       "heavy_damage_type": "",
       "blocks": true
+    },
+    {
+      "id": "slime_slam",
+      "name": "Slam (slime)",
+      "family": "body",
+      "skill": "slam",
+      "light_damage_type": "blunt",
+      "heavy_damage_type": "blunt",
+      "blocks": false
     }
   ]
 }

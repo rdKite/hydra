@@ -84,6 +84,9 @@ def build_material(name, destination, mesh):
     roughness = materials.create_material_expression(material, unreal.MaterialExpressionConstant, -400, 300)
     roughness.r = 0.35
     materials.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
+    # Without this flag a game build shows the grey default material on skinned meshes
+    # (the editor would set it by itself the first time it draws the mesh).
+    materials.set_material_usage(material, unreal.MaterialUsage.MATUSAGE_SKELETAL_MESH)
     materials.recompile_material(material)
     assets.save_loaded_asset(material)
 

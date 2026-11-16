@@ -14,6 +14,8 @@ class UStaticMeshComponent;
 class UAbilitySystemComponent;
 class UHydraAttributeSet;
 class UHydraMovementComponent;
+class UAnimSequence;
+class UGameplayAbility;
 struct FHydraValues;
 
 /** What a character is doing right now, as far as others must be able to see it (the telegraph). */
@@ -28,6 +30,9 @@ enum class EHydraAction : uint8
 	Recovery,      // after the strike
 	Block,
 	Dodge,
+	CastWindup,    // wind-up of the bolt
+	CastCharge,    // button still held: charging the bolt
+	CastRelease,   // the bolt is out
 };
 
 /** Replicated: which action since when. DurationS = planned length of this phase (0 = open). */
@@ -80,7 +85,14 @@ public:
 	float GetMaxHealth() const;
 	float GetStamina() const;
 	float GetMaxStamina() const;
+	float GetMana() const;
+	float GetMaxMana() const;
 	bool IsAlive() const { return !bDead; }
+	FName GetFormId() const { return FormId; }
+	/** Stacks of the burning debuff (replicated). */
+	int32 GetBurningStacks() const { return BurningStacks; }
+	/** The element fire is awakened: the bolt carries fire (M4 earns it; M3 switches it by dev command). */
+	bool HasFireImprint() const { return bFireImprint; }
 	bool HasStateTag(const struct FGameplayTag& Tag) const;
 	int32 GetChainCount() const { return ChainCount; }
 
@@ -116,6 +128,8 @@ public:
 	void InputAttackPressed();
 	void InputAttackReleased();
 	void InputBlock(bool bPressed);
+	/** The off-hand button: block with a shield, cast the bolt for a form with the projectile skill. */
+	void InputOffHand(bool bPressed, float AimYaw);
 	void InputDodge();
 	void InputJump(bool bPressed);
 
@@ -144,6 +158,9 @@ public:
 	void BeginAttackFacing();
 	void EndAttackFacing();
 
+	/** Casting: turn towards the aim direction of the cast (at the turn rate). */
+	void BeginCastFacing();
+
 	// --- Combat (server) -------------------------------------------------------------------
 
 	/** An attack of this character just started: tell the AI opponents (they may react). */
@@ -158,6 +175,23 @@ public:
 
 	/** The strike ended without touching anyone. */
 	void ServerReportMiss(bool bHeavy);
+
+	/** Spawns the bolt along the facing; the charge is cut to what the mana pays for. */
+	void ServerFireBolt(float WantedChargeAlpha);
+
+	/** Damage of a type (slash, pierce, blunt, fire) after the target's resistance. Returns what was dealt. */
+	static float ServerDealDamage(AHydraCharacter* Source, AHydraCharacter* Target, float RawDamage, FName DamageType);
+
+	/** A fire field reports that this character stands in it (several times a second). */
+	void ServerTouchFireField(AHydraCharacter* Source);
+
+	/** Adds stacks of burning (a fire bolt hit). */
+	void ServerAddBurning(int32 Stacks, AHydraCharacter* Source, const TCHAR* Reason);
+
+	/** Change the form (arena start option and dev command): rebuilds numbers and looks, full bars. */
+	void ServerSetForm(FName NewFormId);
+
+	void ServerSetFireImprint(bool bOn) { bFireImprint = bOn; }
 
 	/** Called by the attribute set after damage was taken from Health. */
 	void OnDamaged(float Damage);
@@ -174,6 +208,12 @@ public:
 protected:
 	UFUNCTION(Server, Reliable)
 	void ServerAttackReleased();
+
+	UFUNCTION(Server, Reliable)
+	void ServerCastReleased();
+
+	UFUNCTION(Server, Reliable)
+	void ServerSetCastAim(float Yaw);
 
 	/** Owner: face this way (after a teleport the client keeps its own facing otherwise). */
 	UFUNCTION(Client, Reliable)
@@ -195,7 +235,11 @@ protected:
 	void OnValuesReloaded(const FHydraValues& Values);
 	void RebuildStats();
 	void GrantAbilities();
-	void NotifyAttackReleased();
+	void NotifyReleased(TSubclassOf<UGameplayAbility> AbilityClass);
+	void ApplyFormLook();
+	void UpdateMeshAnimation();
+	void UpdateBurning();
+	void SetBurningStacks(int32 NewStacks, const TCHAR* Reason);
 
 	// Combat, server (HydraCharacterCombat.cpp).
 	void ResolveHit(AHydraCharacter* Target, const FHydraPoseSample& TargetPose, bool bHeavy, float ChargeFactor, float RewindS);
@@ -269,11 +313,28 @@ protected:
 	UPROPERTY(Replicated)
 	uint8 ChainCount = 0;
 
+	UPROPERTY(Replicated)
+	uint8 BurningStacks = 0;
+
+	UPROPERTY(Replicated)
+	bool bFireImprint = false;
+
+	/** Animations of a form with a model, by name (Idle, Move, Windup, ...). */
+	UPROPERTY(Transient)
+	TMap<FName, TObjectPtr<UAnimSequence>> FormAnimations;
+
+	/** The form is shown by a skeletal mesh from the Blender pipeline (otherwise: placeholder primitives). */
+	bool bUsesModel = false;
+	FName PlayingAnimation;
+	float PlayingStartTime = -1.f;
+	FName LookBuiltForForm;
+
 	/** Owning client only: action of a predicted ability. */
 	FHydraActionState PredictedAction;
 
 	FHydraCombatStats Stats;
 	FActiveGameplayEffectHandle StaminaRegenHandle;
+	FActiveGameplayEffectHandle ManaRegenHandle;
 	bool bAttributesInitialized = false;
 	bool bAbilitiesGranted = false;
 
@@ -283,6 +344,13 @@ protected:
 	FTransform SpawnTransform;
 	FTimerHandle RespawnTimer;
 	FVector PendingDodgeDirection = FVector::ZeroVector;
+	double LastInFireFieldTime = -1000.0;
+	double NextBurningStackChange = 0.0;
+	double NextBurningTick = 0.0;
+	TWeakObjectPtr<AHydraCharacter> BurningSource;
+
+	// Owning client and server: where the cast is aimed.
+	float CastAimYaw = 0.f;
 
 	// Local.
 	bool bBlockHeld = false;

@@ -16,6 +16,7 @@
  *   -HydraShot=<s>[,<s>...]      take a screenshot at <s> (with HUD), written to
  *                                Saved/Screenshots/Live/<name>_<s>.png
  *   -HydraShotName=<name>        name prefix for the screenshots (default "shot")
+ *   -HydraShotDir=<folder>       folder under Saved/Screenshots/ (default "Live")
  *   -HydraQuit=<s>               quit at <s>
  *
  * Don't click into a window during a scripted run: it captures the mouse on the first click.
@@ -32,6 +33,9 @@ public:
 	/** Seconds since the dev clock started (0 before that). */
 	double GetClock() const;
 
+	/** The dev clock of the process this object lives in (for log lines). */
+	static double ClockOf(const UObject* WorldContext);
+
 private:
 	bool Tick(float DeltaTime);
 	bool IsReadyToStart() const;
@@ -47,6 +51,7 @@ private:
 
 	TArray<FPending> Pending;
 	FString ShotName = TEXT("shot");
+	FString ShotDir = TEXT("Live");
 	int32 WaitPlayers = 1;
 	double StartTime = -1.0;
 	FTSTicker::FDelegateHandle TickHandle;

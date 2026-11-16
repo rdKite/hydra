@@ -22,7 +22,8 @@ class AHydraCharacter;
  *   Walk (hold)                 Left Ctrl             -
  *   Weapon hand: press = light  left mouse            right shoulder
  *                hold = heavy
- *   Shield hand: hold = block   right mouse           left shoulder
+ *   Off hand: shield = block    right mouse           left shoulder
+ *     (hold); slime = cast the bolt (press, hold = charge)
  *   Lock-on                     Q / middle mouse      right stick click
  *   Reload values               F5                    -
  *   Latency step                F6                    -
@@ -82,6 +83,18 @@ public:
 	/** Hold (1) or release (0) the shield hand's button. */
 	UFUNCTION(Exec)
 	void HydraBlock(int32 Hold);
+
+	/** Press the off-hand button and hold it for HoldMs (slime: cast the bolt, charged by holding). */
+	UFUNCTION(Exec)
+	void HydraOffHand(float HoldMs);
+
+	/** Change the own form: "humanoid" or "slime" (dev; the arena start option is ?Form=). */
+	UFUNCTION(Exec)
+	void HydraForm(const FString& FormId);
+
+	/** Fire awakened for the own character on (1) / off (0): the bolt carries fire (dev; M4 earns it). */
+	UFUNCTION(Exec)
+	void HydraFire(int32 On);
 
 	/** Press the dodge button. */
 	UFUNCTION(Exec)

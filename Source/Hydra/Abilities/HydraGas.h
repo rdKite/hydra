@@ -44,6 +44,18 @@ namespace HydraGas
 	 */
 	HYDRA_API void ApplyStaminaValues(UAbilitySystemComponent* Target, float Max, float RegenPerS, FActiveGameplayEffectHandle& InOutRegen, bool bFill);
 
+	// --- Mana ------------------------------------------------------------------------------
+
+	HYDRA_API float GetMana(const UAbilitySystemComponent* Target);
+	HYDRA_API float GetMaxMana(const UAbilitySystemComponent* Target);
+	HYDRA_API bool CanAffordMana(const UAbilitySystemComponent* Target, float ManaCost);
+
+	/** Takes Cost from the mana (never below 0). Does not check CanAffordMana. */
+	HYDRA_API void SpendMana(UAbilitySystemComponent* Target, float Cost);
+
+	/** Sets maximum and regeneration (numbers of the form); like ApplyStaminaValues. Max 0 = no mana. */
+	HYDRA_API void ApplyManaValues(UAbilitySystemComponent* Target, float Max, float RegenPerS, FActiveGameplayEffectHandle& InOutRegen, bool bFill);
+
 	// --- Health ----------------------------------------------------------------------------
 
 	HYDRA_API float GetHealth(const UAbilitySystemComponent* Target);

@@ -6,6 +6,12 @@
 #        Scripts/play.sh client     only a client that joins 127.0.0.1
 #        Further arguments go to the game, e.g. Scripts/play.sh both -HydraQuit=20
 #
+# Who plays what (default: both humanoid):
+#        HOST_FORM=slime Scripts/play.sh              host is the slime
+#        HOST_FORM=slime CLIENT_FORM=slime Scripts/play.sh
+#        HOST_FIRE=1 / CLIENT_FIRE=1                  fire awakened from the start (the bolt
+#                                                     carries fire; M4 will earn this in play)
+#
 # Needs a built editor target and the arena map (Scripts/build.sh, Scripts/create_arena_map.sh).
 # Logs: Saved/Logs/PlayHost.log, Saved/Logs/PlayClient.log
 set -u
@@ -17,14 +23,16 @@ MODE="${1:-both}"
 # Git Bash would rewrite arguments that look like Unix paths (/Game/Maps/Arena).
 export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 WINDOW=(-game -windowed -ResX=1280 -ResY=720 -nosplash "${@:2}")
+HOST_URL="/Game/Maps/Arena?listen?Form=${HOST_FORM:-humanoid}?Fire=${HOST_FIRE:-0}"
+CLIENT_URL="127.0.0.1?Form=${CLIENT_FORM:-humanoid}?Fire=${CLIENT_FIRE:-0}"
 
 if [ "$MODE" = both ] || [ "$MODE" = host ]; then
-  "$EDITOR" "$PROJ" "/Game/Maps/Arena?listen" "${WINDOW[@]}" -WinX=0 -WinY=40 -log=PlayHost.log > /dev/null 2>&1 &
+  "$EDITOR" "$PROJ" "$HOST_URL" "${WINDOW[@]}" -WinX=0 -WinY=40 -log=PlayHost.log > /dev/null 2>&1 &
 fi
 if [ "$MODE" = both ]; then
   sleep 6
 fi
 if [ "$MODE" = both ] || [ "$MODE" = client ]; then
-  "$EDITOR" "$PROJ" 127.0.0.1 "${WINDOW[@]}" -WinX=640 -WinY=120 -log=PlayClient.log > /dev/null 2>&1 &
+  "$EDITOR" "$PROJ" "$CLIENT_URL" "${WINDOW[@]}" -WinX=640 -WinY=120 -log=PlayClient.log > /dev/null 2>&1 &
 fi
 wait

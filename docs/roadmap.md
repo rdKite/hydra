@@ -43,15 +43,15 @@ pure logic).
 
 ### M3 – Slime and magic (about 1 week)
 
-- [ ] Blender pipeline by script: model, rig, procedural textures baked by script, FBX
+- [x] Blender pipeline by script: model, rig, procedural textures baked by script, FBX
       export with fixed settings for Unreal; import path for animations made by the human
       (`docs/tech/blender-pipeline.md`).
-- [ ] **"Models by script" test:** build, rig, texture and export the slime agentically and
+- [x] **"Models by script" test:** build, rig, texture and export the slime agentically and
       make it playable (placeholder animations by script until the human's animations
       exist); the wolf pup only as a pipeline test (model, rig, texture, not playable) – is
       the topology good enough for animation?
-- [ ] Slime: slam and projectile; mana.
-- [ ] Minimal magic (slime only; the humanoid stays physical in Phase 1): fire bolt, fire
+- [x] Slime: slam and projectile; mana.
+- [x] Minimal magic (slime only; the humanoid stays physical in Phase 1): fire bolt, fire
       element field with the burning debuff.
 
 ### M4 – Progression and waves (about 1 week)

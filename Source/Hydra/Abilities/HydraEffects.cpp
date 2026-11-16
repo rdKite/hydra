@@ -22,6 +22,18 @@ UHydraGE_StaminaRegen::UHydraGE_StaminaRegen()
 	PauseWhileTargetHas(HydraTags::State_StaminaRegenBlocked);
 }
 
+UHydraGE_ManaChange::UHydraGE_ManaChange()
+{
+	MakeInstant();
+	AddAmountTo(UHydraAttributeSet::GetManaAttribute());
+}
+
+UHydraGE_ManaRegen::UHydraGE_ManaRegen()
+{
+	MakeInfinite(UHydraGE_StaminaRegen::TickS);
+	AddAmountTo(UHydraAttributeSet::GetManaAttribute());
+}
+
 UHydraGE_StaminaRegenDelay::UHydraGE_StaminaRegenDelay()
 {
 	MakeTimed();

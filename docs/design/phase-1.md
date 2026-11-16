@@ -595,3 +595,27 @@ all numbers are in `data/values.json` (see `data/CHANGELOG.md` v2). "Weight rati
 
 Not built in M2 (not on the roadmap list): feints (out of the plan, see §21), block with the weapon, stamina cost for
 running, hit stop as more than a short freeze of the pose.
+
+## 24. Rules as built in M3 (slime and magic, starting formulas)
+
+Like §23: assumptions to be confirmed or changed in playtests; numbers in
+`data/values.json` (`data/CHANGELOG.md` v4).
+
+| Rule | As built |
+|---|---|
+| Choosing a form | arena start option per player (`?Form=slime`, see README); no menu yet |
+| Size | every form has a body radius and height (`forms.<id>`); hit areas and movement use them |
+| Resistance | damage × (1 − resistance of the target for that type); types: slash, pierce, blunt, fire (`forms.<id>.resistance`). The slime resists slash and pierce and is vulnerable to blunt |
+| Slime buttons | weapon-hand button = slam (press light, hold heavy, like a weapon); off-hand button = the bolt (press, hold = charge). No block. Dodge and jump like everyone |
+| Slam | a body attack with its own numbers (`weapons.slime_slam`), blunt, costs stamina by its weight like a weapon; chain, interrupt, weak point as for weapons |
+| Bolt | costs mana: the base cost at the press, the extra for the charge at the release (cut down to what the mana pays for). Wind-up, then it leaves; held longer it charges up to `max_charge_ms`: damage and cost grow linearly to their full-charge factors. Binds like an attack until it is out |
+| Aiming | the cast is aimed where the camera looks; the caster turns there **at its turn rate** during the wind-up and the bolt leaves along the facing it has reached. It flies level and straight at `bolt.speed_m_s` up to `bolt.range_m` (no gravity yet) |
+| Element | without an element the bolt deals blunt damage and nothing else. With fire awakened (M4 earns that; M3 has a start option and a dev command) it deals fire damage, adds `burning.stacks_per_hit` and leaves a fire field where it lands |
+| Bolt against a block | it bursts on the shield: `block.projectile_damage_through` of the damage gets through, the blocker pays `block.stamina_cost_per_hit`, no burning stack, and the fire field appears in front of the blocker (one body radius plus one field radius towards the caster). Empty stamina: block break, full hit |
+| Fire field | a circle of `fire_field.radius_m` for `duration_ms`; it burns everyone in it, the caster too |
+| Burning | in a field: first stack at once, then +1 per `stack_interval_ms`; outside −1 per interval (it keeps burning after leaving). The interval is divided by (1 − fire resistance). Damage: `damage_per_s_per_stack` × stacks, in ticks of `tick_interval_ms`, as fire damage |
+| Mana | per form (`mana_max`, `mana_regen_per_s`); regenerates without a delay; the humanoid has none |
+
+Not built in M3: gravity or drop for the bolt, aim assist for the bolt, the bolt's own lag
+compensation (it is simulated on the server; what the caster sees is the replicated
+bolt), mesh tints or effects for burning (text on the HUD only), per-form movement speeds.

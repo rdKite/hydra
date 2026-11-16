@@ -283,11 +283,68 @@ bool FHydraCombatStatsTest::RunTest(const FString& Parameters)
 
 	// Phase 1 check from the design: humanoid with shield and slime turn clearly differently.
 	const FHydraCombatStats Slime = HydraCombatMath::BuildStats(Defs, V, TEXT("slime"));
+	const FHydraFormValues& SlimeForm = V.forms.FindChecked(TEXT("slime"));
 	TestTrue(TEXT("slime is valid"), Slime.bValid);
-	TestFalse(TEXT("slime has no weapon and no shield"), Slime.bHasWeapon || Slime.bHasShield);
+	TestTrue(TEXT("slime attacks with its body (slam) and has no shield"), Slime.bHasWeapon && !Slime.bHasShield);
+	TestEqual(TEXT("the slam is blunt"), Slime.LightDamageType, FName(TEXT("blunt")));
+	TestTrue(TEXT("slime casts the bolt, the humanoid does not (Phase 1)"), Slime.bCanCast && !Humanoid.bCanCast);
+	TestTrue(TEXT("slime: little stamina, a lot of mana"), SlimeForm.stamina_max < Form.stamina_max && SlimeForm.mana_max > SlimeForm.stamina_max && Form.mana_max == 0.f);
+	TestTrue(TEXT("slime line: raised resistance to slash and pierce"), SlimeForm.resistance.slash > 0.f && SlimeForm.resistance.pierce > 0.f);
+	TestTrue(TEXT("slime can pay for its slam and its bolt"), Slime.HeavyStaminaCost <= SlimeForm.stamina_max && V.bolt.mana_cost * V.bolt.full_charge_cost_factor <= SlimeForm.mana_max);
+	TestTrue(TEXT("slime is small"), Slime.BodyHalfHeightCm < Humanoid.BodyHalfHeightCm && Slime.BodyHalfHeightCm >= Slime.BodyRadiusCm);
+	TestEqual(TEXT("humanoid is 1.8 m tall"), Humanoid.BodyHalfHeightCm * 2.f, Form.body_height_m * 100.f, 0.01f);
 	TestTrue(FString::Printf(TEXT("slime turns clearly faster (%.0f vs %.0f deg/s)"), Slime.TurnRateDegS, Humanoid.TurnRateDegS), Slime.TurnRateDegS > Humanoid.TurnRateDegS * 1.15f);
 
 	TestFalse(TEXT("unknown form is not valid"), HydraCombatMath::BuildStats(Defs, V, TEXT("no_such_form")).bValid);
+	return true;
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHydraMagicMathTest, "Hydra.Combat.ResistanceBoltBurning", HydraTests::Flags)
+bool FHydraMagicMathTest::RunTest(const FString& Parameters)
+{
+	using namespace HydraCombatMath;
+	const float Tolerance = 0.001f;
+
+	// Resistance per damage type.
+	FHydraResistanceValues R;
+	R.slash = 0.5f;
+	R.blunt = -0.25f;
+	TestEqual(TEXT("resistance by type"), ResistanceTo(R, TEXT("slash")), 0.5f, Tolerance);
+	TestEqual(TEXT("no resistance where none is set"), ResistanceTo(R, TEXT("fire")), 0.f, Tolerance);
+	TestEqual(TEXT("unknown type: none"), ResistanceTo(R, TEXT("sonic")), 0.f, Tolerance);
+	TestEqual(TEXT("half resisted"), ResistedDamage(20.f, 0.5f), 10.f, Tolerance);
+	TestEqual(TEXT("vulnerable: more damage"), ResistedDamage(20.f, -0.25f), 25.f, Tolerance);
+	TestTrue(TEXT("never fully immune"), ResistedDamage(20.f, 5.f) > 0.f);
+
+	// Bolt: charging makes it stronger and costlier.
+	FHydraBoltValues B;
+	B.mana_cost = 20.f;
+	B.damage = 15.f;
+	B.windup_ms = 300.f;
+	B.max_charge_ms = 1200.f;
+	B.full_charge_damage_factor = 1.6f;
+	B.full_charge_cost_factor = 1.8f;
+	TestEqual(TEXT("released during the wind-up: no charge"), BoltChargeAlpha(B, 200.f), 0.f, Tolerance);
+	TestEqual(TEXT("half charged"), BoltChargeAlpha(B, 750.f), 0.5f, Tolerance);
+	TestEqual(TEXT("fully charged"), BoltChargeAlpha(B, 3000.f), 1.f, Tolerance);
+	TestEqual(TEXT("damage uncharged"), BoltDamage(B, 0.f), 15.f, Tolerance);
+	TestEqual(TEXT("damage fully charged"), BoltDamage(B, 1.f), 24.f, Tolerance);
+	TestEqual(TEXT("cost uncharged"), BoltManaCost(B, 0.f), 20.f, Tolerance);
+	TestEqual(TEXT("cost fully charged"), BoltManaCost(B, 1.f), 36.f, Tolerance);
+	TestEqual(TEXT("enough mana: the wanted charge"), AffordableBoltCharge(B, 1.f, 50.f), 1.f, Tolerance);
+	TestEqual(TEXT("half the extra mana: half the charge"), AffordableBoltCharge(B, 1.f, 8.f), 0.5f, Tolerance);
+	TestEqual(TEXT("no mana left: no charge"), AffordableBoltCharge(B, 1.f, 0.f), 0.f, Tolerance);
+
+	// Burning: resistance lengthens the interval between stacks.
+	FHydraBurningValues Burn;
+	Burn.stack_interval_ms = 10000.f;
+	TestEqual(TEXT("interval"), BurningIntervalS(Burn, 0.f), 10.f, Tolerance);
+	TestEqual(TEXT("fire resistance 0.5 doubles the interval"), BurningIntervalS(Burn, 0.5f), 20.f, Tolerance);
+	TestEqual(TEXT("a vulnerability does not shorten it"), BurningIntervalS(Burn, -0.5f), 10.f, Tolerance);
+
+	// A bolt flying past: distance of a body to the path of one step.
+	TestEqual(TEXT("point beside the path"), DistancePointToSegment(FVector(50.f, 30.f, 0.f), FVector::ZeroVector, FVector(100.f, 0.f, 0.f)), 30.f, Tolerance);
+	TestEqual(TEXT("point beyond the end of the step"), DistancePointToSegment(FVector(130.f, 40.f, 0.f), FVector::ZeroVector, FVector(100.f, 0.f, 0.f)), 50.f, Tolerance);
 	return true;
 }
 

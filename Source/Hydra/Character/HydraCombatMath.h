@@ -22,12 +22,25 @@ struct FHydraCombatStats
 	/** TotalWeight / Strength: drives turn rate and dodge cost. */
 	float WeightRatio = 1.f;
 
+	/** Body size (capsule) in cm. */
+	float BodyRadiusCm = 0.f;
+	float BodyHalfHeightCm = 0.f;
+
 	float HpMax = 0.f;
 	float StaminaMax = 0.f;
 	float StaminaRegenPerS = 0.f;
+	float ManaMax = 0.f;
+	float ManaRegenPerS = 0.f;
+	FHydraResistanceValues Resistance;
+
+	/** The form has the body skill projectile: its off-hand button casts the bolt. */
+	bool bCanCast = false;
 
 	bool bHasWeapon = false;
 	FHydraWeaponValues Weapon;
+	/** "slash", "pierce" or "blunt" (weapons.json). */
+	FName LightDamageType;
+	FName HeavyDamageType;
 	bool bHasShield = false;
 	FHydraShieldValues Shield;
 
@@ -145,6 +158,68 @@ namespace HydraCombatMath
 	{
 		const float Scale = WeaponWeightRatio > KINDA_SMALL_NUMBER ? V.reference_weapon_weight_ratio / WeaponWeightRatio : 1.f;
 		return FMath::Clamp(1.f + (V.damage_multiplier - 1.f) * Scale, 1.f, FMath::Max(1.f, V.max_damage_multiplier));
+	}
+
+	// --- Resistances, bolt, burning ------------------------------------------------------
+
+	/** Resistance of a form against a damage type ("slash", "pierce", "blunt", "fire"); 0 for anything else. */
+	inline float ResistanceTo(const FHydraResistanceValues& R, FName DamageType)
+	{
+		static const FName Slash(TEXT("slash")), Pierce(TEXT("pierce")), Blunt(TEXT("blunt")), Fire(TEXT("fire"));
+		if (DamageType == Slash) { return R.slash; }
+		if (DamageType == Pierce) { return R.pierce; }
+		if (DamageType == Blunt) { return R.blunt; }
+		if (DamageType == Fire) { return R.fire; }
+		return 0.f;
+	}
+
+	/** Damage after resistance: a resistance of 0.5 halves it, -0.25 adds a quarter. */
+	inline float ResistedDamage(float Damage, float Resistance)
+	{
+		return FMath::Max(0.f, Damage * (1.f - FMath::Clamp(Resistance, -1.f, 0.95f)));
+	}
+
+	/** How far a bolt was charged when released after HeldMs: 0 at the wind-up, 1 at max charge. */
+	inline float BoltChargeAlpha(const FHydraBoltValues& B, float HeldMs)
+	{
+		const float Span = B.max_charge_ms - B.windup_ms;
+		return Span > KINDA_SMALL_NUMBER ? FMath::Clamp((HeldMs - B.windup_ms) / Span, 0.f, 1.f) : 0.f;
+	}
+
+	/** Charging makes the bolt stronger and costlier. */
+	inline float BoltDamage(const FHydraBoltValues& B, float ChargeAlpha)
+	{
+		return B.damage * FMath::Lerp(1.f, FMath::Max(1.f, B.full_charge_damage_factor), FMath::Clamp(ChargeAlpha, 0.f, 1.f));
+	}
+
+	inline float BoltManaCost(const FHydraBoltValues& B, float ChargeAlpha)
+	{
+		return B.mana_cost * FMath::Lerp(1.f, FMath::Max(1.f, B.full_charge_cost_factor), FMath::Clamp(ChargeAlpha, 0.f, 1.f));
+	}
+
+	/**
+	 * The charge a caster can pay for: with ManaLeft after the base cost, the wanted charge is
+	 * cut down to what the extra mana buys.
+	 */
+	inline float AffordableBoltCharge(const FHydraBoltValues& B, float WantedAlpha, float ManaLeft)
+	{
+		const float ExtraAtFull = B.mana_cost * (FMath::Max(1.f, B.full_charge_cost_factor) - 1.f);
+		const float Affordable = ExtraAtFull > KINDA_SMALL_NUMBER ? FMath::Clamp(ManaLeft / ExtraAtFull, 0.f, 1.f) : 1.f;
+		return FMath::Min(FMath::Clamp(WantedAlpha, 0.f, 1.f), Affordable);
+	}
+
+	/** Seconds between two changes of the burning stack; fire resistance lengthens it. */
+	inline float BurningIntervalS(const FHydraBurningValues& B, float FireResistance)
+	{
+		return B.stack_interval_ms / 1000.f / (1.f - FMath::Clamp(FireResistance, 0.f, 0.9f));
+	}
+
+	/** Shortest distance between a point and the segment A-B. */
+	inline float DistancePointToSegment(const FVector& Point, const FVector& A, const FVector& B)
+	{
+		const FVector Axis = B - A;
+		const float T = Axis.SizeSquared() > KINDA_SMALL_NUMBER ? FMath::Clamp(FVector::DotProduct(Point - A, Axis) / Axis.SizeSquared(), 0.f, 1.f) : 0.f;
+		return FVector::Dist(Point, A + Axis * T);
 	}
 
 	// --- Positions and arcs ----------------------------------------------------------------
@@ -268,6 +343,12 @@ namespace HydraCombatMath
 		S.HpMax = Numbers->hp_max;
 		S.StaminaMax = Numbers->stamina_max;
 		S.StaminaRegenPerS = Numbers->stamina_regen_per_s;
+		S.ManaMax = Numbers->mana_max;
+		S.ManaRegenPerS = Numbers->mana_regen_per_s;
+		S.Resistance = Numbers->resistance;
+		S.BodyRadiusCm = Numbers->body_radius_m * 100.f;
+		S.BodyHalfHeightCm = FMath::Max(Numbers->body_height_m * 50.f, S.BodyRadiusCm);
+		S.bCanCast = Form->skills.Contains(FName(TEXT("projectile")));
 		S.TotalWeight = S.BodyWeight;
 		// Everything carried counts towards the weight; the first weapon and the first shield are in the hands.
 		for (const FName Item : Form->loadout)
@@ -279,6 +360,11 @@ namespace HydraCombatMath
 				{
 					S.bHasWeapon = true;
 					S.Weapon = *W;
+					if (const FHydraWeaponDef* Def = Defs.FindWeapon(Item))
+					{
+						S.LightDamageType = Def->light_damage_type;
+						S.HeavyDamageType = Def->heavy_damage_type;
+					}
 				}
 			}
 			else if (const FHydraShieldValues* Sh = V.shields.Find(Item))

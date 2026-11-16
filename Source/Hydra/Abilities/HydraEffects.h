@@ -40,6 +40,24 @@ public:
 	static constexpr float TickS = 0.1f;
 };
 
+/** Instant: Mana += Data.Amount (negative for a cost). */
+UCLASS()
+class HYDRA_API UHydraGE_ManaChange : public UHydraGameplayEffect
+{
+	GENERATED_BODY()
+public:
+	UHydraGE_ManaChange();
+};
+
+/** Mana regeneration: lasts forever, adds Data.Amount every TickS seconds (no delay: mana has none). */
+UCLASS()
+class HYDRA_API UHydraGE_ManaRegen : public UHydraGameplayEffect
+{
+	GENERATED_BODY()
+public:
+	UHydraGE_ManaRegen();
+};
+
 /**
  * Regeneration delay after an action: grants State.StaminaRegenBlocked for Data.Duration.
  * Applying it again restarts the delay.

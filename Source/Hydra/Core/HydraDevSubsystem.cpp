@@ -19,6 +19,7 @@ void UHydraDevSubsystem::Initialize(FSubsystemCollectionBase& Collection)
 	const TCHAR* CmdLine = FCommandLine::Get();
 	FParse::Value(CmdLine, TEXT("HydraWaitPlayers="), WaitPlayers);
 	FParse::Value(CmdLine, TEXT("HydraShotName="), ShotName);
+	FParse::Value(CmdLine, TEXT("HydraShotDir="), ShotDir);
 
 	FString Value;
 	if (FParse::Value(CmdLine, TEXT("HydraShot="), Value, false))
@@ -65,6 +66,14 @@ double UHydraDevSubsystem::GetClock() const
 	return StartTime < 0.0 ? 0.0 : FPlatformTime::Seconds() - StartTime;
 }
 
+double UHydraDevSubsystem::ClockOf(const UObject* WorldContext)
+{
+	const UWorld* World = WorldContext ? WorldContext->GetWorld() : nullptr;
+	const UGameInstance* GI = World ? World->GetGameInstance() : nullptr;
+	const UHydraDevSubsystem* Dev = GI ? GI->GetSubsystem<UHydraDevSubsystem>() : nullptr;
+	return Dev ? Dev->GetClock() : 0.0;
+}
+
 bool UHydraDevSubsystem::IsReadyToStart() const
 {
 	const UWorld* World = GetGameInstance() ? GetGameInstance()->GetWorld() : nullptr;
@@ -96,7 +105,7 @@ bool UHydraDevSubsystem::Tick(float DeltaTime)
 		{
 		case EKind::Shot:
 		{
-			const FString File = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("Screenshots/Live") / FString::Printf(TEXT("%s_%s.png"), *ShotName, *Next.Command));
+			const FString File = FPaths::ConvertRelativePathToFull(FPaths::ProjectSavedDir() / TEXT("Screenshots") / ShotDir / FString::Printf(TEXT("%s_%s.png"), *ShotName, *Next.Command));
 			UE_LOG(LogHydra, Log, TEXT("HydraDev: t=%.2f screenshot %s"), Clock, *File);
 			FScreenshotRequest::RequestScreenshot(File, /*bShowUI*/ true, /*bAddFilenameSuffix*/ false);
 			break;

@@ -14,6 +14,8 @@ namespace HydraHUDStyle
 	const FLinearColor Back(0.f, 0.f, 0.f, 0.55f);
 	const FLinearColor Health(0.8f, 0.12f, 0.1f);
 	const FLinearColor Stamina(0.2f, 0.75f, 0.25f);
+	const FLinearColor Mana(0.2f, 0.45f, 0.95f);
+	const FLinearColor Burning(1.f, 0.5f, 0.1f);
 	const FLinearColor LockOn(1.f, 0.85f, 0.2f);
 	constexpr float OverheadRangeCm = 2500.f;
 	constexpr float PixelsPerStaminaPoint = 3.f;
@@ -75,7 +77,7 @@ void AHydraHUD::DrawNetInfo()
 	DrawText(FString::Printf(TEXT("%s | latency step %d ms (F6) | measured ping %s | packet loss %.0f%% (F8) | values v%d (F5 reloads) | %.0f fps"),
 		GetNetMode() == NM_Client ? TEXT("client") : TEXT("host"), GS->GetLatencyStepMs(), *Rtt, GS->GetPacketLossRatio() * 100.f,
 		Values ? Values->GetValues().version : 0, SmoothedFps), FLinearColor::White, 20.f, 16.f, Font);
-	DrawText(TEXT("WASD move | mouse look | LMB attack (hold = heavy) | RMB block | Left Alt dodge | Space jump | Q lock-on | Left Ctrl walk | ~ console"), FLinearColor(1.f, 1.f, 1.f, 0.7f), 20.f, 34.f, Font);
+	DrawText(TEXT("WASD move | mouse look | LMB attack (hold = heavy) | RMB block / slime: bolt (hold = charge) | Left Alt dodge | Space jump | Q lock-on | Left Ctrl walk | ~ console"), FLinearColor(1.f, 1.f, 1.f, 0.7f), 20.f, 34.f, Font);
 }
 
 void AHydraHUD::DrawOwnBars()
@@ -93,6 +95,15 @@ void AHydraHUD::DrawOwnBars()
 	DrawBar(X, Y, MaxHp * HydraHUDStyle::PixelsPerStaminaPoint, 14.f, Self->GetHealth() / MaxHp, HydraHUDStyle::Health);
 	DrawBar(X, Y + 22.f, Max * HydraHUDStyle::PixelsPerStaminaPoint, 10.f, Self->GetStamina() / Max, HydraHUDStyle::Stamina);
 	FString Text = FString::Printf(TEXT("HP %.0f / %.0f   Stamina %.0f / %.0f"), Self->GetHealth(), MaxHp, Self->GetStamina(), Max);
+	if (Self->GetMaxMana() > 0.f)
+	{
+		DrawBar(X, Y + 38.f, Self->GetMaxMana() * HydraHUDStyle::PixelsPerStaminaPoint, 10.f, Self->GetMana() / Self->GetMaxMana(), HydraHUDStyle::Mana);
+		Text += FString::Printf(TEXT("   Mana %.0f / %.0f"), Self->GetMana(), Self->GetMaxMana());
+	}
+	if (Self->GetBurningStacks() > 0)
+	{
+		Text += FString::Printf(TEXT("   BURNING x%d"), Self->GetBurningStacks());
+	}
 	if (Self->GetChainCount() > 0)
 	{
 		Text += FString::Printf(TEXT("   chain x%d"), Self->GetChainCount());
@@ -118,7 +129,7 @@ void AHydraHUD::DrawOverheadBars()
 		{
 			continue;
 		}
-		const FVector Screen = Canvas->Project(C->GetActorLocation() + FVector(0.f, 0.f, 105.f));
+		const FVector Screen = Canvas->Project(C->GetActorLocation() + FVector(0.f, 0.f, C->GetStats().BodyHalfHeightCm + 15.f));
 		if (Screen.Z <= 0.f)
 		{
 			continue;
@@ -126,6 +137,14 @@ void AHydraHUD::DrawOverheadBars()
 		const float W = 60.f;
 		DrawBar(Screen.X - W * 0.5f, Screen.Y, W, 5.f, C->GetHealth() / FMath::Max(1.f, C->GetMaxHealth()), HydraHUDStyle::Health);
 		DrawBar(Screen.X - W * 0.5f, Screen.Y + 7.f, W, 3.f, C->GetStamina() / FMath::Max(1.f, C->GetMaxStamina()), HydraHUDStyle::Stamina);
+		if (C->GetMaxMana() > 0.f)
+		{
+			DrawBar(Screen.X - W * 0.5f, Screen.Y + 12.f, W, 3.f, C->GetMana() / C->GetMaxMana(), HydraHUDStyle::Mana);
+		}
+		if (C->GetBurningStacks() > 0)
+		{
+			DrawText(FString::Printf(TEXT("burning x%d"), C->GetBurningStacks()), HydraHUDStyle::Burning, Screen.X - W * 0.5f, Screen.Y - 16.f, GEngine->GetSmallFont());
+		}
 	}
 }
 

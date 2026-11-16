@@ -11,6 +11,110 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-16 – M3 Slime and magic (agent session, start 16:40)
+
+Before M3, answers of the human to the M2 questions: **jump on Space, dodge on Left Alt**
+(done; walk moved to Left Ctrl – assumption; `movement.jump_height_m`, values v3), **feints
+out of the plan**, **no Mixamo interim look**, **block state stays lag-compensated**. Pulled
+`main`: animations are designed by the human, textures are procedural from Blender scripts
+– both fit what M3 builds. `UE_ROOT` is still not set on this machine.
+
+**Item 1 – Blender pipeline by script.** `Art/scripts/` (shared helpers, one build script
+per model, `export_animations.py`), `Scripts/build_art.sh` (Blender headless, then the
+Unreal import commandlet `Scripts/import_art.py`). Scene unit centimetre, fixed FBX
+settings, one FBX per action, material built on import. Settings, commands and the path for
+the human's animations: `docs/tech/blender-pipeline.md`. Blender 5.2.3 was already
+installed; nothing was installed by the agent.
+Verified: both scripts run headless; import log reports slime 83 × 83 × 46 cm with its base
+on the floor, 3 bones, 11 animations; wolf pup 18 × 67 × 45 cm, 15 bones;
+`export_animations.py` exports all 11 actions from a copy of `slime.blend`.
+
+**Item 2 – "models by script" test.** Slime: built, rigged, textured, animated with
+placeholders, imported and **playable** (`HOST_FORM=slime Scripts/play.sh`). Wolf pup:
+model, rig, texture and a test pose, imported, not playable. The answers to the three
+questions are in `docs/tech/blender-pipeline.md`; in short: simple shapes work well by
+script, a four-legged body only as a rough stand-in (clean quads, bends without tearing,
+but no character), no human step needed for the pipeline.
+- The game shows a form with its model if `/Game/Characters/<form>/SK_<form>` exists and
+  plays one clip per action in single-node mode, time-scaled to the action's duration from
+  `values.json`. **Assumption / deviation:** this is not the blending C++ anim instance of
+  the tech test – a slime with eleven short placeholder clips does not need blending. The
+  blending instance comes when the humanoid gets animations.
+- Preview renders of every build: `Saved/ArtPreview/` (not in git).
+
+**Item 3 – slime: slam, projectile, mana.** Form numbers (size, mana, resistances) and the
+slam as a body attack in `values.json` (v4). The slam reuses the attack ability; the
+projectile is `UHydraGA_Cast` (mana, wind-up, charge by holding) and spawns
+`AHydraProjectile`, which the server alone simulates (clients fly a copy along the same
+line). A form is chosen per player by a start option (`?Form=slime`) or the dev command
+`HydraForm`. Mana is a new attribute with its own regeneration.
+Verified live (`Scripts/run_live_slime.sh`, 76 checks): slam 14 damage after 300 ms for 20
+stamina, charged slam 39; the AI's sword does 10 instead of 20 to the slime (slash
+resistance); bolt 15 damage for 20 mana, fully charged 24 for 36, flight time for 6 m as
+`bolt.speed_m_s` says; client sees form, bars and model.
+
+**Item 4 – fire bolt, fire field, burning.** With fire awakened the bolt deals fire damage,
+adds a burning stack and leaves `AHydraElementField`. Burning follows the design (stack up
+in the field per interval, down outside, damage per stack) and is kept on the character.
+Verified live: fire field of 1 m for 3 s under the target; the target burns (server and
+client see the stack), a second character stepping into the field burns at once; both
+stacks drop 10.0 s later; 10 damage per stack over its interval; the caster does not burn;
+against a block the bolt bursts on the shield (4.5 of 15 damage, blocker pays 24 stamina,
+no stack, field 135 cm in front of the blocker); a cast aimed 90° to the side leaves at
+about 65° because the slime turns at its turn rate.
+
+**Verification.** `Scripts/run_all.sh`: 17 automation tests, combat live run 146 checks,
+slime live run 76 checks. Fresh clone: see end of entry.
+
+**Assumptions (to confirm).**
+- All new numbers are guesses (`data/CHANGELOG.md` v3, v4). Formulas: `phase-1.md` §24.
+- Slime buttons: weapon-hand button = slam, off-hand button = bolt.
+- The projectile (body skill) *is* the bolt (spell form): without an element blunt damage,
+  with fire the fire bolt. Fire is switched by a start option / dev command until M4 earns
+  it by an imprint. Default: off.
+- The bolt flies level and straight (no gravity), is aimed by camera yaw only, and the
+  caster turns towards the aim at its turn rate. No aim assist for it yet.
+- Bolt against a block costs the blocker `block.stamina_cost_per_hit` (a bolt has no
+  weight); a blocked fire bolt adds no burning stack.
+- Burning: entering a field gives the first stack at once; the stack timer is one timer for
+  up and down. Burning damage is fire damage and goes through fire resistance.
+- Jump: no stamina cost; not while an attack binds, while blocking or dodging.
+- Movement speeds are still the same for all forms.
+- Burning is not a GAS effect but state on the character (stack count replicated, damage
+  through the damage effect): the design's up/down stacking does not map well onto effect
+  stacking, and the tech test's version needed class-default mutation.
+
+**Not built (noted):** gravity for the bolt; lag compensation for the bolt (server-side
+flight, 20 m/s); effects for burning beyond HUD text; slime AI (the AI opponent stays a
+humanoid and does not react to bolts in particular); form selection menu.
+
+**Problems and workarounds.**
+- Blender: objects removed a moment ago are still in the view layer list as `None`
+  (update the view layer before selecting); `use_nodes` is deprecated in 5.2 (guarded).
+- The imported material was grey in the game: skinned meshes need the usage flag set at
+  import, a game build cannot add it.
+- Other players' slime floated 40 cm: character network smoothing resets the mesh to a
+  cached offset → `CacheInitialMeshOffset` after placing the model.
+- A tapped cast got a sliver of charge from frame timing (15.1 instead of 15 damage); the
+  charge is now decided together with the release.
+- Two checks sat exactly on a 2 s chain boundary and flickered; moved.
+
+**Interventions:** none.
+
+**To decide before M4 (human):**
+1. **Slime vs. the AI opponent:** the active AI kills a standing slime in about five
+   seconds (60 HP, chained sword hits). That is "very weak" as designed – is it the wanted
+   starting point, or should the practice AI start passive / gentler?
+2. **Bolt flight:** level and straight, 20 m/s, no gravity. Keep for Phase 1 or add an arc
+   ("like a bow shot")?
+3. **Burning numbers:** one stack = 10 damage over 10 s; a field only ever adds one stack
+   by itself because it lasts 3 s and the interval is 10 s. More stacks come only from more
+   bolts. Intended, or should fields last longer / stack faster?
+4. **Per-form movement speed:** the slime moves exactly like the humanoid. Add speeds per
+   form to `values.json`?
+5. **Wolf pup quality:** the scripted quadruped is a stand-in. Fine as the pipeline test it
+   was meant to be – who makes the real wolf in Phase 1b (script, human, or a mix)?
+
 ### 2026-11-16 – M2 Combat core, humanoid (agent session, start 15:50)
 
 Answers of the human to the M1 questions: per-form and per-weapon numbers first "into

@@ -7,11 +7,14 @@
 #include "Abilities/HydraGas.h"
 #include "Abilities/HydraTags.h"
 #include "AbilitySystemComponent.h"
+#include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
 #include "Character/HydraMovementComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Data/HydraValuesSubsystem.h"
+#include "Engine/SkeletalMesh.h"
 #include "Engine/StaticMesh.h"
 #include "EngineUtils.h"
 #include "GameFramework/GameStateBase.h"
@@ -188,12 +191,16 @@ void AHydraCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME(AHydraCharacter, bDead);
 	DOREPLIFETIME(AHydraCharacter, ActionState);
 	DOREPLIFETIME(AHydraCharacter, ChainCount);
+	DOREPLIFETIME(AHydraCharacter, BurningStacks);
+	DOREPLIFETIME(AHydraCharacter, bFireImprint);
 }
 
 float AHydraCharacter::GetHealth() const { return Attributes->GetHealth(); }
 float AHydraCharacter::GetMaxHealth() const { return Attributes->GetMaxHealth(); }
 float AHydraCharacter::GetStamina() const { return Attributes->GetStamina(); }
 float AHydraCharacter::GetMaxStamina() const { return Attributes->GetMaxStamina(); }
+float AHydraCharacter::GetMana() const { return Attributes->GetMana(); }
+float AHydraCharacter::GetMaxMana() const { return Attributes->GetMaxMana(); }
 
 bool AHydraCharacter::HasStateTag(const FGameplayTag& Tag) const
 {
@@ -267,17 +274,81 @@ void AHydraCharacter::RebuildStats()
 	}
 	// Movement values are needed on both sides (prediction); attributes are server-only.
 	GetHydraMovement()->ApplyValues(V, Stats.WeightRatio);
-	SwordPivot->SetVisibility(Stats.bHasWeapon, true);
-	ShieldPivot->SetVisibility(Stats.bHasShield, true);
+	ApplyFormLook();
 	if (HasAuthority() && Stats.bValid)
 	{
 		HydraGas::ApplyHealthValues(AbilitySystem, Stats.HpMax, !bAttributesInitialized);
 		HydraGas::ApplyStaminaValues(AbilitySystem, Stats.StaminaMax, Stats.StaminaRegenPerS, StaminaRegenHandle, !bAttributesInitialized);
+		HydraGas::ApplyManaValues(AbilitySystem, Stats.ManaMax, Stats.ManaRegenPerS, ManaRegenHandle, !bAttributesInitialized);
 		bAttributesInitialized = true;
-		UE_LOG(LogHydra, Log, TEXT("HydraCombatStats form=%s ai=%d weight=%.2f strength=%.2f ratio=%.4f turn=%.1f hp=%.1f stamina=%.1f regen=%.1f light_cost=%.2f heavy_cost=%.2f dodge_cost=%.2f"),
+		UE_LOG(LogHydra, Log, TEXT("HydraCombatStats form=%s ai=%d weight=%.2f strength=%.2f ratio=%.4f turn=%.1f hp=%.1f stamina=%.1f regen=%.1f mana=%.1f light_cost=%.2f heavy_cost=%.2f dodge_cost=%.2f radius=%.0f half_height=%.0f"),
 			*FormId.ToString(), bAIControlled ? 1 : 0, Stats.TotalWeight, Stats.Strength, Stats.WeightRatio, Stats.TurnRateDegS, Stats.HpMax, Stats.StaminaMax,
-			Stats.StaminaRegenPerS, Stats.LightStaminaCost, Stats.HeavyStaminaCost, Stats.DodgeStaminaCost);
+			Stats.StaminaRegenPerS, Stats.ManaMax, Stats.LightStaminaCost, Stats.HeavyStaminaCost, Stats.DodgeStaminaCost, Stats.BodyRadiusCm, Stats.BodyHalfHeightCm);
 	}
+}
+
+void AHydraCharacter::ApplyFormLook()
+{
+	if (!Stats.bValid)
+	{
+		return;
+	}
+	// Body size of the form. The feet stay where they are.
+	UCapsuleComponent* Capsule = GetCapsuleComponent();
+	const float OldHalfHeight = Capsule->GetUnscaledCapsuleHalfHeight();
+	if (!FMath::IsNearlyEqual(Capsule->GetUnscaledCapsuleRadius(), Stats.BodyRadiusCm) || !FMath::IsNearlyEqual(OldHalfHeight, Stats.BodyHalfHeightCm))
+	{
+		Capsule->SetCapsuleSize(Stats.BodyRadiusCm, Stats.BodyHalfHeightCm);
+		if (HasActorBegunPlay())
+		{
+			AddActorWorldOffset(FVector(0.f, 0.f, Stats.BodyHalfHeightCm - OldHalfHeight));
+		}
+	}
+
+	// Looks: a model from the Blender pipeline if the form has one
+	// (/Game/Characters/<form>/SK_<form> with animations A_<form>_<Name>), otherwise the
+	// placeholder body from primitives.
+	USkeletalMeshComponent* Model = GetMesh();
+	if (LookBuiltForForm != FormId)
+	{
+		LookBuiltForForm = FormId;
+		FormAnimations.Reset();
+		PlayingAnimation = NAME_None;
+		const FString Form = FormId.ToString();
+		const FString Folder = FString::Printf(TEXT("/Game/Characters/%s/"), *Form);
+		USkeletalMesh* ModelMesh = LoadObject<USkeletalMesh>(nullptr, *FString::Printf(TEXT("%sSK_%s.SK_%s"), *Folder, *Form, *Form), nullptr, LOAD_NoWarn | LOAD_Quiet);
+		bUsesModel = ModelMesh != nullptr;
+		Model->SetSkeletalMesh(ModelMesh);
+		if (bUsesModel)
+		{
+			Model->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			Model->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+			Model->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
+			static const TCHAR* Names[] = { TEXT("Idle"), TEXT("Move"), TEXT("Windup"), TEXT("Charge"), TEXT("Strike"), TEXT("Recovery"),
+				TEXT("Cast"), TEXT("CastCharge"), TEXT("CastRelease"), TEXT("Dodge"), TEXT("Death") };
+			for (const TCHAR* Name : Names)
+			{
+				const FString Asset = FString::Printf(TEXT("%sA_%s_%s.A_%s_%s"), *Folder, *Form, Name, *Form, Name);
+				if (UAnimSequence* Sequence = LoadObject<UAnimSequence>(nullptr, *Asset, nullptr, LOAD_NoWarn | LOAD_Quiet))
+				{
+					FormAnimations.Add(FName(Name), Sequence);
+				}
+			}
+			UE_LOG(LogHydra, Log, TEXT("Form %s uses its model with %d animations"), *Form, FormAnimations.Num());
+		}
+	}
+	// Models from Blender look along +Y and stand on the floor at their origin.
+	Model->SetRelativeLocation(FVector(0.f, 0.f, -Stats.BodyHalfHeightCm));
+	Model->SetRelativeRotation(FRotator(0.f, -90.f, 0.f));
+	// Network smoothing puts the mesh of other players' characters back to this cached
+	// offset every frame; without it their model floats at the middle of the capsule.
+	CacheInitialMeshOffset(Model->GetRelativeLocation(), Model->GetRelativeRotation());
+	Model->SetVisibility(bUsesModel);
+	BodyTorso->SetVisibility(!bUsesModel);
+	BodyHead->SetVisibility(!bUsesModel);
+	BodyVisor->SetVisibility(!bUsesModel);
+	SwordPivot->SetVisibility(!bUsesModel && Stats.bHasWeapon, true);
+	ShieldPivot->SetVisibility(!bUsesModel && Stats.bHasShield, true);
 }
 
 void AHydraCharacter::GrantAbilities()
@@ -291,6 +362,7 @@ void AHydraCharacter::GrantAbilities()
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UHydraGA_Attack::StaticClass(), 1));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UHydraGA_Block::StaticClass(), 1));
 	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UHydraGA_Dodge::StaticClass(), 1));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UHydraGA_Cast::StaticClass(), 1));
 }
 
 // --- Actions -----------------------------------------------------------------------------
@@ -341,7 +413,7 @@ void AHydraCharacter::InputAttackPressed()
 
 void AHydraCharacter::InputAttackReleased()
 {
-	NotifyAttackReleased();
+	NotifyReleased(UHydraGA_Attack::StaticClass());
 	if (!HasAuthority())
 	{
 		ServerAttackReleased();
@@ -350,18 +422,67 @@ void AHydraCharacter::InputAttackReleased()
 
 void AHydraCharacter::ServerAttackReleased_Implementation()
 {
-	NotifyAttackReleased();
+	NotifyReleased(UHydraGA_Attack::StaticClass());
 }
 
-void AHydraCharacter::NotifyAttackReleased()
+void AHydraCharacter::ServerCastReleased_Implementation()
 {
-	const FGameplayAbilitySpec* Spec = AbilitySystem->FindAbilitySpecFromClass(UHydraGA_Attack::StaticClass());
+	NotifyReleased(UHydraGA_Cast::StaticClass());
+}
+
+void AHydraCharacter::ServerSetCastAim_Implementation(float Yaw)
+{
+	CastAimYaw = Yaw;
+}
+
+void AHydraCharacter::NotifyReleased(TSubclassOf<UGameplayAbility> AbilityClass)
+{
+	const FGameplayAbilitySpec* Spec = AbilitySystem->FindAbilitySpecFromClass(AbilityClass);
 	if (Spec && Spec->IsActive())
 	{
-		if (UHydraGA_Attack* Attack = Cast<UHydraGA_Attack>(Spec->GetPrimaryInstance()))
+		if (UHydraGameplayAbility* Ability = Cast<UHydraGameplayAbility>(Spec->GetPrimaryInstance()))
 		{
-			Attack->OnInputReleased();
+			Ability->OnInputReleased();
 		}
+	}
+}
+
+void AHydraCharacter::InputOffHand(bool bPressed, float AimYaw)
+{
+	// The off hand does what it holds: a shield blocks; a form with the projectile skill casts.
+	if (Stats.bHasShield)
+	{
+		InputBlock(bPressed);
+	}
+	else if (Stats.bCanCast)
+	{
+		if (bPressed)
+		{
+			CastAimYaw = AimYaw;
+			if (!HasAuthority())
+			{
+				ServerSetCastAim(AimYaw);
+			}
+			AbilitySystem->TryActivateAbilityByClass(UHydraGA_Cast::StaticClass());
+		}
+		else
+		{
+			NotifyReleased(UHydraGA_Cast::StaticClass());
+			if (!HasAuthority())
+			{
+				ServerCastReleased();
+			}
+		}
+	}
+}
+
+void AHydraCharacter::BeginCastFacing()
+{
+	UHydraMovementComponent* Move = GetHydraMovement();
+	Move->ClearFacingGoal();
+	if (!Move->bWantsStrafe)
+	{
+		Move->SetFacingGoal(CastAimYaw); // locked on: the character already turns towards its target
 	}
 }
 
@@ -469,6 +590,7 @@ void AHydraCharacter::Tick(float DeltaSeconds)
 		{
 			ClearChain();
 		}
+		UpdateBurning();
 	}
 	// Holding the block button blocks as soon as it is possible (after an attack, a dodge).
 	if (bBlockHeld && IsLocallyControlled() && !HasStateTag(HydraTags::State_Blocking))
@@ -540,6 +662,12 @@ void AHydraCharacter::UpdatePose()
 	BodyRoot->SetRelativeLocation(IsAlive() ? FVector::ZeroVector : FVector(-40.f, 0.f, -65.f));
 	BodyRoot->SetRelativeRotation(IsAlive() ? FRotator::ZeroRotator : FRotator(85.f, 0.f, 0.f));
 
+	if (bUsesModel)
+	{
+		UpdateMeshAnimation();
+		return;
+	}
+
 	// Hit stop: the pose freezes for a moment (looks only; the timeline of the ability runs on).
 	if (GetWorld()->GetTimeSeconds() < HitStopUntil)
 	{
@@ -586,6 +714,51 @@ void AHydraCharacter::UpdatePose()
 	SwordPivot->SetRelativeRotation(SwordRot);
 	ShieldPivot->SetRelativeLocation(ShieldLoc);
 	ShieldPivot->SetRelativeRotation(ShieldRot);
+}
+
+void AHydraCharacter::UpdateMeshAnimation()
+{
+	// One clip per thing the game shows; clips of actions are time-scaled to the action's
+	// duration from values.json, so wind-up, strike and recovery follow the data.
+	USkeletalMeshComponent* Model = GetMesh();
+	const FHydraActionState& Shown = GetShownAction();
+	FName Wanted = TEXT("Idle");
+	bool bLoop = true;
+	if (!IsAlive())
+	{
+		Wanted = TEXT("Death");
+		bLoop = false;
+	}
+	else
+	{
+		switch (Shown.Action)
+		{
+		case EHydraAction::LightWindup: Wanted = TEXT("Windup"); bLoop = false; break;
+		case EHydraAction::HeavyCharge: Wanted = TEXT("Charge"); break;
+		case EHydraAction::LightStrike:
+		case EHydraAction::HeavyStrike: Wanted = TEXT("Strike"); bLoop = false; break;
+		case EHydraAction::Recovery: Wanted = TEXT("Recovery"); bLoop = false; break;
+		case EHydraAction::CastWindup: Wanted = TEXT("Cast"); bLoop = false; break;
+		case EHydraAction::CastCharge: Wanted = TEXT("CastCharge"); break;
+		case EHydraAction::CastRelease: Wanted = TEXT("CastRelease"); bLoop = false; break;
+		case EHydraAction::Dodge: Wanted = TEXT("Dodge"); bLoop = false; break;
+		default: Wanted = GetVelocity().Size2D() > 20.f ? TEXT("Move") : TEXT("Idle"); break;
+		}
+	}
+	const bool bActionRestarted = !bLoop && IsAlive() && !FMath::IsNearlyEqual(Shown.StartServerTime, PlayingStartTime);
+	if (Wanted != PlayingAnimation || bActionRestarted)
+	{
+		PlayingAnimation = Wanted;
+		PlayingStartTime = Shown.StartServerTime;
+		if (const TObjectPtr<UAnimSequence>* Sequence = FormAnimations.Find(Wanted))
+		{
+			Model->PlayAnimation(*Sequence, bLoop);
+			const bool bTimed = !bLoop && IsAlive() && Shown.DurationS > 0.f;
+			Model->SetPlayRate(bTimed ? (*Sequence)->GetPlayLength() / Shown.DurationS : 1.f);
+		}
+	}
+	// Hit stop: the pose freezes for a moment.
+	Model->GlobalAnimRateScale = GetWorld()->GetTimeSeconds() < HitStopUntil ? 0.f : 1.f;
 }
 
 void AHydraCharacter::MulticastHitFeedback_Implementation(uint8 Kind, float HitStopS)

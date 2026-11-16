@@ -27,17 +27,36 @@ AHydraArena* AHydraGameMode::FindArena() const
 	return nullptr;
 }
 
+FString AHydraGameMode::InitNewPlayer(APlayerController* NewPlayerController, const FUniqueNetIdRepl& UniqueId, const FString& Options, const FString& Portal)
+{
+	FStartOptions Start;
+	Start.Form = FName(*UGameplayStatics::ParseOption(Options, TEXT("Form")));
+	Start.bFire = UGameplayStatics::ParseOption(Options, TEXT("Fire")) == TEXT("1");
+	StartOptions.Add(NewPlayerController, Start);
+	return Super::InitNewPlayer(NewPlayerController, UniqueId, Options, Portal);
+}
+
 APawn* AHydraGameMode::SpawnDefaultPawnFor_Implementation(AController* NewPlayer, AActor* StartSpot)
 {
-	if (const AHydraArena* Arena = FindArena())
+	APawn* Pawn = nullptr;
+	const AHydraArena* Arena = FindArena();
+	const TArray<FTransform> Spawns = Arena ? Arena->GetSpawnTransforms() : TArray<FTransform>();
+	if (Spawns.Num() > 0)
 	{
-		const TArray<FTransform> Spawns = Arena->GetSpawnTransforms();
-		if (Spawns.Num() > 0)
-		{
-			return SpawnDefaultPawnAtTransform(NewPlayer, Spawns[NextSpawnIndex++ % Spawns.Num()]);
-		}
+		Pawn = SpawnDefaultPawnAtTransform(NewPlayer, Spawns[NextSpawnIndex++ % Spawns.Num()]);
 	}
-	return Super::SpawnDefaultPawnFor_Implementation(NewPlayer, StartSpot);
+	else
+	{
+		Pawn = Super::SpawnDefaultPawnFor_Implementation(NewPlayer, StartSpot);
+	}
+	// Arena start options: which form the player is and whether fire is awakened.
+	AHydraCharacter* Character = Cast<AHydraCharacter>(Pawn);
+	if (const FStartOptions* Start = Character ? StartOptions.Find(NewPlayer) : nullptr)
+	{
+		Character->ServerSetForm(Start->Form);
+		Character->ServerSetFireImprint(Start->bFire);
+	}
+	return Pawn;
 }
 
 void AHydraGameMode::StartPlay()

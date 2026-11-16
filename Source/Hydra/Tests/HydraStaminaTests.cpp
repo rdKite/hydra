@@ -147,6 +147,27 @@ bool FHydraStaminaTest::RunTest(const FString& Parameters)
 	HydraGas::DealDamage(ASC, Form.hp_max * 5.f, nullptr);
 	TestEqual(TEXT("health never below zero"), HydraGas::GetHealth(ASC), 0.f);
 
+	// Mana (the slime's bar): cost, regeneration without a delay, clamp.
+	const FHydraFormValues& Slime = V.forms.FindChecked(TEXT("slime"));
+	FActiveGameplayEffectHandle ManaRegen;
+	HydraGas::ApplyManaValues(ASC, Slime.mana_max, Slime.mana_regen_per_s, ManaRegen, true);
+	TestEqual(TEXT("mana starts full"), HydraGas::GetMana(ASC), Slime.mana_max);
+	TestTrue(TEXT("can afford a bolt"), HydraGas::CanAffordMana(ASC, V.bolt.mana_cost));
+	HydraGas::SpendMana(ASC, V.bolt.mana_cost);
+	TestEqual(TEXT("mana cost taken"), HydraGas::GetMana(ASC), Slime.mana_max - V.bolt.mana_cost);
+	TestWorld.Advance(1.f);
+	TestTrue(FString::Printf(TEXT("mana regenerates with mana_regen_per_s (is %.1f)"), HydraGas::GetMana(ASC)),
+		FMath::Abs(HydraGas::GetMana(ASC) - (Slime.mana_max - V.bolt.mana_cost + Slime.mana_regen_per_s)) <= 2.f * Slime.mana_regen_per_s * UHydraGE_StaminaRegen::TickS + 0.01f);
+	TestWorld.Advance(Slime.mana_max / FMath::Max(1.f, Slime.mana_regen_per_s) + 1.f);
+	TestEqual(TEXT("mana full again, not beyond"), HydraGas::GetMana(ASC), Slime.mana_max);
+	HydraGas::SpendMana(ASC, Slime.mana_max * 3.f);
+	TestEqual(TEXT("mana never below zero"), HydraGas::GetMana(ASC), 0.f);
+	TestFalse(TEXT("cannot afford a bolt with empty mana"), HydraGas::CanAffordMana(ASC, V.bolt.mana_cost));
+	// A form without mana (the humanoid): no bar, no regeneration.
+	HydraGas::ApplyManaValues(ASC, 0.f, 0.f, ManaRegen, true);
+	TestWorld.Advance(0.5f);
+	TestEqual(TEXT("no mana bar stays empty"), HydraGas::GetMana(ASC), 0.f);
+
 	return true;
 }
 

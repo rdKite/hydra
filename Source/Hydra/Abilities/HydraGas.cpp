@@ -74,6 +74,49 @@ void HydraGas::ApplyStaminaValues(UAbilitySystemComponent* Target, float Max, fl
 	InOutRegen = Apply(Target, UHydraGE_StaminaRegen::StaticClass(), RegenPerS * UHydraGE_StaminaRegen::TickS);
 }
 
+float HydraGas::GetMana(const UAbilitySystemComponent* Target)
+{
+	return Target ? Target->GetNumericAttribute(UHydraAttributeSet::GetManaAttribute()) : 0.f;
+}
+
+float HydraGas::GetMaxMana(const UAbilitySystemComponent* Target)
+{
+	return Target ? Target->GetNumericAttribute(UHydraAttributeSet::GetMaxManaAttribute()) : 0.f;
+}
+
+bool HydraGas::CanAffordMana(const UAbilitySystemComponent* Target, float ManaCost)
+{
+	return ManaCost <= 0.f || GetMana(Target) >= ManaCost - 0.001f;
+}
+
+void HydraGas::SpendMana(UAbilitySystemComponent* Target, float Cost)
+{
+	if (Target && Cost > 0.f)
+	{
+		Apply(Target, UHydraGE_ManaChange::StaticClass(), -Cost);
+	}
+}
+
+void HydraGas::ApplyManaValues(UAbilitySystemComponent* Target, float Max, float RegenPerS, FActiveGameplayEffectHandle& InOutRegen, bool bFill)
+{
+	if (!Target)
+	{
+		return;
+	}
+	const float Current = bFill ? Max : FMath::Min(GetMana(Target), Max);
+	Target->SetNumericAttributeBase(UHydraAttributeSet::GetMaxManaAttribute(), Max);
+	Target->SetNumericAttributeBase(UHydraAttributeSet::GetManaAttribute(), Current);
+	if (InOutRegen.IsValid())
+	{
+		Target->RemoveActiveGameplayEffect(InOutRegen);
+		InOutRegen.Invalidate();
+	}
+	if (Max > 0.f && RegenPerS > 0.f)
+	{
+		InOutRegen = Apply(Target, UHydraGE_ManaRegen::StaticClass(), RegenPerS * UHydraGE_StaminaRegen::TickS);
+	}
+}
+
 float HydraGas::GetHealth(const UAbilitySystemComponent* Target)
 {
 	return Target ? Target->GetNumericAttribute(UHydraAttributeSet::GetHealthAttribute()) : 0.f;

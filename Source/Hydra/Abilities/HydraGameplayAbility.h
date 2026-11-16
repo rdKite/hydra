@@ -29,6 +29,9 @@ public:
 	virtual void ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const override;
 	virtual void EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled) override;
 
+	/** The button that started this ability was released (owning client and server). */
+	virtual void OnInputReleased() {}
+
 protected:
 	/** Stamina needed to start (and taken on the server when it starts). 0 = free. */
 	virtual float GetStaminaCost(const FHydraCombatStats& Stats) const { return 0.f; }

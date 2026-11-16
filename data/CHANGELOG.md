@@ -1,5 +1,30 @@
 # values.json changelog
 
+## v4 – 2026-11-16 (M3, slime and magic)
+
+**Everything new here is a guess, not yet playtested.**
+
+- **Per form (new keys in `forms.<id>`):** `body_radius_m`, `body_height_m` (size for
+  movement and hit areas: humanoid 0.35 / 1.8, slime 0.4 / 0.8), `mana_max`,
+  `mana_regen_per_s` (humanoid 0 / 0 = no mana bar; slime 100 / 10, the old global `mana`
+  section, which is removed), `resistance` per damage type (share of damage shrugged off,
+  negative = vulnerable): humanoid all 0; slime slash 0.5, pierce 0.5, blunt -0.25, fire 0.
+- **`weapons.slime_slam`** (the slime's body attack, blunt): weight 0.3 (gives stamina costs
+  of 20 light / 32 heavy of the slime's 50); light 14 damage, 300 ms wind-up, reach 1.3 m;
+  heavy 26 damage, 500–1200 ms, ×1.5 at full charge, reach 1.5 m; arcs 60°.
+- **`fire_bolt` became `bolt`** (the spell form; with or without an element): mana_cost 20,
+  damage 15, speed 20 m/s, range 25 m as before; new `windup_ms` 300, `max_charge_ms` 1200,
+  `full_charge_damage_factor` 1.6, `full_charge_cost_factor` 1.8 (charging makes it stronger
+  and costlier), `recovery_ms` 300, `radius_m` 0.2.
+- **New `fire_field`:** `radius_m` 1.0, `duration_ms` 3000 (were `fire_bolt.field_*`).
+- **`burning` follows the design now** (was the tech-test model): `stack_interval_ms` 10000
+  (the design's starting value: in a field +1 stack per interval, the first at once; outside
+  -1 per interval; fire resistance lengthens it) replaces `duration_ms`;
+  `damage_per_s_per_stack` 3 → 1 (one stack now burns for a whole interval: 10 damage);
+  `max_stacks` 5, `stacks_per_hit` 1, `tick_interval_ms` 500 unchanged.
+- **New `block.projectile_damage_through`** 0.3: share of a bolt's damage that gets through
+  a plain shield.
+
 ## v3 – 2026-11-16 (jump)
 
 - New `movement.jump_height_m` 0.9 (guess, not playtested). A jump costs no stamina for now

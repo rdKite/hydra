@@ -217,9 +217,10 @@ void AHydraPlayerController::OnAttackReleased(const FInputActionValue&)
 
 void AHydraPlayerController::OnBlockPressed(const FInputActionValue&)
 {
+	// The off-hand button: block with a shield, cast for the slime. A cast is aimed where the camera looks.
 	if (AHydraCharacter* C = GetHydraCharacter())
 	{
-		C->InputBlock(true);
+		C->InputOffHand(true, GetControlRotation().Yaw);
 	}
 }
 
@@ -227,7 +228,7 @@ void AHydraPlayerController::OnBlockReleased(const FInputActionValue&)
 {
 	if (AHydraCharacter* C = GetHydraCharacter())
 	{
-		C->InputBlock(false);
+		C->InputOffHand(false, GetControlRotation().Yaw);
 	}
 }
 
@@ -412,6 +413,23 @@ void AHydraPlayerController::HydraBlock(int32 Hold)
 	Hold ? OnBlockPressed(FInputActionValue()) : OnBlockReleased(FInputActionValue());
 }
 
+void AHydraPlayerController::HydraOffHand(float HoldMs)
+{
+	OnBlockPressed(FInputActionValue());
+	FTimerHandle Handle;
+	GetWorldTimerManager().SetTimer(Handle, FTimerDelegate::CreateWeakLambda(this, [this]() { OnBlockReleased(FInputActionValue()); }), FMath::Max(0.02f, HoldMs / 1000.f), false);
+}
+
+void AHydraPlayerController::HydraForm(const FString& FormId)
+{
+	ServerDevCommand(FString::Printf(TEXT("form %s"), *FormId));
+}
+
+void AHydraPlayerController::HydraFire(int32 On)
+{
+	ServerDevCommand(FString::Printf(TEXT("fire %d"), On));
+}
+
 void AHydraPlayerController::HydraDodge()
 {
 	OnDodge(FInputActionValue());
@@ -522,8 +540,9 @@ void AHydraPlayerController::HydraStats()
 			const float ToTarget = (Target->GetActorLocation() - C->GetActorLocation()).Rotation().Yaw;
 			LockOff = FMath::Abs(FMath::FindDeltaAngleDegrees(GetControlRotation().Yaw, ToTarget));
 		}
-		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
-			Clock, Who, *C->GetLogId(), bMe ? 1 : 0, C->GetHealth(), C->GetMaxHealth(), C->GetStamina(), C->GetMaxStamina(),
+		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d form=%s hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f mana=%.2f maxmana=%.1f burning=%d fire=%d x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
+			Clock, Who, *C->GetLogId(), bMe ? 1 : 0, *C->GetFormId().ToString(), C->GetHealth(), C->GetMaxHealth(), C->GetStamina(), C->GetMaxStamina(),
+			C->GetMana(), C->GetMaxMana(), C->GetBurningStacks(), C->HasFireImprint() ? 1 : 0,
 			C->GetActorLocation().X, C->GetActorLocation().Y, C->GetActorLocation().Z, C->GetActorRotation().Yaw, bMe ? GetControlRotation().Yaw : 0.f, *Lock, LockOff,
 			PS ? PS->GetPingInMilliseconds() : 0.f, C->HasStateTag(HydraTags::State_StaminaRegenBlocked) ? 1 : 0, C->GetVelocity().Size2D(),
 			*ActionEnum->GetNameStringByValue(static_cast<int64>(C->GetShownAction().Action)), C->GetChainCount(), C->IsAlive() ? 0 : 1,
@@ -595,6 +614,14 @@ void AHydraPlayerController::ServerDevCommand_Implementation(const FString& Comm
 	else if (Args[0] == TEXT("aiteleport") && AICharacter)
 	{
 		AICharacter->ServerTeleport(FVector(Number(1), Number(2), AICharacter->GetActorLocation().Z), Number(3));
+	}
+	else if (Args[0] == TEXT("form") && Self && Args.Num() >= 2)
+	{
+		Self->ServerSetForm(FName(*Args[1]));
+	}
+	else if (Args[0] == TEXT("fire") && Self)
+	{
+		Self->ServerSetFireImprint(Number(1) != 0.f);
 	}
 	else if (Args[0] == TEXT("reset"))
 	{
