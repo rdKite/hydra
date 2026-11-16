@@ -149,6 +149,12 @@ Perception is not used in Phase 1 (stealth is out of scope).
   the character faster. Turn rate always applies – also to aim assist: at the start of an
   attack it gives the character a facing part of the way towards a target in front, and the
   character turns there at its turn rate (decision 2026-11-16).
+- **Facing while moving** (decision 2026-11-16): normally the character turns into its
+  movement. With **precise movement** (a toggle; keyboard X, gamepad left stick click) it
+  keeps facing where the camera looks and steps backwards and sideways, at the strafe
+  speed. A **raised block** always faces the camera direction, so the block arc can be
+  aimed without lock-on; the same is planned for drawing a bow. Turn rate applies to all
+  of it. In precise movement there is no aim assist (the player aims with the camera).
 - Controller and mouse/keyboard.
 
 ### Attacks: one button per hand

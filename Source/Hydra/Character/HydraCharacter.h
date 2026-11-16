@@ -147,6 +147,17 @@ public:
 	void SetLockOnTarget(AHydraCharacter* NewTarget);
 	AHydraCharacter* GetLockOnTarget() const { return LockOnTarget.Get(); }
 
+	/**
+	 * Precise movement (owning client, a toggle): the character keeps facing where the camera
+	 * looks and steps backwards and sideways instead of turning into its movement. The same
+	 * strafe flag as lock-on, without a target; the turn rate still limits the turn.
+	 */
+	void SetPreciseMovement(bool bOn);
+	bool IsPreciseMovement() const { return bPreciseMovement; }
+
+	/** Strafe flag = locked on or precise movement (also drops a lock whose target is gone). */
+	void RefreshStrafe();
+
 	/** Best other living character inside a cone (lock-on and aim assist). */
 	AHydraCharacter* FindBestTarget(const FVector& Origin, const FVector& Direction, float RangeCm, float MaxAngleDeg) const;
 
@@ -358,5 +369,6 @@ protected:
 	uint8 HitFlashKind = 0;
 	double HitStopUntil = 0.0;
 	TWeakObjectPtr<AHydraCharacter> LockOnTarget;
+	bool bPreciseMovement = false;
 	FDelegateHandle ValuesReloadedHandle;
 };

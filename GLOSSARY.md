@@ -76,6 +76,7 @@ crafting plans, because that is Unreal's visual scripting).
 | Schwachstelle | **weak point** | fixed damage multiplier, no random crits |
 | Hit-Stop | **hit stop** | |
 | Anvisieren | **lock-on** | |
+| Präzises Laufen | **precise movement** | the character keeps facing where the camera looks and steps backwards and sideways; a toggle, and always on while blocking |
 | Verstärkung | **augment** | binds mana while active (body augment, elemental augment) |
 | gebundenes Mana | **bound mana** | |
 | Zauber | **spell** | |

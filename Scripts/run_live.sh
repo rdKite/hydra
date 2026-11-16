@@ -34,9 +34,11 @@
 #   47    H faces C and raises its block 170 ms after it sees C's attack start - too late
 #         for C to have seen it (lag compensation: block arc), 49.2 latency off
 #   50    Hydra.ReloadValues with edited values (bigger stamina bar, low turn rate):
-#         aim assist and lock-on turn at the turn rate, slower while blocking
-#   59    AI active for a few seconds
-#   67    quit
+#         aim assist and lock-on turn at the turn rate; a raised block faces the camera
+#         direction (no lock-on needed) and turns slower
+#   59    precise movement: backwards with the facing kept, then without it (turns around)
+#   63    AI active for a few seconds
+#   71    quit
 set -u
 source "$(dirname "$0")/env.sh"
 PYTHON="$UE/Engine/Binaries/ThirdParty/Python3/Win64/python.exe"
@@ -64,27 +66,29 @@ H+=";32.5:HydraResetAll;33:HydraAI|attack|0;33.05:HydraDodge;34:HydraStats"
 H+=";35:HydraLockOn;36:HydraStats;36.2:HydraLockOn"
 H+=";37:HydraResetAll;37:HydraTeleport|0|440|70;37.5:HydraAttack|0;38.3:HydraStats"
 H+=";39:Hydra.LatencyStep|150;39.5:HydraResetAll;39.5:HydraTeleport|-1000|-1000|180;43.5:HydraStats;45:HydraLook|180|-10;45:HydraMove|0|1|1.5;46.8:HydraStats"
-H+=";47:HydraResetAll;47:HydraTeleport|-1060|-1000|0;47.3:HydraAutoBlock|170;49.2:Hydra.LatencyStep|0"
+H+=";47:HydraResetAll;47:HydraTeleport|-1060|-1000|0;47:HydraLook|0|-10;47.3:HydraAutoBlock|170;49.2:Hydra.LatencyStep|0"
 H+=";50:Hydra.ReloadValues;51:HydraStats;51.2:HydraResetAll;51.2:HydraTeleport|0|440|62;52:HydraAttack|0;53:HydraStats"
 H+=";53.5:HydraTeleport|0|440|-90;53.8:HydraStats;54:HydraLook|90|-10;54.3:HydraLockOn;55.3:HydraStats;55.6:HydraLockOn"
-H+=";56:HydraTeleport|0|440|-90;56.3:HydraBlock|1;56.8:HydraStats;57:HydraLook|90|-10;57.3:HydraLockOn;58.3:HydraStats;58.6:HydraLockOn;58.6:HydraBlock|0"
-H+=";59:HydraResetAll;59:HydraTeleport|0|0|90;59.2:Hydra.AI|1;63:HydraStats;66.5:HydraStats"
+H+=";56:HydraTeleport|0|440|-90;56:HydraLook|-90|-10;56.3:HydraBlock|1;56.8:HydraStats;57.3:HydraLook|90|-10;58.3:HydraStats;58.6:HydraBlock|0"
+H+=";59:HydraResetAll;59:HydraTeleport|-1000|-1000|0;59:HydraLook|0|-10;59.3:HydraPrecise|1;59.4:HydraStats;59.5:HydraMove|0|-1|1;60.8:HydraStats"
+H+=";61:HydraPrecise|0;61.1:HydraMove|0|-1|1;62.4:HydraStats"
+H+=";63:HydraResetAll;63:HydraTeleport|0|0|90;63.2:Hydra.AI|1;67:HydraStats;70.5:HydraStats"
 
 C="1:HydraStats;2:HydraStats;4.6:HydraStats;5:HydraAttack|0;5.4:HydraStats;6:HydraDodge;7:HydraStats;9:HydraBlock|1;9.5:HydraStats;10:HydraBlock|0"
 C+=";11:HydraStats;12.75:HydraStats;17:HydraStats;19.8:HydraStats;21:HydraStats;38.3:HydraStats"
-C+=";39.5:HydraTeleport|-900|-1000|180;41:Hydra.PacketLoss|0;43.5:HydraStats;44:HydraAutoAttack|170;46.8:HydraStats;48:HydraAttack|0;51:HydraStats;63:HydraStats"
+C+=";39.5:HydraTeleport|-900|-1000|180;41:Hydra.PacketLoss|0;43.5:HydraStats;44:HydraAutoAttack|170;46.8:HydraStats;48:HydraAttack|0;51:HydraStats;60.8:HydraStats;67:HydraStats"
 
-COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound "-HydraDataDir=$DATA_DIR" -HydraWaitPlayers=2 -HydraQuit=67)
+COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound "-HydraDataDir=$DATA_DIR" -HydraWaitPlayers=2 -HydraQuit=71)
 
 # Git Bash would rewrite arguments that look like Unix paths (/Game/Maps/Arena).
 export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 
 "$EDITOR" "$PROJ" "/Game/Maps/Arena?listen" "${COMMON[@]}" -WinX=0 -WinY=40 -log=LiveHost.log -HydraAIPassive \
-  -HydraShotName=host -HydraShot=0.3,11.2,17.2,20.8,36.1,66 "-HydraExec=$H" > /dev/null 2>&1 &
+  -HydraShotName=host -HydraShot=0.3,11.2,17.2,20.8,36.1,70 "-HydraExec=$H" > /dev/null 2>&1 &
 HOST=$!
 sleep 6
 "$EDITOR" "$PROJ" 127.0.0.1 "${COMMON[@]}" -WinX=640 -WinY=120 -log=LiveClient.log \
-  -HydraShotName=client -HydraShot=0.3,11.3,20.9,66.1 "-HydraExec=$C" > /dev/null 2>&1 &
+  -HydraShotName=client -HydraShot=0.3,11.3,20.9,70.1 "-HydraExec=$C" > /dev/null 2>&1 &
 CLIENT=$!
 
 # Watchdog: never hang (first start compiles shaders and can take a while).

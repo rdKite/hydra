@@ -342,17 +342,29 @@ def main(root):
     c.between("1 s after locking on: turned about turn rate x 1 s (%.0f deg/s)" % slow, free_turn, slow * 0.7, slow * 1.3)
     y0, y1 = val(host, 56.8, H, "yaw"), val(host, 58.3, H, "yaw")
     block_turn = None if None in (y0, y1) else angle_diff(y1, y0)
-    c.check("host is blocking during the second turn", (host.stats(58.3, H) or {}).get("blocking") == 1.0)
-    c.between("while blocking: turned about the blocking turn rate x 1 s (%.0f deg/s)" % slow_block, block_turn, slow_block * 0.7, slow_block * 1.3)
+    c.check("host is blocking during the second turn, not locked on, precise movement off", (host.stats(58.3, H) or {}).get("blocking") == 1.0
+            and (host.stats(58.3, H) or {}).get("lock") == "none" and (host.stats(58.3, H) or {}).get("precise") == 0.0)
+    c.between("before the camera turned, the blocker kept its facing", None if y0 is None else angle_diff(y0, -90), 0, 3)
+    c.between("a raised block turns towards the camera direction, at the blocking turn rate x 1 s (%.0f deg/s)" % slow_block, block_turn, slow_block * 0.7, slow_block * 1.3)
     c.check("turning while blocking is clearly slower", free_turn is not None and block_turn is not None and block_turn < free_turn * 0.75, "%s vs %s" % (block_turn, free_turn))
+
+    print("--- precise movement (toggle): facing stays on the camera direction")
+    p0, p1, p2 = host.stats(59.4, H) or {}, host.stats(60.8, H) or {}, host.stats(62.4, H) or {}
+    strafe_cm = v["movement"]["strafe_speed_m_s"] * 100
+    c.check("precise movement is on", p0.get("precise") == 1.0 and p1.get("precise") == 1.0)
+    c.between("moved backwards for 1 s at about movement.strafe_speed_m_s", None if "x" not in p0 or "x" not in p1 else p0["x"] - p1["x"], strafe_cm * 0.6, strafe_cm * 1.1)
+    c.between("... and kept facing forwards (server)", None if "yaw" not in p1 else angle_diff(p1["yaw"], 0), 0, 3)
+    c.between("the client sees the host facing forwards too", None if client.stats(60.8, H) is None else angle_diff(client.stats(60.8, H)["yaw"], 0), 0, 5)
+    c.check("switched off again", p2.get("precise") == 0.0)
+    c.between("without it the character turns into its movement", None if "yaw" not in p2 else angle_diff(p2["yaw"], 0), 20, 180)
 
     print("--- AI opponent, active")
     c.check("AI switched to active", host.count("HydraAI: active") == 1)
-    acted = host.find("HydraHit", 59.2, 68, attacker=AI) + host.find("HydraMiss", 59.2, 68, attacker=AI)
+    acted = host.find("HydraHit", 63.2, 72, attacker=AI) + host.find("HydraMiss", 63.2, 72, attacker=AI)
     c.check("the AI attacked the player by itself", len(acted) >= 1, "%d attacks" % len(acted))
     # 3.8 s after it was switched on (it may have defeated the standing player later on and
     # walked off to the other one, so the end of the run says nothing about this).
-    s_h2, s_ai2 = host.stats(63, H), host.stats(63, AI)
+    s_h2, s_ai2 = host.stats(67, H), host.stats(67, AI)
     if s_h2 and s_ai2 and s_h2.get("dead") == 0.0 and s_ai2.get("dead") == 0.0:
         d = ((s_h2["x"] - s_ai2["x"]) ** 2 + (s_h2["y"] - s_ai2["y"]) ** 2) ** 0.5
         c.between("the AI walked up to the player (it started 6 m away)", d, 60, light["reach_m"] * 100 + 60)
@@ -360,11 +372,11 @@ def main(root):
         c.between("the AI faces the player (protects its back)", angle_diff(s_ai2["yaw"], to_player), 0, 25)
     else:
         c.check("the AI walked up to the player (someone was already defeated, position check skipped)", len(acted) >= 1)
-    c.check("the AI pays stamina like a player", any(e.get("attacker_stamina", st_max * 9) < st_max * STAMINA_MAX_FACTOR for e in host.find("HydraHit", 59.2, 68, attacker=AI)) or len(host.find("HydraHit", 59.2, 68, attacker=AI)) == 0)
+    c.check("the AI pays stamina like a player", any(e.get("attacker_stamina", st_max * 9) < st_max * STAMINA_MAX_FACTOR for e in host.find("HydraHit", 63.2, 72, attacker=AI)) or len(host.find("HydraHit", 63.2, 72, attacker=AI)) == 0)
 
     print("--- screenshots")
     shots = os.path.join(root, "Saved", "Screenshots", "Live")
-    for name in ("host_11.2.png", "host_17.2.png", "host_20.8.png", "host_36.1.png", "host_66.png", "client_11.3.png", "client_20.9.png", "client_66.1.png"):
+    for name in ("host_11.2.png", "host_17.2.png", "host_20.8.png", "host_36.1.png", "host_70.png", "client_11.3.png", "client_20.9.png", "client_70.1.png"):
         path = os.path.join(shots, name)
         c.check("screenshot " + name, os.path.exists(path) and os.path.getsize(path) > 20000,
                 "%d bytes" % os.path.getsize(path) if os.path.exists(path) else "missing")

@@ -77,7 +77,7 @@ void AHydraHUD::DrawNetInfo()
 	DrawText(FString::Printf(TEXT("%s | latency step %d ms (F6) | measured ping %s | packet loss %.0f%% (F8) | values v%d (F5 reloads) | %.0f fps"),
 		GetNetMode() == NM_Client ? TEXT("client") : TEXT("host"), GS->GetLatencyStepMs(), *Rtt, GS->GetPacketLossRatio() * 100.f,
 		Values ? Values->GetValues().version : 0, SmoothedFps), FLinearColor::White, 20.f, 16.f, Font);
-	DrawText(TEXT("WASD move | mouse look | LMB attack (hold = heavy) | RMB block / slime: bolt (hold = charge) | Left Alt dodge | Space jump | Q lock-on | Left Ctrl walk | ~ console"), FLinearColor(1.f, 1.f, 1.f, 0.7f), 20.f, 34.f, Font);
+	DrawText(TEXT("WASD move | mouse look | LMB attack (hold = heavy) | RMB block / slime: bolt (hold = charge) | Left Alt dodge | Space jump | Q lock-on | X precise movement | Left Ctrl walk | ~ console"), FLinearColor(1.f, 1.f, 1.f, 0.7f), 20.f, 34.f, Font);
 }
 
 void AHydraHUD::DrawOwnBars()
@@ -107,6 +107,10 @@ void AHydraHUD::DrawOwnBars()
 	if (Self->GetChainCount() > 0)
 	{
 		Text += FString::Printf(TEXT("   chain x%d"), Self->GetChainCount());
+	}
+	if (Self->IsPreciseMovement())
+	{
+		Text += TEXT("   PRECISE (X)");
 	}
 	if (!Self->IsAlive())
 	{

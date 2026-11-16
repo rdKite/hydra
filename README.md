@@ -52,12 +52,13 @@ Controls (one button per hand):
 | Jump | Space | A / cross |
 | Dodge | Left Alt | B / circle |
 | Lock-on | Q or middle mouse | right stick click |
+| Precise movement on / off: the character keeps facing where the camera looks | X | left stick click |
 | Walk | Left Ctrl | – |
 
 F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console:
 `Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`
 (AI opponent passive / active, on the host), `Hydra.LagCompensation [0|1]`, `HydraStats`,
-`HydraResetAll`, `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraFire 1`
+`HydraResetAll`, `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraPrecise 0|1`, `HydraFire 1`
 (fire awakened: the slime's bolt carries fire, leaves a fire field and causes burning; M4
 will earn this in play). The humanoid's blade shows the telegraph: yellow in the wind-up,
 towards red while a heavy attack charges. The AI opponent is rough on a slime – `Hydra.AI 0`

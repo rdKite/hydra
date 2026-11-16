@@ -482,7 +482,7 @@ void AHydraCharacter::BeginCastFacing()
 	Move->ClearFacingGoal();
 	if (!Move->bWantsStrafe)
 	{
-		Move->SetFacingGoal(CastAimYaw); // locked on: the character already turns towards its target
+		Move->SetFacingGoal(CastAimYaw); // locked on or precise movement: it already faces the camera direction
 	}
 }
 
@@ -529,7 +529,18 @@ FVector AHydraCharacter::ConsumeDodgeDirection()
 void AHydraCharacter::SetLockOnTarget(AHydraCharacter* NewTarget)
 {
 	LockOnTarget = NewTarget;
-	GetHydraMovement()->bWantsStrafe = NewTarget != nullptr;
+	RefreshStrafe();
+}
+
+void AHydraCharacter::SetPreciseMovement(bool bOn)
+{
+	bPreciseMovement = bOn;
+	RefreshStrafe();
+}
+
+void AHydraCharacter::RefreshStrafe()
+{
+	GetHydraMovement()->bWantsStrafe = LockOnTarget.IsValid() || bPreciseMovement;
 }
 
 AHydraCharacter* AHydraCharacter::FindBestTarget(const FVector& Origin, const FVector& Direction, float RangeCm, float MaxAngleDeg) const
@@ -555,7 +566,7 @@ void AHydraCharacter::BeginAttackFacing()
 	Move->ClearFacingGoal();
 	if (Move->bWantsStrafe)
 	{
-		return; // locked on (or AI): the character already turns towards its target
+		return; // locked on, precise movement or AI: the character already faces where it aims
 	}
 	const FHydraAimAssistValues& A = UHydraValuesSubsystem::Get(this).aim_assist;
 	if (const AHydraCharacter* Target = FindBestTarget(GetActorLocation(), GetActorForwardVector(), A.range_m * 100.f, A.angle_deg))

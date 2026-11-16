@@ -73,6 +73,7 @@ void AHydraPlayerController::BuildInput()
 	DodgeAction = MakeAction(TEXT("IA_Dodge"), EInputActionValueType::Boolean);
 	JumpAction = MakeAction(TEXT("IA_Jump"), EInputActionValueType::Boolean);
 	LockOnAction = MakeAction(TEXT("IA_LockOn"), EInputActionValueType::Boolean);
+	PreciseAction = MakeAction(TEXT("IA_Precise"), EInputActionValueType::Boolean);
 	ReloadValuesAction = MakeAction(TEXT("IA_ReloadValues"), EInputActionValueType::Boolean);
 	LatencyStepAction = MakeAction(TEXT("IA_LatencyStep"), EInputActionValueType::Boolean);
 	PacketLossAction = MakeAction(TEXT("IA_PacketLoss"), EInputActionValueType::Boolean);
@@ -111,6 +112,8 @@ void AHydraPlayerController::BuildInput()
 	Ctx->MapKey(LockOnAction, EKeys::Q);
 	Ctx->MapKey(LockOnAction, EKeys::MiddleMouseButton);
 	Ctx->MapKey(LockOnAction, EKeys::Gamepad_RightThumbstick);
+	Ctx->MapKey(PreciseAction, EKeys::X);
+	Ctx->MapKey(PreciseAction, EKeys::Gamepad_LeftThumbstick);
 	Ctx->MapKey(ReloadValuesAction, EKeys::F5);
 	Ctx->MapKey(LatencyStepAction, EKeys::F6);
 	Ctx->MapKey(PacketLossAction, EKeys::F8);
@@ -140,6 +143,7 @@ void AHydraPlayerController::SetupInputComponent()
 	EIC->BindAction(JumpAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnJumpPressed);
 	EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &AHydraPlayerController::OnJumpReleased);
 	EIC->BindAction(LockOnAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnLockOn);
+	EIC->BindAction(PreciseAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPreciseToggle);
 	EIC->BindAction(ReloadValuesAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnReloadValues);
 	EIC->BindAction(LatencyStepAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnLatencyStep);
 	EIC->BindAction(PacketLossAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPacketLossToggle);
@@ -276,6 +280,22 @@ void AHydraPlayerController::OnLockOn(const FInputActionValue&)
 	C->SetLockOnTarget(C->FindBestTarget(C->GetActorLocation(), CamRot.Vector(), L.range_m * 100.f, L.max_angle_deg));
 }
 
+void AHydraPlayerController::OnPreciseToggle(const FInputActionValue&)
+{
+	if (AHydraCharacter* C = GetHydraCharacter())
+	{
+		C->SetPreciseMovement(!C->IsPreciseMovement());
+	}
+}
+
+void AHydraPlayerController::HydraPrecise(int32 On)
+{
+	if (AHydraCharacter* C = GetHydraCharacter())
+	{
+		C->SetPreciseMovement(On != 0);
+	}
+}
+
 void AHydraPlayerController::BeginPlay()
 {
 	Super::BeginPlay();
@@ -312,9 +332,9 @@ void AHydraPlayerController::UpdateLockOn(float DeltaTime)
 	AHydraCharacter* Target = C ? C->GetLockOnTarget() : nullptr;
 	if (!Target)
 	{
-		if (C && C->GetHydraMovement()->bWantsStrafe)
+		if (C)
 		{
-			C->SetLockOnTarget(nullptr); // target is gone (destroyed): release the lock
+			C->RefreshStrafe(); // a target that is gone (destroyed) releases the lock
 		}
 		return;
 	}
@@ -540,10 +560,10 @@ void AHydraPlayerController::HydraStats()
 			const float ToTarget = (Target->GetActorLocation() - C->GetActorLocation()).Rotation().Yaw;
 			LockOff = FMath::Abs(FMath::FindDeltaAngleDegrees(GetControlRotation().Yaw, ToTarget));
 		}
-		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d form=%s hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f mana=%.2f maxmana=%.1f burning=%d fire=%d x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
+		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d form=%s hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f mana=%.2f maxmana=%.1f burning=%d fire=%d x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f precise=%d ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
 			Clock, Who, *C->GetLogId(), bMe ? 1 : 0, *C->GetFormId().ToString(), C->GetHealth(), C->GetMaxHealth(), C->GetStamina(), C->GetMaxStamina(),
 			C->GetMana(), C->GetMaxMana(), C->GetBurningStacks(), C->HasFireImprint() ? 1 : 0,
-			C->GetActorLocation().X, C->GetActorLocation().Y, C->GetActorLocation().Z, C->GetActorRotation().Yaw, bMe ? GetControlRotation().Yaw : 0.f, *Lock, LockOff,
+			C->GetActorLocation().X, C->GetActorLocation().Y, C->GetActorLocation().Z, C->GetActorRotation().Yaw, bMe ? GetControlRotation().Yaw : 0.f, *Lock, LockOff, C->IsPreciseMovement() ? 1 : 0,
 			PS ? PS->GetPingInMilliseconds() : 0.f, C->HasStateTag(HydraTags::State_StaminaRegenBlocked) ? 1 : 0, C->GetVelocity().Size2D(),
 			*ActionEnum->GetNameStringByValue(static_cast<int64>(C->GetShownAction().Action)), C->GetChainCount(), C->IsAlive() ? 0 : 1,
 			C->GetShownAction().Action == EHydraAction::Block ? 1 : 0);

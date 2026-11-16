@@ -326,3 +326,8 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
 - Mixamo interim look: not needed, wait for our own models.
 - A block counts only if the attacker could see it (lag compensation of the block state):
   kept as built.
+- **Precise movement** (after the first hands-on test of M3): a toggle on X; the character
+  keeps facing where the camera looks and can step backwards and sideways. Without it the
+  character turns into its movement as before. **A raised block switches to it by itself**;
+  later the same for drawing a bow. (Holding Q instead of X was the alternative; X was
+  taken because Q sits on a finger that also moves the character.)

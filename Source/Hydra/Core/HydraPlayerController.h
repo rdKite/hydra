@@ -25,12 +25,15 @@ class AHydraCharacter;
  *   Off hand: shield = block    right mouse           left shoulder
  *     (hold); slime = cast the bolt (press, hold = charge)
  *   Lock-on                     Q / middle mouse      right stick click
+ *   Precise movement (toggle)   X                     left stick click
  *   Reload values               F5                    -
  *   Latency step                F6                    -
  *   Packet loss                 F8 (toggle)           -
  *
  * Lock-on turns only the camera: while locked, the camera follows the target and the
- * character turns towards the camera direction at its turn rate.
+ * character turns towards the camera direction at its turn rate. Precise movement does the
+ * same without a target: the character faces where the camera looks and steps backwards and
+ * sideways; without it the character turns into its movement.
  *
  * The Hydra* exec functions are for scripted runs (Scripts/run_live.sh) and for trying
  * things from the console (key ~). Those that change the game state go through one dev RPC
@@ -75,6 +78,10 @@ public:
 	/** Same as the lock-on button. */
 	UFUNCTION(Exec)
 	void HydraLockOn();
+
+	/** Precise movement on (1) / off (0); the key toggles it. */
+	UFUNCTION(Exec)
+	void HydraPrecise(int32 On);
 
 	/** Press the weapon hand's button and hold it for HoldMs (0 = a tap: light attack). */
 	UFUNCTION(Exec)
@@ -169,6 +176,7 @@ private:
 	void OnJumpPressed(const FInputActionValue& Value);
 	void OnJumpReleased(const FInputActionValue& Value);
 	void OnLockOn(const FInputActionValue& Value);
+	void OnPreciseToggle(const FInputActionValue& Value);
 	void OnReloadValues(const FInputActionValue& Value);
 	void OnLatencyStep(const FInputActionValue& Value);
 	void OnPacketLossToggle(const FInputActionValue& Value);
@@ -187,6 +195,7 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UInputAction> DodgeAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> JumpAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> LockOnAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> PreciseAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> ReloadValuesAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> LatencyStepAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> PacketLossAction;

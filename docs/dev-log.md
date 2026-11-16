@@ -11,6 +11,29 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-16 – precise movement, then M4 (agent session, start 18:55)
+
+**Before M4 – feedback from the human's first hands-on test.** The character always turned
+into its movement, so stepping backwards was impossible without lock-on. Built:
+- **Precise movement**, a toggle on **X** (gamepad: left stick click), shown on the HUD. It
+  sets the same strafe flag as lock-on, without a target: the character faces the camera
+  direction at its turn rate and moves at `movement.strafe_speed_m_s`. Dev command
+  `HydraPrecise 0|1`.
+- **A raised block faces the camera direction by itself** (asked for by the human while this
+  was being built). Movement speed while blocking is unchanged (run speed ×
+  `block.move_speed_ratio`).
+- Assumptions: X as a toggle rather than holding Q (Q is pressed by a finger that also
+  moves the character; easy to change in `AHydraPlayerController::BuildInput`); precise
+  movement uses the strafe speed, like lock-on; no aim assist in precise movement (as with
+  lock-on); the toggle survives death and respawn. No new values.
+- Not built: the same for the bolt's charge (the cast still turns to the direction of the
+  press) – the human named "drawing a bow" as a later case; the bolt is the nearest thing
+  today. To decide.
+- Verified: `Scripts/run_all.sh` all green (17 tests, combat run 153 checks – 7 new: one
+  second backwards in precise movement keeps the facing within 3° on server and client and
+  covers about the strafe speed, without it the character turns around; a blocker without
+  lock-on turns to the camera direction at the blocking turn rate; slime run 76).
+
 ### 2026-11-16 – M3 Slime and magic (agent session, start 16:40)
 
 Before M3, answers of the human to the M2 questions: **jump on Space, dodge on Left Alt**
