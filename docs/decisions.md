@@ -350,3 +350,5 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   - **Enemy mix and difficulty:** to be judged in the M5 playtest.
   - **The fire bolt follows the camera while it charges**, like a raised block (and later
     drawing a bow).
+  - **Milestone keys away from WASD:** evolve on **J**, imprint on **K** (instead of E and R,
+    which stay free for later actions).

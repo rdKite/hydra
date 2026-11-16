@@ -22,8 +22,9 @@ To do at the start of the next agent session, before M5 work:
    live run still passes and adjust its expectations if it hard-codes the old numbers.
 4. No change for: evolution in the arena (no workaround), 1 % per level/skill (stays), full
    nXP for everyone (already so).
-5. Keys E (evolve) and R (imprint) at a milestone: explained to the human; open whether
-   they stay – see question 8 in the M4 entry.
+5. **Move the milestone keys away from WASD:** evolve **E → J**, imprint **R → K**
+   (keyboard). E and R stay free for later actions. Keep the gamepad mapping unless it
+   clashes; update the HUD hint and any docs that name E/R.
 
 
 ### 2026-11-16 – precise movement, then M4 (agent session, start 18:55)
