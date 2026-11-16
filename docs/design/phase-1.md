@@ -5,8 +5,8 @@ agents who implement them. It covers only what Phase 1 builds. The full design (
 phases, other lines, world, strategy layer) lives in the German design notes outside this
 repo.
 
-Terms follow `GLOSSARY.md`. The combat design has changed since the glossary was written:
-**parry and perfect dodge are dropped.** New terms used here:
+Terms follow `GLOSSARY.md`. **Parry and perfect dodge are dropped** from the design. The
+most important combat terms:
 
 | German | English | Meaning |
 |---|---|---|
@@ -19,7 +19,8 @@ Terms follow `GLOSSARY.md`. The combat design has changed since the glossary was
 
 **Numbers.** Where the notes give example numbers, they appear here as *starting values
 (tunable)*. Where a value is needed but the notes give none, it says **TBD (tune in
-playtests)**. All numbers live in `data/values.json`; none are hard-coded.
+playtests)** here; `data/values.json` may hold a first guess for it, marked as such in
+`data/CHANGELOG.md`. All numbers live in `data/values.json`; none are hard-coded.
 
 ---
 
