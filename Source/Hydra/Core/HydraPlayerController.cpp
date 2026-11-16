@@ -6,7 +6,9 @@
 #include "AbilitySystemComponent.h"
 #include "Character/HydraCharacter.h"
 #include "Character/HydraMovementComponent.h"
+#include "Character/HydraProgressionComponent.h"
 #include "Core/HydraDevSubsystem.h"
+#include "Core/HydraGameMode.h"
 #include "Core/HydraGameState.h"
 #include "Data/HydraValuesSubsystem.h"
 #include "Engine/Engine.h"
@@ -74,6 +76,8 @@ void AHydraPlayerController::BuildInput()
 	JumpAction = MakeAction(TEXT("IA_Jump"), EInputActionValueType::Boolean);
 	LockOnAction = MakeAction(TEXT("IA_LockOn"), EInputActionValueType::Boolean);
 	PreciseAction = MakeAction(TEXT("IA_Precise"), EInputActionValueType::Boolean);
+	EvolveAction = MakeAction(TEXT("IA_Evolve"), EInputActionValueType::Boolean);
+	ImprintAction = MakeAction(TEXT("IA_Imprint"), EInputActionValueType::Boolean);
 	ReloadValuesAction = MakeAction(TEXT("IA_ReloadValues"), EInputActionValueType::Boolean);
 	LatencyStepAction = MakeAction(TEXT("IA_LatencyStep"), EInputActionValueType::Boolean);
 	PacketLossAction = MakeAction(TEXT("IA_PacketLoss"), EInputActionValueType::Boolean);
@@ -114,6 +118,10 @@ void AHydraPlayerController::BuildInput()
 	Ctx->MapKey(LockOnAction, EKeys::Gamepad_RightThumbstick);
 	Ctx->MapKey(PreciseAction, EKeys::X);
 	Ctx->MapKey(PreciseAction, EKeys::Gamepad_LeftThumbstick);
+	Ctx->MapKey(EvolveAction, EKeys::E);
+	Ctx->MapKey(EvolveAction, EKeys::Gamepad_DPad_Up);
+	Ctx->MapKey(ImprintAction, EKeys::R);
+	Ctx->MapKey(ImprintAction, EKeys::Gamepad_DPad_Right);
 	Ctx->MapKey(ReloadValuesAction, EKeys::F5);
 	Ctx->MapKey(LatencyStepAction, EKeys::F6);
 	Ctx->MapKey(PacketLossAction, EKeys::F8);
@@ -144,6 +152,8 @@ void AHydraPlayerController::SetupInputComponent()
 	EIC->BindAction(JumpAction, ETriggerEvent::Completed, this, &AHydraPlayerController::OnJumpReleased);
 	EIC->BindAction(LockOnAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnLockOn);
 	EIC->BindAction(PreciseAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPreciseToggle);
+	EIC->BindAction(EvolveAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnChooseEvolve);
+	EIC->BindAction(ImprintAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnChooseImprint);
 	EIC->BindAction(ReloadValuesAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnReloadValues);
 	EIC->BindAction(LatencyStepAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnLatencyStep);
 	EIC->BindAction(PacketLossAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPacketLossToggle);
@@ -286,6 +296,50 @@ void AHydraPlayerController::OnPreciseToggle(const FInputActionValue&)
 	{
 		C->SetPreciseMovement(!C->IsPreciseMovement());
 	}
+}
+
+void AHydraPlayerController::OnChooseEvolve(const FInputActionValue&)
+{
+	ServerChooseMilestone(TEXT("evolve"));
+}
+
+void AHydraPlayerController::OnChooseImprint(const FInputActionValue&)
+{
+	ServerChooseMilestone(TEXT("imprint"));
+}
+
+void AHydraPlayerController::HydraChoose(const FString& Choice)
+{
+	ServerChooseMilestone(FName(*Choice));
+}
+
+void AHydraPlayerController::ServerChooseMilestone_Implementation(FName Choice)
+{
+	if (AHydraCharacter* C = GetHydraCharacter())
+	{
+		const bool bTaken = C->GetProgression()->ServerChoose(Choice);
+		UE_LOG(LogHydra, Log, TEXT("HydraChoose who=%s choice=%s %s"), *C->GetLogId(), *Choice.ToString(), bTaken ? TEXT("taken") : TEXT("refused"));
+	}
+}
+
+void AHydraPlayerController::HydraWaves(int32 On)
+{
+	ServerDevCommand(FString::Printf(TEXT("waves %d"), On));
+}
+
+void AHydraPlayerController::HydraXp(float Amount)
+{
+	ServerDevCommand(FString::Printf(TEXT("xp %f"), Amount));
+}
+
+void AHydraPlayerController::HydraImprintProgress(float Amount)
+{
+	ServerDevCommand(FString::Printf(TEXT("imprintprogress %f"), Amount));
+}
+
+void AHydraPlayerController::HydraEnemyTeleport(const FString& Who, float X, float Y, float Yaw)
+{
+	ServerDevCommand(FString::Printf(TEXT("enemyteleport %s %f %f %f"), *Who, X, Y, Yaw));
 }
 
 void AHydraPlayerController::HydraPrecise(int32 On)
@@ -552,6 +606,27 @@ void AHydraPlayerController::HydraStats()
 		const bool bMe = C == GetPawn();
 		const APlayerState* PS = C->GetPlayerState();
 
+		// Progress: skills as id:level:xp, what the milestone offers as imprint / evolve:<form>.
+		const UHydraProgressionComponent* Progress = C->GetProgression();
+		FString Skills;
+		for (const FHydraSkillState& S : Progress->GetSkills())
+		{
+			Skills += FString::Printf(TEXT("%s%s:%d:%.1f"), Skills.IsEmpty() ? TEXT("") : TEXT(","), *S.Id.ToString(), S.Level, S.Xp);
+		}
+		FString Offer = Progress->CanRaiseImprint() ? TEXT("imprint") : TEXT("");
+		if (!Progress->GetEvolutionOffer().IsNone())
+		{
+			Offer += FString::Printf(TEXT("%sevolve:%s"), Offer.IsEmpty() ? TEXT("") : TEXT("+"), *Progress->GetEvolutionOffer().ToString());
+		}
+		if (Offer.IsEmpty())
+		{
+			Offer = TEXT("none");
+		}
+		if (Skills.IsEmpty())
+		{
+			Skills = TEXT("none");
+		}
+
 		FString Lock = TEXT("none");
 		float LockOff = 0.f;
 		if (const AHydraCharacter* Target = C->GetLockOnTarget())
@@ -560,10 +635,11 @@ void AHydraPlayerController::HydraStats()
 			const float ToTarget = (Target->GetActorLocation() - C->GetActorLocation()).Rotation().Yaw;
 			LockOff = FMath::Abs(FMath::FindDeltaAngleDegrees(GetControlRotation().Yaw, ToTarget));
 		}
-		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d form=%s hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f mana=%.2f maxmana=%.1f burning=%d fire=%d x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f precise=%d ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
+		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d form=%s hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f mana=%.2f maxmana=%.1f burning=%d fire=%d x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f precise=%d level=%d xp=%.1f imprint=%d imprintprogress=%.1f milestones=%d offer=%s skills=%s ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
 			Clock, Who, *C->GetLogId(), bMe ? 1 : 0, *C->GetFormId().ToString(), C->GetHealth(), C->GetMaxHealth(), C->GetStamina(), C->GetMaxStamina(),
 			C->GetMana(), C->GetMaxMana(), C->GetBurningStacks(), C->HasFireImprint() ? 1 : 0,
 			C->GetActorLocation().X, C->GetActorLocation().Y, C->GetActorLocation().Z, C->GetActorRotation().Yaw, bMe ? GetControlRotation().Yaw : 0.f, *Lock, LockOff, C->IsPreciseMovement() ? 1 : 0,
+			Progress->GetLevel(), Progress->GetXp(), Progress->GetImprintLevel(), Progress->GetImprintProgress(), Progress->GetOpenMilestones(), *Offer, *Skills,
 			PS ? PS->GetPingInMilliseconds() : 0.f, C->HasStateTag(HydraTags::State_StaminaRegenBlocked) ? 1 : 0, C->GetVelocity().Size2D(),
 			*ActionEnum->GetNameStringByValue(static_cast<int64>(C->GetShownAction().Action)), C->GetChainCount(), C->IsAlive() ? 0 : 1,
 			C->GetShownAction().Action == EHydraAction::Block ? 1 : 0);
@@ -642,6 +718,31 @@ void AHydraPlayerController::ServerDevCommand_Implementation(const FString& Comm
 	else if (Args[0] == TEXT("fire") && Self)
 	{
 		Self->ServerSetFireImprint(Number(1) != 0.f);
+	}
+	else if (Args[0] == TEXT("waves"))
+	{
+		if (AHydraGameMode* GameMode = GetWorld()->GetAuthGameMode<AHydraGameMode>(); GameMode && Number(1) != 0.f)
+		{
+			GameMode->StartWaves();
+		}
+	}
+	else if (Args[0] == TEXT("xp") && Self)
+	{
+		Self->GetProgression()->ServerAddXp(Number(1));
+	}
+	else if (Args[0] == TEXT("imprintprogress") && Self)
+	{
+		Self->GetProgression()->ServerAddImprintProgress(Number(1));
+	}
+	else if (Args[0] == TEXT("enemyteleport") && Args.Num() >= 2)
+	{
+		for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
+		{
+			if (It->GetLogId() == Args[1])
+			{
+				It->ServerTeleport(FVector(Number(2), Number(3), It->GetActorLocation().Z), Number(4));
+			}
+		}
 	}
 	else if (Args[0] == TEXT("reset"))
 	{

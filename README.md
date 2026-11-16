@@ -29,10 +29,11 @@ Git Bash from the repository root.
 | `Scripts/build.sh` | builds the editor target (used for tests and for playing) |
 | `Scripts/run_tests.sh` | build + automation tests, headless |
 | `Scripts/create_arena_map.sh` | recreates `Content/Maps/Arena.umap` (only if the map is lost) |
-| `Scripts/play.sh` | **play:** host window plus a client window (`host` / `client` for one only); `HOST_FORM=slime Scripts/play.sh` to play the slime |
+| `Scripts/play.sh` | **play against waves:** host window plus a client window (`host` / `client` for one only); `HOST_FORM=slime Scripts/play.sh` to play the slime; `WAVES=0 Scripts/play.sh` for one practice opponent instead of waves |
 | `Scripts/run_live.sh` | scripted live run, combat: host + client, automated input, screenshots, checks |
 | `Scripts/run_live_slime.sh` | scripted live run, slime and magic |
-| `Scripts/run_all.sh` | tests and both live runs |
+| `Scripts/run_live_waves.sh` | scripted live run, progression and waves |
+| `Scripts/run_all.sh` | tests and the three live runs |
 | `Scripts/build_art.sh` | Blender builds models, rigs and textures, Unreal imports them (needs Blender) |
 
 Without the script, from any shell (after a build):
@@ -54,15 +55,28 @@ Controls (one button per hand):
 | Lock-on | Q or middle mouse | right stick click |
 | Precise movement on / off: the character keeps facing where the camera looks | X | left stick click |
 | Walk | Left Ctrl | – |
+| At a milestone: evolve / start or raise the fire imprint (only what the HUD offers) | E / R | D-pad up / right |
 
 F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console:
 `Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`
 (AI opponent passive / active, on the host), `Hydra.LagCompensation [0|1]`, `HydraStats`,
 `HydraResetAll`, `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraPrecise 0|1`, `HydraFire 1`
-(fire awakened: the slime's bolt carries fire, leaves a fire field and causes burning; M4
-will earn this in play). The humanoid's blade shows the telegraph: yellow in the wind-up,
-towards red while a heavy attack charges. The AI opponent is rough on a slime – `Hydra.AI 0`
-makes it stand still.
+(fire awakened without earning it: the slime's bolt carries fire, leaves a fire field and
+causes burning), `HydraWaves 1` (switch a practice session to waves), `HydraXp <n>` and
+`HydraImprintProgress <n>` (dev: give yourself nXP or imprint progress), `HydraChoose
+evolve|imprint`. The humanoid's blade shows the telegraph: yellow in the wind-up,
+towards red while a heavy attack charges. `Hydra.AI 0` makes every AI stand still.
+
+**Waves and progression.** Enemies come in waves (`data/values.json`: `waves`, `enemies`).
+Everyone starts at a fixed level (humanoid 9, slime 29 – one level before its cap). Defeated
+enemies give nXP; what you use in a wave (weapon, shield, dodge, bolt) earns skill XP, which
+is credited when the wave is cleared and turns into skill levels at your next level-up.
+Contact with fire – ember slimes cast fire bolts, leave fire fields and burn whoever hits
+them – builds the fire imprint. At a milestone (every 10 levels, and the level cap) the HUD
+offers what you earned: `R` starts or raises the imprint, `E` evolves the slime into the
+fire elemental slime (level and skills start again, with an instinct per skill). Every
+cleared wave writes a metrics row per player and enemy type to
+`Saved/Metrics/metrics_<time>.csv`.
 
 ## Where things are
 
@@ -73,13 +87,14 @@ makes it stand still.
 - [`docs/decisions.md`](docs/decisions.md) – history of design decisions.
 - [`GLOSSARY.md`](GLOSSARY.md) – English names for all game terms.
 - [`data/values.json`](data/values.json) – all gameplay numbers.
-- [`data/`](data) `forms.json`, `skills.json`, `elements.json`, `weapons.json` – what exists
+- [`data/`](data) `forms.json`, `skills.json`, `elements.json`, `weapons.json`, `enemies.json` – what exists
   in the game, with stable IDs (no numbers; those are in `values.json`, per ID).
 - [`Source/Hydra/`](Source/Hydra) – the C++ game module: `Data/` (values and definitions),
   `Abilities/` (GAS helper layer, stamina and health, attack / block / dodge),
-  `Character/` (combat rules, hit resolution, lag compensation), `Combat/` (bolt, fire
-  field), `AI/` (practice opponent),
-  `Core/` (game mode, network emulation, controller, HUD, dev tools), `Arena/`, `Tests/`.
+  `Character/` (combat rules, hit resolution, lag compensation, progression), `Combat/`
+  (bolt, fire field), `AI/` (practice opponent and wave enemies),
+  `Core/` (game mode with the waves, metrics, network emulation, controller, HUD, dev
+  tools), `Arena/`, `Tests/`.
 - [`Scripts/`](Scripts) – build, test, map, art and run scripts.
 - [`Art/`](Art) – Blender scripts and the .blend files they write (models, rigs, textures).
 - [`docs/tech/`](docs/tech) – tech-test findings, Blender pipeline.

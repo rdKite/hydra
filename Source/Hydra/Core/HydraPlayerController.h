@@ -26,6 +26,8 @@ class AHydraCharacter;
  *     (hold); slime = cast the bolt (press, hold = charge)
  *   Lock-on                     Q / middle mouse      right stick click
  *   Precise movement (toggle)   X                     left stick click
+ *   Milestone: evolve           E                     D-pad up
+ *   Milestone: raise imprint    R                     D-pad right
  *   Reload values               F5                    -
  *   Latency step                F6                    -
  *   Packet loss                 F8 (toggle)           -
@@ -156,6 +158,29 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerDevCommand(const FString& Command);
 
+	/** Client -> server: the choice at a milestone, "imprint" or "evolve" (only what is on offer is accepted). */
+	UFUNCTION(Server, Reliable)
+	void ServerChooseMilestone(FName Choice);
+
+	/** Same as the milestone keys: HydraChoose imprint | evolve. */
+	UFUNCTION(Exec)
+	void HydraChoose(const FString& Choice);
+
+	/** Dev: waves on (1) - the practice opponent leaves and the first wave comes. */
+	UFUNCTION(Exec)
+	void HydraWaves(int32 On);
+
+	/** Dev: give the own character nXP / fire imprint progress. */
+	UFUNCTION(Exec)
+	void HydraXp(float Amount);
+
+	UFUNCTION(Exec)
+	void HydraImprintProgress(float Amount);
+
+	/** Dev: put the wave enemy with this log id (e.g. grunt1) at X / Y facing Yaw. */
+	UFUNCTION(Exec)
+	void HydraEnemyTeleport(const FString& Who, float X, float Y, float Yaw);
+
 protected:
 	virtual void SetupInputComponent() override;
 
@@ -177,6 +202,8 @@ private:
 	void OnJumpReleased(const FInputActionValue& Value);
 	void OnLockOn(const FInputActionValue& Value);
 	void OnPreciseToggle(const FInputActionValue& Value);
+	void OnChooseEvolve(const FInputActionValue& Value);
+	void OnChooseImprint(const FInputActionValue& Value);
 	void OnReloadValues(const FInputActionValue& Value);
 	void OnLatencyStep(const FInputActionValue& Value);
 	void OnPacketLossToggle(const FInputActionValue& Value);
@@ -196,6 +223,8 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UInputAction> JumpAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> LockOnAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> PreciseAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> EvolveAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> ImprintAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> ReloadValuesAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> LatencyStepAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> PacketLossAction;

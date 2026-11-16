@@ -14,6 +14,18 @@ void AHydraGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(AHydraGameState, LatencyStepMs);
 	DOREPLIFETIME(AHydraGameState, bPacketLoss);
+	DOREPLIFETIME(AHydraGameState, bWaves);
+	DOREPLIFETIME(AHydraGameState, Wave);
+	DOREPLIFETIME(AHydraGameState, EnemiesLeft);
+	DOREPLIFETIME(AHydraGameState, NextWaveTime);
+}
+
+void AHydraGameState::SetWaveState(bool bInWaves, int32 InWave, int32 InEnemiesLeft, float InNextWaveTime)
+{
+	bWaves = bInWaves;
+	Wave = InWave;
+	EnemiesLeft = InEnemiesLeft;
+	NextWaveTime = InNextWaveTime;
 }
 
 void AHydraGameState::BeginPlay()

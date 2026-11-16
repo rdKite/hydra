@@ -1,6 +1,6 @@
 {
   "_note": "All gameplay numbers for hydra. Times in milliseconds, rates per second, distances in metres, angles in degrees (arcs as half angles). 'Weight ratio' always means weight / strength. The sections forms, weapons and shields hold the numbers per ID from forms.json and weapons.json; body_weight, weapon weight and strength share one unit: at weight / strength = 1 the general rules apply unchanged. Starting values - tune in playtests. Every change: bump version and add a line to data/CHANGELOG.md.",
-  "version": 4,
+  "version": 5,
   "forms": {
     "humanoid": {
       "body_weight": 70,
@@ -12,7 +12,11 @@
       "stamina_regen_per_s": 35,
       "mana_max": 0,
       "mana_regen_per_s": 0,
-      "resistance": { "slash": 0.0, "pierce": 0.0, "blunt": 0.0, "fire": 0.0 }
+      "resistance": { "slash": 0.0, "pierce": 0.0, "blunt": 0.0, "fire": 0.0 },
+      "level_cap": 50,
+      "start_level": 9,
+      "start_skill_level": 6,
+      "element_body_damage": 0
     },
     "slime": {
       "body_weight": 8,
@@ -24,7 +28,27 @@
       "stamina_regen_per_s": 20,
       "mana_max": 100,
       "mana_regen_per_s": 10,
-      "resistance": { "slash": 0.5, "pierce": 0.5, "blunt": -0.25, "fire": 0.0 }
+      "resistance": { "slash": 0.5, "pierce": 0.5, "blunt": -0.25, "fire": 0.0 },
+      "level_cap": 30,
+      "start_level": 29,
+      "start_skill_level": 20,
+      "element_body_damage": 0
+    },
+    "fire_elemental_slime": {
+      "body_weight": 10,
+      "strength": 16,
+      "body_radius_m": 0.45,
+      "body_height_m": 0.9,
+      "hp_max": 80,
+      "stamina_max": 60,
+      "stamina_regen_per_s": 22,
+      "mana_max": 130,
+      "mana_regen_per_s": 13,
+      "resistance": { "slash": 0.5, "pierce": 0.5, "blunt": -0.25, "fire": 0.5 },
+      "level_cap": 50,
+      "start_level": 0,
+      "start_skill_level": 0,
+      "element_body_damage": 4
     }
   },
   "weapons": {
@@ -160,7 +184,109 @@
     "heavy_attack_chance": 0.3,
     "block_chance": 0.5,
     "dodge_chance": 0.25,
-    "block_hold_ms": 800
+    "block_hold_ms": 800,
+    "cast_range_m": 0,
+    "cast_pause_ms": 0
+  },
+  "enemies": {
+    "grunt": {
+      "level": 5,
+      "skill_level": 3,
+      "nxp_base": 40,
+      "ai": {
+        "engage_range_m": 60,
+        "reaction_time_ms": 450,
+        "error_rate": 0.4,
+        "attack_pause_ms": 1600,
+        "heavy_attack_chance": 0.2,
+        "block_chance": 0.35,
+        "dodge_chance": 0.15,
+        "block_hold_ms": 700,
+        "cast_range_m": 0,
+        "cast_pause_ms": 0
+      }
+    },
+    "veteran": {
+      "level": 10,
+      "skill_level": 8,
+      "nxp_base": 80,
+      "ai": {
+        "engage_range_m": 60,
+        "reaction_time_ms": 300,
+        "error_rate": 0.2,
+        "attack_pause_ms": 1100,
+        "heavy_attack_chance": 0.3,
+        "block_chance": 0.5,
+        "dodge_chance": 0.25,
+        "block_hold_ms": 800,
+        "cast_range_m": 0,
+        "cast_pause_ms": 0
+      }
+    },
+    "ember_slime": {
+      "level": 5,
+      "skill_level": 3,
+      "nxp_base": 50,
+      "ai": {
+        "engage_range_m": 60,
+        "reaction_time_ms": 400,
+        "error_rate": 0.35,
+        "attack_pause_ms": 1500,
+        "heavy_attack_chance": 0.2,
+        "block_chance": 0.0,
+        "dodge_chance": 0.3,
+        "block_hold_ms": 0,
+        "cast_range_m": 12,
+        "cast_pause_ms": 2500
+      }
+    }
+  },
+  "waves": {
+    "first_delay_ms": 4000,
+    "break_ms": 6000,
+    "level_bonus_per_loop": 3,
+    "list": [
+      { "groups": [ { "enemy": "grunt", "count": 2 } ] },
+      { "groups": [ { "enemy": "grunt", "count": 1 }, { "enemy": "ember_slime", "count": 1 } ] },
+      { "groups": [ { "enemy": "ember_slime", "count": 2 }, { "enemy": "grunt", "count": 1 } ] },
+      { "groups": [ { "enemy": "veteran", "count": 1 }, { "enemy": "grunt", "count": 2 } ] },
+      { "groups": [ { "enemy": "veteran", "count": 1 }, { "enemy": "ember_slime", "count": 2 } ] }
+    ]
+  },
+  "progression": {
+    "xp_base": 100,
+    "xp_per_level": 10,
+    "nxp_bonus_per_enemy_level": 0.1,
+    "hp_bonus_per_level": 0.01,
+    "damage_bonus_per_level": 0.01,
+    "milestone_every_levels": 10
+  },
+  "skills": {
+    "xp_base": 20,
+    "xp_per_level": 4,
+    "xp_per_hit": 5,
+    "xp_per_block": 5,
+    "xp_per_dodge": 8,
+    "xp_per_bolt_hit": 6,
+    "damage_bonus_per_level": 0.01,
+    "cost_reduction_per_level": 0.01,
+    "min_cost_factor": 0.5,
+    "block_arc_deg_per_level": 0.5,
+    "dodge_distance_bonus_per_level": 0.01,
+    "field_radius_bonus_per_level": 0.02
+  },
+  "imprint": {
+    "max_level": 5,
+    "progress_per_damage_taken": 1.0,
+    "progress_per_damage_dealt": 0.5,
+    "progress_first_level": 30,
+    "progress_per_further_level": 60,
+    "resistance_per_level": 0.1,
+    "damage_bonus_per_level": 0.1
+  },
+  "instinct": {
+    "skill_level_bonus_max": 3,
+    "xp_bonus_max": 0.5
   },
   "bolt": {
     "mana_cost": 20,

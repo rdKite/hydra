@@ -31,7 +31,7 @@ namespace HydraDataLoader
 
 	HYDRA_API bool LoadValues(const FString& Dir, FHydraValues& Out, TArray<FString>& OutProblems);
 
-	/** Loads the four definition files and validates IDs and references. */
+	/** Loads the definition files and validates IDs and references. */
 	HYDRA_API bool LoadDefinitions(const FString& Dir, FHydraDefinitions& Out, TArray<FString>& OutProblems);
 
 	/** JSON keys without a matching struct member (the game would silently ignore them). Keys starting with "_" are comments. */
@@ -43,7 +43,7 @@ namespace HydraDataLoader
 	/** IDs: non-empty, lower snake_case, unique per file; references between files resolve. */
 	HYDRA_API void ValidateDefinitions(const FHydraDefinitions& Defs, TArray<FString>& OutProblems);
 
-	/** values.json against the definition files: numbers for every form, weapon and shield, and none for unknown IDs. */
+	/** values.json against the definition files: numbers for every form, weapon, shield and enemy type, none for unknown IDs, waves of known enemies. */
 	HYDRA_API void ValidateValues(const FHydraValues& V, const FHydraDefinitions& Defs, TArray<FString>& OutProblems);
 
 	HYDRA_API bool IsValidId(FName Id);

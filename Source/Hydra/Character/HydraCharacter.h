@@ -5,6 +5,7 @@
 #include "ActiveGameplayEffectHandle.h"
 #include "Character/HydraCombatMath.h"
 #include "Character/HydraPoseHistory.h"
+#include "Core/HydraMetrics.h"
 #include "GameFramework/Character.h"
 #include "HydraCharacter.generated.h"
 
@@ -14,6 +15,7 @@ class UStaticMeshComponent;
 class UAbilitySystemComponent;
 class UHydraAttributeSet;
 class UHydraMovementComponent;
+class UHydraProgressionComponent;
 class UAnimSequence;
 class UGameplayAbility;
 struct FHydraValues;
@@ -50,7 +52,8 @@ struct FHydraActionState
  * A character in the arena: player or AI opponent, same class and same rules.
  *
  * - Form and loadout come from forms.json (FormId), all numbers from values.json; weight,
- *   strength and what follows from them are in GetStats().
+ *   strength, level, skills and imprint (UHydraProgressionComponent) and what follows from
+ *   them are in GetStats().
  * - Abilities (attack, block, dodge) run through GAS; this class takes the input, shows the
  *   action (placeholder body from engine primitives with sword and shield - models come
  *   with the Blender pipeline in M3) and resolves hits on the server.
@@ -91,8 +94,12 @@ public:
 	FName GetFormId() const { return FormId; }
 	/** Stacks of the burning debuff (replicated). */
 	int32 GetBurningStacks() const { return BurningStacks; }
-	/** The element fire is awakened: the bolt carries fire (M4 earns it; M3 switches it by dev command). */
-	bool HasFireImprint() const { return bFireImprint; }
+	/** The element fire is awakened (fire imprint of level 1 or more): the bolt carries fire. */
+	bool HasFireImprint() const;
+	/** Level, skills, imprint and evolution. */
+	UHydraProgressionComponent* GetProgression() const { return Progression; }
+	/** The progress changed (server, and clients when it arrives): work out the numbers again. */
+	void OnProgressChanged();
 	bool HasStateTag(const struct FGameplayTag& Tag) const;
 	int32 GetChainCount() const { return ChainCount; }
 
@@ -102,7 +109,23 @@ public:
 	void SetAIControlled() { bAIControlled = true; }
 	bool IsAIControlledCharacter() const { return bAIControlled; }
 
-	/** Name for logs: the player id, or "ai". The same in every process. */
+	/**
+	 * Server, before BeginPlay: this character is an enemy of a wave (enemies.json ID). Serial
+	 * tells enemies of one type apart; LevelBonus is added to the level of the type.
+	 */
+	void SetEnemyType(FName InEnemyId, int32 InSerial, int32 InLevelBonus);
+	FName GetEnemyId() const { return EnemyId; }
+
+	/** Server: false = it does not come back after a defeat (wave enemies); it is removed instead. */
+	void SetRespawns(bool bInRespawns) { bRespawns = bInRespawns; }
+
+	/** May this character's attacks hurt Target? (AI characters are one side and do not hurt each other.) */
+	bool CanHurt(const AHydraCharacter* Target) const { return Target && Target != this && !(bAIControlled && Target->bAIControlled); }
+
+	/** Server: counters for the metrics CSV. */
+	FHydraMetricCounters Metrics;
+
+	/** Name for logs: the player id, "ai" for the practice opponent, type and number for a wave enemy. The same in every process. */
 	FString GetLogId() const;
 
 	/** Server world time as this process knows it (synced on clients). */
@@ -174,6 +197,9 @@ public:
 
 	// --- Combat (server) -------------------------------------------------------------------
 
+	/** Server: a dodge step starts here (for the check whether it avoided a hit). */
+	void ServerNoteDodge();
+
 	/** An attack of this character just started: tell the AI opponents (they may react). */
 	void OnAttackStarted();
 
@@ -202,7 +228,11 @@ public:
 	/** Change the form (arena start option and dev command): rebuilds numbers and looks, full bars. */
 	void ServerSetForm(FName NewFormId);
 
-	void ServerSetFireImprint(bool bOn) { bFireImprint = bOn; }
+	/** Evolution: the new form with full bars; level, skills and imprint were already reset by the progression. */
+	void ServerEvolveTo(FName NewFormId);
+
+	/** Start option and dev command: fire awakened (imprint level 1) or not. */
+	void ServerSetFireImprint(bool bOn);
 
 	/** Called by the attribute set after damage was taken from Health. */
 	void OnDamaged(float Damage);
@@ -244,6 +274,8 @@ protected:
 	void OnRep_AIControlled();
 
 	void OnValuesReloaded(const FHydraValues& Values);
+	void InitProgress();
+	void ChangeForm(FName NewFormId);
 	void RebuildStats();
 	void GrantAbilities();
 	void NotifyReleased(TSubclassOf<UGameplayAbility> AbilityClass);
@@ -307,6 +339,9 @@ protected:
 	UPROPERTY()
 	TObjectPtr<UHydraAttributeSet> Attributes;
 
+	UPROPERTY(VisibleAnywhere, Category = "Progression")
+	TObjectPtr<UHydraProgressionComponent> Progression;
+
 	/** Form from forms.json. Phase 1 before M3: everyone is the humanoid. */
 	UPROPERTY(ReplicatedUsing = OnRep_FormId)
 	FName FormId = TEXT("humanoid");
@@ -327,8 +362,12 @@ protected:
 	UPROPERTY(Replicated)
 	uint8 BurningStacks = 0;
 
+	/** Wave enemies: type (enemies.json) and a number to tell them apart. */
 	UPROPERTY(Replicated)
-	bool bFireImprint = false;
+	FName EnemyId;
+
+	UPROPERTY(Replicated)
+	int32 EnemySerial = 0;
 
 	/** Animations of a form with a model, by name (Idle, Move, Windup, ...). */
 	UPROPERTY(Transient)
@@ -359,6 +398,16 @@ protected:
 	double NextBurningStackChange = 0.0;
 	double NextBurningTick = 0.0;
 	TWeakObjectPtr<AHydraCharacter> BurningSource;
+	bool bRespawns = true;
+	int32 EnemyLevelBonus = 0;
+	/** Who dealt the last damage (gets the kill). */
+	TWeakObjectPtr<AHydraCharacter> LastDamager;
+	/** Counts this character's attacks, so a dodge is credited once per attack. */
+	int32 AttackSerial = 0;
+	double DodgeStartTime = -1000.0;
+	FVector DodgeStartLocation = FVector::ZeroVector;
+	TWeakObjectPtr<AHydraCharacter> LastAvoidedAttacker;
+	int32 LastAvoidedSerial = 0;
 
 	// Owning client and server: where the cast is aimed.
 	float CastAimYaw = 0.f;

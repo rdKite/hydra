@@ -10,6 +10,7 @@
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
 #include "Character/HydraMovementComponent.h"
+#include "Character/HydraProgressionComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -46,6 +47,8 @@ namespace HydraCharacterLook
 	const FLinearColor HitFlashColor(1.00f, 1.00f, 1.00f);
 	const FLinearColor BlockFlashColor(0.60f, 0.80f, 1.00f);
 	constexpr float HitFlashS = 0.12f;
+	const FLinearColor FireBodyTint(2.2f, 0.75f, 0.25f);     // element body fire: the slime's green turns orange
+	const FLinearColor FireBodyGlow(0.9f, 0.18f, 0.02f);
 
 	// Poses of sword and shield relative to the body (cm, degrees).
 	const FVector SwordRest(18.f, 30.f, 5.f);
@@ -135,6 +138,7 @@ AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
 	AbilitySystem->SetIsReplicated(true);
 	AbilitySystem->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
 	Attributes = CreateDefaultSubobject<UHydraAttributeSet>(TEXT("Attributes"));
+	Progression = CreateDefaultSubobject<UHydraProgressionComponent>(TEXT("Progression"));
 }
 
 UAbilitySystemComponent* AHydraCharacter::GetAbilitySystemComponent() const
@@ -192,7 +196,8 @@ void AHydraCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME(AHydraCharacter, ActionState);
 	DOREPLIFETIME(AHydraCharacter, ChainCount);
 	DOREPLIFETIME(AHydraCharacter, BurningStacks);
-	DOREPLIFETIME(AHydraCharacter, bFireImprint);
+	DOREPLIFETIME(AHydraCharacter, EnemyId);
+	DOREPLIFETIME(AHydraCharacter, EnemySerial);
 }
 
 float AHydraCharacter::GetHealth() const { return Attributes->GetHealth(); }
@@ -216,7 +221,7 @@ FString AHydraCharacter::GetLogId() const
 {
 	if (bAIControlled)
 	{
-		return TEXT("ai");
+		return EnemyId.IsNone() ? FString(TEXT("ai")) : FString::Printf(TEXT("%s%d"), *EnemyId.ToString(), EnemySerial);
 	}
 	const APlayerState* PS = GetPlayerState();
 	return PS ? FString::FromInt(PS->GetPlayerId()) : FString(TEXT("unknown"));
@@ -234,6 +239,10 @@ void AHydraCharacter::BeginPlay()
 	Super::BeginPlay();
 	SpawnTransform = GetActorTransform();
 	UpdateTint();
+	if (HasAuthority())
+	{
+		InitProgress();
+	}
 	RebuildStats();
 	if (HasAuthority())
 	{
@@ -259,6 +268,50 @@ void AHydraCharacter::OnValuesReloaded(const FHydraValues&)
 	RebuildStats();
 }
 
+void AHydraCharacter::OnProgressChanged()
+{
+	if (HasActorBegunPlay())
+	{
+		RebuildStats();
+	}
+}
+
+bool AHydraCharacter::HasFireImprint() const
+{
+	return Progression->GetImprintLevel() > 0;
+}
+
+void AHydraCharacter::SetEnemyType(FName InEnemyId, int32 InSerial, int32 InLevelBonus)
+{
+	EnemyId = InEnemyId;
+	EnemySerial = InSerial;
+	EnemyLevelBonus = InLevelBonus;
+	bAIControlled = true;
+}
+
+void AHydraCharacter::InitProgress()
+{
+	// Arena rule: start at fixed levels. A wave enemy has the level and skill level of its type.
+	check(HasAuthority());
+	const UHydraValuesSubsystem* ValuesSubsystem = UHydraValuesSubsystem::GetSubsystem(this);
+	if (!ValuesSubsystem)
+	{
+		return;
+	}
+	const FHydraValues& V = ValuesSubsystem->GetValues();
+	const FHydraEnemyValues* Enemy = V.enemies.Find(EnemyId);
+	const FHydraEnemyDef* EnemyDef = ValuesSubsystem->GetDefinitions().FindEnemy(EnemyId);
+	if (Enemy && EnemyDef)
+	{
+		FormId = EnemyDef->form;
+		Progression->ServerInit(Enemy->level + EnemyLevelBonus, Enemy->skill_level + EnemyLevelBonus, EnemyDef->imprint.IsNone() ? 0 : 1);
+	}
+	else if (const FHydraFormValues* Form = V.forms.Find(FormId))
+	{
+		Progression->ServerInit(Form->start_level, Form->start_skill_level, 0);
+	}
+}
+
 void AHydraCharacter::RebuildStats()
 {
 	const UHydraValuesSubsystem* ValuesSubsystem = UHydraValuesSubsystem::GetSubsystem(this);
@@ -267,7 +320,7 @@ void AHydraCharacter::RebuildStats()
 		return;
 	}
 	const FHydraValues& V = ValuesSubsystem->GetValues();
-	Stats = HydraCombatMath::BuildStats(ValuesSubsystem->GetDefinitions(), V, FormId);
+	Stats = HydraCombatMath::BuildStats(ValuesSubsystem->GetDefinitions(), V, FormId, Progression->MakeView());
 	if (!Stats.bValid)
 	{
 		UE_LOG(LogHydra, Error, TEXT("Character %s: form '%s' is unknown or has no numbers in values.json"), *GetName(), *FormId.ToString());
@@ -281,8 +334,8 @@ void AHydraCharacter::RebuildStats()
 		HydraGas::ApplyStaminaValues(AbilitySystem, Stats.StaminaMax, Stats.StaminaRegenPerS, StaminaRegenHandle, !bAttributesInitialized);
 		HydraGas::ApplyManaValues(AbilitySystem, Stats.ManaMax, Stats.ManaRegenPerS, ManaRegenHandle, !bAttributesInitialized);
 		bAttributesInitialized = true;
-		UE_LOG(LogHydra, Log, TEXT("HydraCombatStats form=%s ai=%d weight=%.2f strength=%.2f ratio=%.4f turn=%.1f hp=%.1f stamina=%.1f regen=%.1f mana=%.1f light_cost=%.2f heavy_cost=%.2f dodge_cost=%.2f radius=%.0f half_height=%.0f"),
-			*FormId.ToString(), bAIControlled ? 1 : 0, Stats.TotalWeight, Stats.Strength, Stats.WeightRatio, Stats.TurnRateDegS, Stats.HpMax, Stats.StaminaMax,
+		UE_LOG(LogHydra, Log, TEXT("HydraCombatStats who=%s level=%d form=%s ai=%d weight=%.2f strength=%.2f ratio=%.4f turn=%.1f hp=%.1f stamina=%.1f regen=%.1f mana=%.1f light_cost=%.2f heavy_cost=%.2f dodge_cost=%.2f radius=%.0f half_height=%.0f"),
+			*GetLogId(), Stats.Level, *FormId.ToString(), bAIControlled ? 1 : 0, Stats.TotalWeight, Stats.Strength, Stats.WeightRatio, Stats.TurnRateDegS, Stats.HpMax, Stats.StaminaMax,
 			Stats.StaminaRegenPerS, Stats.ManaMax, Stats.LightStaminaCost, Stats.HeavyStaminaCost, Stats.DodgeStaminaCost, Stats.BodyRadiusCm, Stats.BodyHalfHeightCm);
 	}
 }
@@ -306,15 +359,17 @@ void AHydraCharacter::ApplyFormLook()
 	}
 
 	// Looks: a model from the Blender pipeline if the form has one
-	// (/Game/Characters/<form>/SK_<form> with animations A_<form>_<Name>), otherwise the
-	// placeholder body from primitives.
+	// (/Game/Characters/<model>/SK_<model> with animations A_<model>_<Name>; forms.json names
+	// the model, by default the form's own id), otherwise the placeholder body from primitives.
 	USkeletalMeshComponent* Model = GetMesh();
 	if (LookBuiltForForm != FormId)
 	{
 		LookBuiltForForm = FormId;
 		FormAnimations.Reset();
 		PlayingAnimation = NAME_None;
-		const FString Form = FormId.ToString();
+		const UHydraValuesSubsystem* ValuesSubsystem = UHydraValuesSubsystem::GetSubsystem(this);
+		const FHydraFormDef* FormDef = ValuesSubsystem ? ValuesSubsystem->GetDefinitions().FindForm(FormId) : nullptr;
+		const FString Form = (FormDef && !FormDef->model.IsNone() ? FormDef->model : FormId).ToString();
 		const FString Folder = FString::Printf(TEXT("/Game/Characters/%s/"), *Form);
 		USkeletalMesh* ModelMesh = LoadObject<USkeletalMesh>(nullptr, *FString::Printf(TEXT("%sSK_%s.SK_%s"), *Folder, *Form, *Form), nullptr, LOAD_NoWarn | LOAD_Quiet);
 		bUsesModel = ModelMesh != nullptr;
@@ -334,7 +389,18 @@ void AHydraCharacter::ApplyFormLook()
 					FormAnimations.Add(FName(Name), Sequence);
 				}
 			}
-			UE_LOG(LogHydra, Log, TEXT("Form %s uses its model with %d animations"), *Form, FormAnimations.Num());
+			// A form with an element body shows it: the model of its line, tinted and glowing
+			// (material parameters Tint and Glow of the generated material, Scripts/import_art.py).
+			if (GetNetMode() != NM_DedicatedServer)
+			{
+				const bool bFireBody = FormDef && FormDef->element_body == FName(TEXT("fire"));
+				if (UMaterialInstanceDynamic* Material = Model->CreateAndSetMaterialInstanceDynamic(0))
+				{
+					Material->SetVectorParameterValue(TEXT("Tint"), bFireBody ? HydraCharacterLook::FireBodyTint : FLinearColor::White);
+					Material->SetVectorParameterValue(TEXT("Glow"), bFireBody ? HydraCharacterLook::FireBodyGlow : FLinearColor::Black);
+				}
+			}
+			UE_LOG(LogHydra, Log, TEXT("Form %s uses the model %s with %d animations"), *FormId.ToString(), *Form, FormAnimations.Num());
 		}
 	}
 	// Models from Blender look along +Y and stand on the floor at their origin.

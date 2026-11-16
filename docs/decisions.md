@@ -331,3 +331,7 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   character turns into its movement as before. **A raised block switches to it by itself**;
   later the same for drawing a bow. (Holding Q instead of X was the alternative; X was
   taken because Q sits on a finger that also moves the character.)
+- M4 was built on assumptions where the design leaves numbers and details open (start
+  levels, who gets nXP, when a milestone closes, instinct size, ...). They are listed in
+  `docs/dev-log.md` (session M4) and `docs/design/phase-1.md` §25 and are **not decided
+  yet**.

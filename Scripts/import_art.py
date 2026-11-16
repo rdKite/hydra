@@ -4,6 +4,7 @@ Run headless through Scripts/build_art.sh (Python commandlet, no editor UI). For
 folder Art/export/<name>/ it imports
   SK_<name>.fbx              -> SK_<name> (skeletal mesh), SK_<name>_Skeleton, physics asset
   Art/<name>/T_<name>_color.png -> T_<name>_color, and builds the material M_<name> from it
+                                (with the parameters Tint and Glow for the game)
   A_<name>_<Action>.fbx      -> A_<name>_<Action> (animation sequence on that skeleton)
 Existing assets are replaced, so the script can be run again after every change in Blender.
 Animations made by the human take the same way: export them with
@@ -78,9 +79,21 @@ def build_material(name, destination, mesh):
     else:
         material = asset_tools.create_asset("M_" + name, destination, unreal.Material, unreal.MaterialFactoryNew())
     # The look is decided in M5; until then: the baked colour, a little shine.
-    sample = materials.create_material_expression(material, unreal.MaterialExpressionTextureSample, -400, 0)
+    # Two parameters for the game: Tint multiplies the colour, Glow is added as light (a form
+    # with an element body shows it with them; defaults: no change).
+    sample = materials.create_material_expression(material, unreal.MaterialExpressionTextureSample, -600, 0)
     sample.texture = texture
-    materials.connect_material_property(sample, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
+    tint = materials.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -600, -250)
+    tint.set_editor_property("parameter_name", "Tint")
+    tint.set_editor_property("default_value", unreal.LinearColor(1.0, 1.0, 1.0, 1.0))
+    tinted = materials.create_material_expression(material, unreal.MaterialExpressionMultiply, -300, -100)
+    materials.connect_material_expressions(sample, "RGB", tinted, "A")
+    materials.connect_material_expressions(tint, "", tinted, "B")
+    materials.connect_material_property(tinted, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    glow = materials.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -600, 500)
+    glow.set_editor_property("parameter_name", "Glow")
+    glow.set_editor_property("default_value", unreal.LinearColor(0.0, 0.0, 0.0, 1.0))
+    materials.connect_material_property(glow, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
     roughness = materials.create_material_expression(material, unreal.MaterialExpressionConstant, -400, 300)
     roughness.r = 0.35
     materials.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)

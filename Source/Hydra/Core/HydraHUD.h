@@ -22,6 +22,8 @@ protected:
 	void DrawOwnBars();
 	void DrawOverheadBars();
 	void DrawLockOn();
+	void DrawProgress();
+	void DrawWaves();
 	void DrawBar(float X, float Y, float W, float H, float Fraction, const FLinearColor& Color);
 
 	float SmoothedFps = 0.f;

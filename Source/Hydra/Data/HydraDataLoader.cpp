@@ -164,6 +164,7 @@ bool HydraDataLoader::LoadDefinitions(const FString& Dir, FHydraDefinitions& Out
 	bOk &= LoadFile(Dir, TEXT("skills.json"), Out.skills, OutProblems);
 	bOk &= LoadFile(Dir, TEXT("weapons.json"), Out.weapons, OutProblems);
 	bOk &= LoadFile(Dir, TEXT("forms.json"), Out.forms, OutProblems);
+	bOk &= LoadFile(Dir, TEXT("enemies.json"), Out.enemies, OutProblems);
 	if (bOk)
 	{
 		ValidateDefinitions(Out, OutProblems);
@@ -182,9 +183,10 @@ void HydraDataLoader::ValidateValues(const FHydraValues& V, const FHydraDefiniti
 			OutProblems.Add(FString::Printf(TEXT("values.json: no numbers for form '%s' (section forms)"), *F.id.ToString()));
 		}
 		else if (N->body_weight <= 0.f || N->strength <= 0.f || N->hp_max <= 0.f || N->stamina_max <= 0.f || N->stamina_regen_per_s < 0.f
-			|| N->body_radius_m <= 0.f || N->body_height_m < 2.f * N->body_radius_m || N->mana_max < 0.f || N->mana_regen_per_s < 0.f)
+			|| N->body_radius_m <= 0.f || N->body_height_m < 2.f * N->body_radius_m || N->mana_max < 0.f || N->mana_regen_per_s < 0.f
+			|| N->level_cap <= 0 || N->start_level < 0 || N->start_level > N->level_cap || N->start_skill_level < 0 || N->start_skill_level > N->start_level || N->element_body_damage < 0.f)
 		{
-			OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has implausible numbers (weight, strength, hp, stamina, radius > 0; height >= 2 x radius; mana >= 0)"), *F.id.ToString()));
+			OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has implausible numbers (weight, strength, hp, stamina, radius > 0; height >= 2 x radius; mana >= 0; start_skill_level <= start_level <= level_cap)"), *F.id.ToString()));
 		}
 		else
 		{
@@ -248,6 +250,46 @@ void HydraDataLoader::ValidateValues(const FHydraValues& V, const FHydraDefiniti
 			OutProblems.Add(FString::Printf(TEXT("values.json: shields.%s is not a shield in weapons.json"), *Pair.Key.ToString()));
 		}
 	}
+	// Enemy types and waves.
+	for (const FHydraEnemyDef& E : Defs.enemies.enemies)
+	{
+		const FHydraEnemyValues* N = V.enemies.Find(E.id);
+		if (!N)
+		{
+			OutProblems.Add(FString::Printf(TEXT("values.json: no numbers for enemy '%s' (section enemies)"), *E.id.ToString()));
+		}
+		else if (N->level < 0 || N->skill_level < 0 || N->nxp_base < 0.f || N->ai.error_rate < 0.f || N->ai.error_rate > 1.f
+			|| N->ai.block_chance < 0.f || N->ai.dodge_chance < 0.f || N->ai.block_chance + N->ai.dodge_chance > 1.f || N->ai.reaction_time_ms < 0.f || N->ai.engage_range_m <= 0.f)
+		{
+			OutProblems.Add(FString::Printf(TEXT("values.json: enemies.%s has implausible numbers (level, nxp >= 0; chances in 0..1, block + dodge <= 1; engage range > 0)"), *E.id.ToString()));
+		}
+	}
+	for (const TPair<FName, FHydraEnemyValues>& Pair : V.enemies)
+	{
+		if (!Defs.FindEnemy(Pair.Key))
+		{
+			OutProblems.Add(FString::Printf(TEXT("values.json: enemies.%s is not an enemy in enemies.json"), *Pair.Key.ToString()));
+		}
+	}
+	for (int32 i = 0; i < V.waves.list.Num(); ++i)
+	{
+		if (V.waves.list[i].groups.Num() == 0)
+		{
+			OutProblems.Add(FString::Printf(TEXT("values.json: waves.list[%d] has no enemies"), i));
+		}
+		for (const FHydraWaveGroupValues& G : V.waves.list[i].groups)
+		{
+			if (!Defs.FindEnemy(G.enemy) || G.count <= 0)
+			{
+				OutProblems.Add(FString::Printf(TEXT("values.json: waves.list[%d] refers to unknown enemy '%s' or has a count <= 0"), i, *G.enemy.ToString()));
+			}
+		}
+	}
+	if (V.progression.xp_base <= 0.f || V.progression.milestone_every_levels <= 0 || V.skills.xp_base <= 0.f || V.skills.min_cost_factor <= 0.f || V.skills.min_cost_factor > 1.f
+		|| V.imprint.max_level <= 0 || V.imprint.progress_first_level <= 0.f || V.imprint.progress_per_further_level < V.imprint.progress_first_level)
+	{
+		OutProblems.Add(TEXT("values.json: progression, skills or imprint has implausible numbers (xp_base, milestone_every_levels, max_level > 0; min_cost_factor in 0..1; the first imprint level must be the easiest)"));
+	}
 }
 
 bool HydraDataLoader::IsValidId(FName Id)
@@ -301,6 +343,7 @@ void HydraDataLoader::ValidateDefinitions(const FHydraDefinitions& Defs, TArray<
 	CheckIds(Defs.skills.skills, TEXT("skills.json"), OutProblems);
 	CheckIds(Defs.weapons.weapons, TEXT("weapons.json"), OutProblems);
 	CheckIds(Defs.forms.forms, TEXT("forms.json"), OutProblems);
+	CheckIds(Defs.enemies.enemies, TEXT("enemies.json"), OutProblems);
 
 	auto NeedSkill = [&](FName Skill, const TCHAR* File, FName Owner)
 	{
@@ -329,6 +372,35 @@ void HydraDataLoader::ValidateDefinitions(const FHydraDefinitions& Defs, TArray<
 		for (const FName Skill : F.skills)
 		{
 			NeedSkill(Skill, TEXT("forms.json"), F.id);
+		}
+		for (const FName Evolution : F.evolutions)
+		{
+			if (!Defs.FindForm(Evolution))
+			{
+				OutProblems.Add(FString::Printf(TEXT("forms.json: '%s' evolves into unknown form '%s'"), *F.id.ToString(), *Evolution.ToString()));
+			}
+		}
+		for (const FName Element : { F.requires_imprint, F.element_body })
+		{
+			if (!Element.IsNone() && !Defs.FindElement(Element))
+			{
+				OutProblems.Add(FString::Printf(TEXT("forms.json: '%s' refers to unknown element '%s'"), *F.id.ToString(), *Element.ToString()));
+			}
+		}
+		if (!F.model.IsNone() && !Defs.FindForm(F.model))
+		{
+			OutProblems.Add(FString::Printf(TEXT("forms.json: '%s' uses the model of unknown form '%s'"), *F.id.ToString(), *F.model.ToString()));
+		}
+	}
+	for (const FHydraEnemyDef& E : Defs.enemies.enemies)
+	{
+		if (!Defs.FindForm(E.form))
+		{
+			OutProblems.Add(FString::Printf(TEXT("enemies.json: '%s' refers to unknown form '%s'"), *E.id.ToString(), *E.form.ToString()));
+		}
+		if (!E.imprint.IsNone() && !Defs.FindElement(E.imprint))
+		{
+			OutProblems.Add(FString::Printf(TEXT("enemies.json: '%s' refers to unknown element '%s'"), *E.id.ToString(), *E.imprint.ToString()));
 		}
 	}
 }

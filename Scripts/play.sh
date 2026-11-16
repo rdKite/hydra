@@ -9,8 +9,15 @@
 # Who plays what (default: both humanoid):
 #        HOST_FORM=slime Scripts/play.sh              host is the slime
 #        HOST_FORM=slime CLIENT_FORM=slime Scripts/play.sh
-#        HOST_FIRE=1 / CLIENT_FIRE=1                  fire awakened from the start (the bolt
-#                                                     carries fire; M4 will earn this in play)
+#        HOST_FIRE=1 / CLIENT_FIRE=1                  fire awakened from the start (fire imprint
+#                                                     level 1; in play it is earned at a milestone)
+#
+# What you play against (default: waves):
+#        Scripts/play.sh                              AI enemies in waves, with level, skills,
+#                                                     imprint and evolution
+#        WAVES=0 Scripts/play.sh                      one practice opponent (Hydra.AI 0 in the
+#                                                     console makes it stand still)
+# Metrics of a session with waves: Saved/Metrics/metrics_<time>.csv
 #
 # Needs a built editor target and the arena map (Scripts/build.sh, Scripts/create_arena_map.sh).
 # Logs: Saved/Logs/PlayHost.log, Saved/Logs/PlayClient.log
@@ -23,7 +30,7 @@ MODE="${1:-both}"
 # Git Bash would rewrite arguments that look like Unix paths (/Game/Maps/Arena).
 export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 WINDOW=(-game -windowed -ResX=1280 -ResY=720 -nosplash "${@:2}")
-HOST_URL="/Game/Maps/Arena?listen?Form=${HOST_FORM:-humanoid}?Fire=${HOST_FIRE:-0}"
+HOST_URL="/Game/Maps/Arena?listen?Form=${HOST_FORM:-humanoid}?Fire=${HOST_FIRE:-0}?Waves=${WAVES:-1}"
 CLIENT_URL="127.0.0.1?Form=${CLIENT_FORM:-humanoid}?Fire=${CLIENT_FIRE:-0}"
 
 if [ "$MODE" = both ] || [ "$MODE" = host ]; then

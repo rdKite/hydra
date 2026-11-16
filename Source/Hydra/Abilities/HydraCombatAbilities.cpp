@@ -64,6 +64,10 @@ void UHydraGA_Attack::ActivateAbility(const FGameplayAbilitySpecHandle Handle, c
 	StartWorldTime = GetWorld()->GetTimeSeconds();
 
 	SetCommitted(true);
+	if (IsServer())
+	{
+		++C->Metrics.Attacks;
+	}
 	C->BeginAttackFacing();
 	C->SetAction(EHydraAction::LightWindup, Weapon.light.windup_ms / 1000.f);
 	C->OnAttackStarted();
@@ -207,7 +211,7 @@ bool UHydraGA_Cast::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGa
 {
 	const AHydraCharacter* C = ActorInfo ? Cast<AHydraCharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
 	return C && C->GetStats().bValid && C->GetStats().bCanCast
-		&& HydraGas::CanAffordMana(C->GetAbilitySystemComponent(), UHydraValuesSubsystem::Get(C).bolt.mana_cost);
+		&& HydraGas::CanAffordMana(C->GetAbilitySystemComponent(), C->GetStats().Bolt.mana_cost);
 }
 
 void UHydraGA_Cast::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
@@ -215,7 +219,7 @@ void UHydraGA_Cast::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGa
 	const AHydraCharacter* C = ActorInfo ? Cast<AHydraCharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
 	if (C && C->HasAuthority())
 	{
-		HydraGas::SpendMana(C->GetAbilitySystemComponent(), UHydraValuesSubsystem::Get(C).bolt.mana_cost);
+		HydraGas::SpendMana(C->GetAbilitySystemComponent(), C->GetStats().Bolt.mana_cost);
 	}
 }
 
@@ -388,7 +392,11 @@ void UHydraGA_Dodge::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	AHydraCharacter* C = GetHydraCharacter();
 	const FHydraDodgeValues& D = GetValues().dodge;
 	const float DurationS = FMath::Max(0.05f, D.duration_ms / 1000.f);
-	const float DistanceCm = D.distance_m * 100.f;
+	const float DistanceCm = D.distance_m * 100.f * C->GetStats().DodgeDistanceFactor;   // a higher dodge skill steps further
+	if (IsServer())
+	{
+		C->ServerNoteDodge();
+	}
 
 	// Direction: the current movement input (the same on client and server through the
 	// predicted move); without input straight back.

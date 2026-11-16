@@ -96,6 +96,9 @@ crafting plans, because that is Unreal's visual scripting).
 | Veteranenstufe | **veteran level** | after max level; each raises one skill by one level, up to 150 |
 | Instinkt | **instinct** | kept from skills after an evolution |
 | Meilenstein | **milestone** | every 10 levels |
+| Elementkörper | **element body** | melee hits against it deal some of its element's damage back (fire elemental slime) |
+| Welle | **wave** | a group of AI enemies in the arena; the next one comes when it is cleared |
+| Gegnertyp | **enemy type** | `enemies.json`: a form played by the AI with its own level, reaction time and error rate |
 | nXP / hXP | **nXP** (normal XP) / **hXP** (hardship XP) | |
 | Härte-Wert | **hardship rating** | |
 | Gefahrenwert | **threat rating** | used for hXP and matchmaking |

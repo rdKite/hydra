@@ -135,6 +135,19 @@ TArray<FTransform> AHydraArena::GetSpawnTransforms() const
 	return Result;
 }
 
+TArray<FTransform> AHydraArena::GetWaveSpawnTransforms() const
+{
+	const FTransform& T = GetActorTransform();
+	TArray<FTransform> Result;
+	for (const FVector2D& Spot : { FVector2D(0.f, 1500.f), FVector2D(1500.f, 0.f), FVector2D(0.f, -1500.f), FVector2D(-1500.f, 0.f),
+		FVector2D(1000.f, -1300.f), FVector2D(-500.f, 1600.f), FVector2D(-1300.f, -1300.f), FVector2D(1600.f, 600.f) })
+	{
+		const float YawToCentre = FMath::RadiansToDegrees(FMath::Atan2(-Spot.Y, -Spot.X));
+		Result.Add(FTransform(FRotator(0.f, YawToCentre, 0.f), T.TransformPosition(FVector(Spot.X, Spot.Y, 100.f))));
+	}
+	return Result;
+}
+
 FTransform AHydraArena::GetDummySpawnTransform() const
 {
 	return FTransform(FRotator(0.f, -90.f, 0.f), GetActorTransform().TransformPosition(FVector(0.f, 600.f, 100.f)));

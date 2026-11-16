@@ -43,6 +43,7 @@ namespace HydraTests
 			{ TEXT("skills.json"), FHydraSkillsFile::StaticStruct() },
 			{ TEXT("weapons.json"), FHydraWeaponsFile::StaticStruct() },
 			{ TEXT("forms.json"), FHydraFormsFile::StaticStruct() },
+			{ TEXT("enemies.json"), FHydraEnemiesFile::StaticStruct() },
 		};
 	}
 }

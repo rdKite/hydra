@@ -2,6 +2,10 @@
 
   check_live.py <project root>            check Saved/Logs/LiveHost.log and LiveClient.log
   check_live.py --edit-values <file>      change the copied values.json for the reload step
+  check_live.py --plain-start <file>      copied values.json: everyone starts at level 0 without
+                                          skill levels and the imprint gives no bonus, so the
+                                          run measures the plain rules (progression has its
+                                          own run, Scripts/run_live_waves.sh)
 
 The expected numbers are worked out here from data/values.json with the formulas of the
 design (not taken from the game), so a wrong formula in the game shows up as a failed check.
@@ -29,6 +33,20 @@ def edit_values(path):
     with open(path, "w", encoding="utf-8") as f:
         json.dump(values, f, indent=2)
     print("check_live: edited " + path)
+
+
+def plain_start(path):
+    with open(path, encoding="utf-8") as f:
+        values = json.load(f)
+    for form in values["forms"].values():
+        form["start_level"] = 0
+        form["start_skill_level"] = 0
+    values["imprint"]["resistance_per_level"] = 0
+    values["imprint"]["damage_bonus_per_level"] = 0
+    values["skills"]["field_radius_bonus_per_level"] = 0
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(values, f, indent=2)
+    print("check_live: plain start in " + path)
 
 
 def read_log(path):
@@ -388,6 +406,9 @@ def main(root):
 if __name__ == "__main__":
     if len(sys.argv) == 3 and sys.argv[1] == "--edit-values":
         edit_values(sys.argv[2])
+        sys.exit(0)
+    if len(sys.argv) == 3 and sys.argv[1] == "--plain-start":
+        plain_start(sys.argv[2])
         sys.exit(0)
     if len(sys.argv) != 2:
         print(__doc__)

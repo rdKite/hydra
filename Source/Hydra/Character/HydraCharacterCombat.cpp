@@ -8,9 +8,11 @@
 #include "Abilities/HydraTags.h"
 #include "AbilitySystemComponent.h"
 #include "Character/HydraMovementComponent.h"
+#include "Character/HydraProgressionComponent.h"
 #include "Combat/HydraProjectile.h"
 #include "Components/CapsuleComponent.h"
 #include "Core/HydraDevSubsystem.h"
+#include "Core/HydraGameMode.h"
 #include "Data/HydraValuesSubsystem.h"
 #include "Engine/GameInstance.h"
 #include "EngineUtils.h"
@@ -68,6 +70,7 @@ void AHydraCharacter::OnAttackStarted()
 	{
 		return;
 	}
+	++AttackSerial;
 	for (TActorIterator<AHydraAIController> It(GetWorld()); It; ++It)
 	{
 		It->OnAttackSeen(this);
@@ -96,7 +99,7 @@ int32 AHydraCharacter::ServerTestAttackHits(bool bHeavy, float ChargeFactor, TAr
 	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
 	{
 		AHydraCharacter* Target = *It;
-		if (Target == this || !Target->IsAlive() || AlreadyHit.Contains(Target))
+		if (!CanHurt(Target) || !Target->IsAlive() || AlreadyHit.Contains(Target))
 		{
 			continue;
 		}
@@ -108,8 +111,21 @@ int32 AHydraCharacter::ServerTestAttackHits(bool bHeavy, float ChargeFactor, TAr
 			Pose.Yaw = Target->GetActorRotation().Yaw;
 			Pose.bBlocking = Target->HasStateTag(HydraTags::State_Blocking);
 		}
-		if (!HydraCombatMath::IsInHitArea(MyLocation, MyYaw, Pose.Location, Target->GetCapsuleComponent()->GetScaledCapsuleRadius(), ReachCm, HalfArc))
+		const float TargetRadius = Target->GetCapsuleComponent()->GetScaledCapsuleRadius();
+		if (!HydraCombatMath::IsInHitArea(MyLocation, MyYaw, Pose.Location, TargetRadius, ReachCm, HalfArc))
 		{
+			// A dodge counts only against a real attack: the target is out of the hit area now,
+			// stepped away a moment ago, and would have been hit where its step began.
+			const double DodgeWindowS = (V.dodge.duration_ms + V.dodge.recovery_ms) / 1000.0;
+			if (Now - Target->DodgeStartTime <= DodgeWindowS && !(Target->LastAvoidedAttacker == this && Target->LastAvoidedSerial == AttackSerial)
+				&& HydraCombatMath::IsInHitArea(MyLocation, MyYaw, Target->DodgeStartLocation, TargetRadius, ReachCm, HalfArc))
+			{
+				Target->LastAvoidedAttacker = this;
+				Target->LastAvoidedSerial = AttackSerial;
+				++Target->Metrics.DodgesAvoided;
+				Target->Progression->ServerAddSkillXp(TEXT("dodge"), V.skills.xp_per_dodge);
+				UE_LOG(LogHydra, Log, TEXT("HydraDodged t=%.2f who=%s attacker=%s"), HydraCombat::DevClock(this), *Target->GetLogId(), *GetLogId());
+			}
 			continue;
 		}
 		AlreadyHit.Add(Target);
@@ -121,6 +137,7 @@ int32 AHydraCharacter::ServerTestAttackHits(bool bHeavy, float ChargeFactor, TAr
 
 void AHydraCharacter::ServerReportMiss(bool bHeavy)
 {
+	++Metrics.Misses;
 	UE_LOG(LogHydra, Log, TEXT("HydraMiss t=%.2f attacker=%s kind=%s"), HydraCombat::DevClock(this), *GetLogId(), bHeavy ? TEXT("heavy") : TEXT("light"));
 }
 
@@ -151,12 +168,15 @@ void AHydraCharacter::ResolveHit(AHydraCharacter* Target, const FHydraPoseSample
 		&& HydraCombatMath::IsInArc(TargetPose.Location, TargetPose.Yaw, MyLocation, TargetStats.Shield.block_half_arc_deg);
 	if (bBlocked)
 	{
-		const float BlockCost = HydraCombatMath::BlockStaminaCost(V.block, Stats.Weapon.weight, TargetStats.Shield.weight, bHeavy);
+		const float BlockCost = HydraCombatMath::BlockStaminaCost(V.block, Stats.Weapon.weight, TargetStats.Shield.weight, bHeavy) * TargetStats.BlockCostFactor;
 		if (HydraGas::CanAfford(TargetASC, BlockCost))
 		{
 			// Blocked: strongly reduced damage, the blocker pays stamina by the weight of the
 			// attack, and the attacker loses extra stamina (rebound).
 			Result = TEXT("blocked");
+			++Metrics.HitsBlocked;
+			++Target->Metrics.Blocks;
+			Target->Progression->ServerAddSkillXp(TargetStats.ShieldSkill, V.skills.xp_per_block);
 			HydraGas::SpendStamina(TargetASC, BlockCost, V.stamina);
 			Damage *= FMath::Clamp(1.f - TargetStats.Shield.block_damage_reduction, 0.f, 1.f);
 			HydraGas::SpendStamina(AbilitySystem, HydraCombatMath::ReboundStamina(V.block, AttackCost, Stats.Weapon.weight, TargetStats.Shield.weight), V.stamina);
@@ -166,6 +186,7 @@ void AHydraCharacter::ResolveHit(AHydraCharacter* Target, const FHydraPoseSample
 			// Stamina empty: the block breaks. The hit lands in full, but nobody is stunned.
 			Result = TEXT("blockbreak");
 			bBlocked = false;
+			++Target->Metrics.BlockBreaks;
 			HydraGas::SpendStamina(TargetASC, Target->GetStamina(), V.stamina);
 			const FGameplayTagContainer BlockTag(HydraTags::Ability_Block);
 			TargetASC->CancelAbilities(&BlockTag);
@@ -173,6 +194,9 @@ void AHydraCharacter::ResolveHit(AHydraCharacter* Target, const FHydraPoseSample
 	}
 	if (!bBlocked)
 	{
+		++Metrics.Hits;
+		++Target->Metrics.HitsTaken;
+		Progression->ServerAddSkillXp(Stats.WeaponSkill, V.skills.xp_per_hit);
 		// Weak point: the back, by position - no random crits. Lighter weapons gain more.
 		bWeakPoint = HydraCombatMath::IsInBackArc(TargetPose.Location, TargetPose.Yaw, MyLocation, V.weak_point.back_half_arc_deg);
 		if (bWeakPoint)
@@ -191,6 +215,7 @@ void AHydraCharacter::ResolveHit(AHydraCharacter* Target, const FHydraPoseSample
 
 	// For the log: what would the server's present have said (shows what lag compensation changes).
 	const float TargetRadius = Target->GetCapsuleComponent()->GetScaledCapsuleRadius();
+	const float ElementBodyDamage = TargetStats.ElementBodyDamage;
 	const float ReachCm = (bHeavy ? Stats.Weapon.heavy.reach_m : Stats.Weapon.light.reach_m) * 100.f;
 	const float HalfArc = bHeavy ? Stats.Weapon.heavy.half_arc_deg : Stats.Weapon.light.half_arc_deg;
 	const bool bInNow = HydraCombatMath::IsInHitArea(MyLocation, GetActorRotation().Yaw, Target->GetActorLocation(), TargetRadius, ReachCm, HalfArc);
@@ -198,6 +223,7 @@ void AHydraCharacter::ResolveHit(AHydraCharacter* Target, const FHydraPoseSample
 	const bool bBlockNow = Target->HasStateTag(HydraTags::State_Blocking) && TargetStats.bHasShield
 		&& HydraCombatMath::IsInArc(Target->GetActorLocation(), Target->GetActorRotation().Yaw, MyLocation, TargetStats.Shield.block_half_arc_deg);
 
+	Target->LastDamager = this;
 	HydraGas::DealDamage(TargetASC, Damage, AbilitySystem);
 	Target->MulticastHitFeedback(bBlocked ? 1 : 0, HitStopS);
 	MulticastHitFeedback(2, HitStopS);
@@ -207,6 +233,13 @@ void AHydraCharacter::ResolveHit(AHydraCharacter* Target, const FHydraPoseSample
 		GetChainHitsNow(), bInterrupted ? 1 : 0, RewindS * 1000.f, bInNow ? 1 : 0, bBlockNow ? 1 : 0,
 		FVector::Dist2D(MyLocation, TargetPose.Location), FVector::Dist2D(MyLocation, Target->GetActorLocation()),
 		Target->GetHealth(), Target->GetStamina(), GetStamina());
+
+	// Element body: a melee hit against it deals some of its element's damage back.
+	if (ElementBodyDamage > 0.f && IsAlive())
+	{
+		const float Back = ServerDealDamage(Target, this, ElementBodyDamage, TEXT("fire"));
+		UE_LOG(LogHydra, Log, TEXT("HydraElementBody t=%.2f body=%s attacker=%s dmg=%.2f attacker_hp=%.2f"), HydraCombat::DevClock(this), *Target->GetLogId(), *GetLogId(), Back, GetHealth());
+	}
 }
 
 float AHydraCharacter::ServerDealDamage(AHydraCharacter* Source, AHydraCharacter* Target, float RawDamage, FName DamageType)
@@ -216,6 +249,20 @@ float AHydraCharacter::ServerDealDamage(AHydraCharacter* Source, AHydraCharacter
 		return 0.f;
 	}
 	const float Dealt = HydraCombatMath::ResistedDamage(RawDamage, HydraCombatMath::ResistanceTo(Target->GetStats().Resistance, DamageType));
+	if (Source && Source != Target)
+	{
+		Target->LastDamager = Source;
+	}
+	if (DamageType == FName(TEXT("fire")))
+	{
+		// Imprint progress comes from contact with the element: taking its damage and dealing it.
+		const FHydraImprintValues& I = UHydraValuesSubsystem::Get(Target).imprint;
+		Target->Progression->ServerAddImprintProgress(Dealt * I.progress_per_damage_taken);
+		if (Source && Source != Target)
+		{
+			Source->Progression->ServerAddImprintProgress(Dealt * I.progress_per_damage_dealt);
+		}
+	}
 	HydraGas::DealDamage(Target->GetAbilitySystemComponent(), Dealt, Source ? Source->GetAbilitySystemComponent() : nullptr);
 	return Dealt;
 }
@@ -223,7 +270,9 @@ float AHydraCharacter::ServerDealDamage(AHydraCharacter* Source, AHydraCharacter
 void AHydraCharacter::ServerFireBolt(float WantedChargeAlpha)
 {
 	check(HasAuthority());
-	const FHydraBoltValues& B = UHydraValuesSubsystem::Get(this).bolt;
+	const FHydraBoltValues& B = Stats.Bolt;   // with level and skill
+	const bool bFire = HasFireImprint();
+	++Metrics.Casts;
 	// The base cost was paid at the press; the charge costs extra, as far as the mana reaches.
 	const float Charge = HydraCombatMath::AffordableBoltCharge(B, WantedChargeAlpha, GetMana());
 	HydraGas::SpendMana(AbilitySystem, HydraCombatMath::BoltManaCost(B, Charge) - B.mana_cost);
@@ -235,11 +284,11 @@ void AHydraCharacter::ServerFireBolt(float WantedChargeAlpha)
 		ESpawnActorCollisionHandlingMethod::AlwaysSpawn);
 	if (Bolt)
 	{
-		Bolt->Launch(this, Direction, HydraCombatMath::BoltDamage(B, Charge), bFireImprint, Charge);
+		Bolt->Launch(this, Direction, HydraCombatMath::BoltDamage(B, Charge) * (bFire ? Stats.FireDamageFactor : 1.f), bFire, Charge);
 		Bolt->FinishSpawning(FTransform(Start));
 	}
 	UE_LOG(LogHydra, Log, TEXT("HydraCast t=%.2f attacker=%s charge=%.2f wanted=%.2f fire=%d yaw=%.1f mana=%.2f"),
-		HydraCombat::DevClock(this), *GetLogId(), Charge, WantedChargeAlpha, bFireImprint ? 1 : 0, GetActorRotation().Yaw, GetMana());
+		HydraCombat::DevClock(this), *GetLogId(), Charge, WantedChargeAlpha, bFire ? 1 : 0, GetActorRotation().Yaw, GetMana());
 }
 
 // --- Burning -----------------------------------------------------------------------------
@@ -329,6 +378,32 @@ void AHydraCharacter::ServerSetForm(FName NewFormId)
 	{
 		return;
 	}
+	FormId = NewFormId;
+	InitProgress();   // a form chosen at the start begins at its start levels
+	ChangeForm(NewFormId);
+}
+
+void AHydraCharacter::ServerEvolveTo(FName NewFormId)
+{
+	check(HasAuthority());
+	ChangeForm(NewFormId);
+}
+
+void AHydraCharacter::ServerSetFireImprint(bool bOn)
+{
+	check(HasAuthority());
+	Progression->ServerSetImprintLevel(bOn ? FMath::Max(1, Progression->GetImprintLevel()) : 0);
+}
+
+void AHydraCharacter::ServerNoteDodge()
+{
+	++Metrics.Dodges;
+	DodgeStartTime = GetWorld()->GetTimeSeconds();
+	DodgeStartLocation = GetActorLocation();
+}
+
+void AHydraCharacter::ChangeForm(FName NewFormId)
+{
 	AbilitySystem->CancelAllAbilities();
 	ActionState = FHydraActionState();
 	FormId = NewFormId;
@@ -370,6 +445,11 @@ void AHydraCharacter::ClearChain()
 
 void AHydraCharacter::OnDamaged(float Damage)
 {
+	Metrics.DamageTaken += Damage;
+	if (AHydraCharacter* Damager = LastDamager.Get())
+	{
+		Damager->Metrics.DamageDealt += Damage;
+	}
 	if (HasAuthority() && IsAlive() && GetHealth() <= 0.f)
 	{
 		Die();
@@ -387,8 +467,25 @@ void AHydraCharacter::Die()
 	SetBurningStacks(0, TEXT("death"));
 	SetLockOnTarget(nullptr);
 	const float DelayS = FMath::Max(0.1f, UHydraValuesSubsystem::Get(this).character.respawn_delay_ms / 1000.f);
-	GetWorldTimerManager().SetTimer(RespawnTimer, this, &AHydraCharacter::Respawn, DelayS, false);
-	UE_LOG(LogHydra, Log, TEXT("HydraDeath t=%.2f who=%s"), HydraCombat::DevClock(this), *GetLogId());
+	AHydraCharacter* Killer = LastDamager.Get();
+	++Metrics.Deaths;
+	if (Killer && Killer != this)
+	{
+		++Killer->Metrics.Kills;
+	}
+	UE_LOG(LogHydra, Log, TEXT("HydraDeath t=%.2f who=%s killer=%s"), HydraCombat::DevClock(this), *GetLogId(), Killer ? *Killer->GetLogId() : TEXT("none"));
+	if (bRespawns)
+	{
+		GetWorldTimerManager().SetTimer(RespawnTimer, this, &AHydraCharacter::Respawn, DelayS, false);
+	}
+	else
+	{
+		SetLifeSpan(DelayS); // a wave enemy lies there for a moment and is removed
+	}
+	if (AHydraGameMode* GameMode = GetWorld()->GetAuthGameMode<AHydraGameMode>())
+	{
+		GameMode->OnCharacterDied(this, Killer);
+	}
 }
 
 void AHydraCharacter::Respawn()
@@ -411,6 +508,7 @@ void AHydraCharacter::ServerResetState()
 	ClearChain();
 	SetBurningStacks(0, TEXT("reset"));
 	LastInFireFieldTime = -1000.0;
+	LastDamager = nullptr;
 }
 
 void AHydraCharacter::ServerTeleport(const FVector& Location, float Yaw)

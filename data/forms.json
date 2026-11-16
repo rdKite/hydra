@@ -1,5 +1,5 @@
 {
-  "_note": "Forms (what a player can be). IDs are stable (lower snake_case). loadout: weapons.json IDs (for monsters their body attacks); skills: skills.json IDs (a form with the skill projectile casts the bolt with its off-hand button). Numbers live in values.json.",
+  "_note": "Forms (what a player can be). IDs are stable (lower snake_case). loadout: weapons.json IDs (for monsters their body attacks); skills: skills.json IDs (a form with the skill projectile casts the bolt with its off-hand button). model: whose model the form is shown with (Content/Characters/<model>; empty = its own id). evolutions: forms it can evolve into. requires_imprint: element whose imprint the evolution into this form needs (elements.json; empty = none). element_body: element of its body - melee hits against it deal that damage back (empty = none). Numbers live in values.json.",
   "forms": [
     {
       "id": "humanoid",
@@ -7,7 +7,11 @@
       "line": "humanoid",
       "starting_form": true,
       "loadout": ["longsword", "round_shield"],
-      "skills": ["sword_fighting", "shield_fighting", "dodge"]
+      "skills": ["sword_fighting", "shield_fighting", "dodge"],
+      "model": "",
+      "evolutions": [],
+      "requires_imprint": "",
+      "element_body": ""
     },
     {
       "id": "slime",
@@ -15,7 +19,23 @@
       "line": "slime",
       "starting_form": true,
       "loadout": ["slime_slam"],
-      "skills": ["slam", "projectile", "dodge"]
+      "skills": ["slam", "projectile", "dodge"],
+      "model": "",
+      "evolutions": ["fire_elemental_slime"],
+      "requires_imprint": "",
+      "element_body": ""
+    },
+    {
+      "id": "fire_elemental_slime",
+      "name": "Fire elemental slime",
+      "line": "slime",
+      "starting_form": false,
+      "loadout": ["slime_slam"],
+      "skills": ["slam", "projectile", "dodge"],
+      "model": "slime",
+      "evolutions": [],
+      "requires_imprint": "fire",
+      "element_body": "fire"
     }
   ]
 }

@@ -4,6 +4,7 @@
 #include "Abilities/HydraEffects.h"
 #include "Abilities/HydraTags.h"
 #include "AbilitySystemComponent.h"
+#include "Character/HydraCharacter.h"
 #include "Data/HydraValues.h"
 
 FActiveGameplayEffectHandle HydraGas::Apply(UAbilitySystemComponent* Target, TSubclassOf<UGameplayEffect> Effect,
@@ -47,6 +48,10 @@ void HydraGas::SpendStamina(UAbilitySystemComponent* Target, float Cost, const F
 	if (!Target || Cost <= 0.f)
 	{
 		return;
+	}
+	if (AHydraCharacter* Character = Cast<AHydraCharacter>(Target->GetAvatarActor()))
+	{
+		Character->Metrics.StaminaUsed += FMath::Min(Cost, GetStamina(Target));
 	}
 	Apply(Target, UHydraGE_StaminaChange::StaticClass(), -Cost);
 	const float DelayS = Values.regen_delay_after_action_ms / 1000.f;
@@ -93,6 +98,10 @@ void HydraGas::SpendMana(UAbilitySystemComponent* Target, float Cost)
 {
 	if (Target && Cost > 0.f)
 	{
+		if (AHydraCharacter* Character = Cast<AHydraCharacter>(Target->GetAvatarActor()))
+		{
+			Character->Metrics.ManaUsed += FMath::Min(Cost, GetMana(Target));
+		}
 		Apply(Target, UHydraGE_ManaChange::StaticClass(), -Cost);
 	}
 }

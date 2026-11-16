@@ -1,5 +1,43 @@
 # values.json changelog
 
+## v5 – 2026-11-16 (M4, progression and waves)
+
+**Everything new here is a guess, not yet playtested.** The formulas are in
+`docs/design/phase-1.md`, section 25.
+
+- **Per form (new keys in `forms.<id>`):** `level_cap` (slime 30 and fire elemental slime 50
+  as the design says; humanoid 50 is a guess – the design names no cap for it),
+  `start_level` and `start_skill_level` (arena rule "start at fixed levels": humanoid 9 / 6,
+  one level before its first milestone; slime 29 / 20, one level before its cap, so the
+  evolution can be tested at once), `element_body_damage` (0 = none).
+- **New form `fire_elemental_slime`:** higher base values than the slime (hp 80, stamina 60,
+  mana 130, strength 16, a little bigger), the line's resistance to slash and pierce, fire
+  resistance 0.5, `element_body_damage` 4 (fire damage a melee hit against it deals back).
+- **`ai_practice` got `cast_range_m` and `cast_pause_ms`** (both 0: the practice opponent
+  never casts); it has the same shape as the AI numbers of an enemy type now.
+- **New `enemies`** (per ID from the new `enemies.json`): `level`, `skill_level`, `nxp_base`
+  and `ai` (reaction time and error rate per enemy type). `grunt` (level 5, slow: 450 ms,
+  error 0.4), `veteran` (level 10, 300 ms, error 0.2), `ember_slime` (fire elemental slime,
+  level 5, casts fire bolts inside 12 m every 2.5 s – the players' way to contact with fire).
+- **New `waves`:** `first_delay_ms` 4000, `break_ms` 6000, `level_bonus_per_loop` 3 and the
+  `list` of five waves (2 grunts; grunt + ember slime; 2 ember slimes + grunt; veteran + 2
+  grunts; veteran + 2 ember slimes). After the last one the list starts again, every enemy 3
+  levels higher.
+- **New `progression`:** nXP for level L → L + 1 = `xp_base` 100 + `xp_per_level` 10 × L;
+  nXP of an enemy = its `nxp_base` × (1 + `nxp_bonus_per_enemy_level` 0.1 × its level);
+  `hp_bonus_per_level` and `damage_bonus_per_level` 0.01 ("a little more HP and damage per
+  level"); `milestone_every_levels` 10 (design). With these numbers the first three waves
+  give 405 nXP: enough for the slime's last level (390) and for two levels of the humanoid.
+- **New `skills`:** skill XP for skill level L → L + 1 = `xp_base` 20 + `xp_per_level` 4 × L;
+  XP per action (`xp_per_hit` 5, `xp_per_block` 5, `xp_per_dodge` 8, `xp_per_bolt_hit` 6);
+  per skill level 1 % more damage and 1 % lower cost (`min_cost_factor` 0.5), the block arc
+  0.5° wider, the dodge step 1 % longer, the fire field 2 % bigger.
+- **New `imprint`:** `max_level` 5 (design); progress per point of fire damage taken 1.0 and
+  dealt 0.5; `progress_first_level` 30, `progress_per_further_level` 60 (the first level is
+  clearly easier); per level 0.1 fire resistance and 10 % more fire damage.
+- **New `instinct`:** at (old skill level ÷ old level cap) = 1 a permanent bonus of
+  `skill_level_bonus_max` 3 skill levels and `xp_bonus_max` 0.5 = 50 % more skill XP.
+
 ## v4 – 2026-11-16 (M3, slime and magic)
 
 **Everything new here is a guess, not yet playtested.**

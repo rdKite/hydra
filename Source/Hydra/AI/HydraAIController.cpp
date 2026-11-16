@@ -17,10 +17,13 @@ namespace HydraAI
 	// Behaviour shape, not balance: how the simple opponent uses its reach.
 	constexpr float TargetUpdateIntervalS = 0.25f;
 	constexpr float StandAtReachRatio = 0.8f;    // walks up until the target is at 80 % of its reach
+	constexpr float StandAtCastRangeRatio = 0.6f; // a caster stands at 60 % of its cast range
 	constexpr float AttackAtReachRatio = 0.95f;  // attacks when the target is inside 95 % of its reach
 	constexpr float FaceBeyondReachFactor = 3.f; // beyond 3 x reach it runs instead of circling
 	constexpr float ThreatReachFactor = 1.3f;    // reacts to attacks that start within 1.3 x the attacker's reach
 	constexpr float TapHoldS = 0.03f;            // how long it holds the button for a light attack
+	constexpr float ProbeAheadCm = 160.f;        // how far ahead it looks for an obstacle
+	constexpr float DetourS = 0.35f;             // how long it keeps a sideways step before it looks again
 }
 
 AHydraAIController::AHydraAIController()
@@ -35,9 +38,18 @@ AHydraCharacter* AHydraAIController::GetHydraCharacter() const
 	return Cast<AHydraCharacter>(GetPawn());
 }
 
+const FHydraAiValues& AHydraAIController::GetAiValues() const
+{
+	const FHydraValues& V = UHydraValuesSubsystem::Get(this);
+	const AHydraCharacter* Self = GetHydraCharacter();
+	const FHydraEnemyValues* Enemy = Self ? V.enemies.Find(Self->GetEnemyId()) : nullptr;
+	return Enemy ? Enemy->ai : V.ai_practice;
+}
+
 void AHydraAIController::OnPossess(APawn* InPawn)
 {
 	Super::OnPossess(InPawn);
+	bHadPawn = true;
 	UE_LOG(LogHydra, Log, TEXT("HydraAI: opponent ready (%s)"), bPassive ? TEXT("passive") : TEXT("active"));
 }
 
@@ -58,8 +70,13 @@ void AHydraAIController::StopActing(AHydraCharacter* Self)
 		Self->InputAttackReleased();
 	}
 	Self->InputBlock(false);
+	if (ReleaseCastAt > 0.0)
+	{
+		Self->InputOffHand(false, Self->GetActorRotation().Yaw);
+	}
 	ReleaseAttackAt = -1.0;
 	ReleaseBlockAt = -1.0;
+	ReleaseCastAt = -1.0;
 	PendingReaction = EReaction::None;
 	Target = nullptr;
 	ClearFocus(EAIFocusPriority::Gameplay);
@@ -87,7 +104,7 @@ void AHydraAIController::CommandAttack(float HoldMs)
 void AHydraAIController::UpdateTarget(const AHydraCharacter* Self)
 {
 	// Nearest living player inside the engage range.
-	const float RangeCm = UHydraValuesSubsystem::Get(this).ai_practice.engage_range_m * 100.f;
+	const float RangeCm = GetAiValues().engage_range_m * 100.f;
 	AHydraCharacter* Best = nullptr;
 	float BestDistSq = FMath::Square(RangeCm);
 	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
@@ -107,6 +124,45 @@ void AHydraAIController::UpdateTarget(const AHydraCharacter* Self)
 	Target = Best;
 }
 
+bool AHydraAIController::IsWayBlocked(const AHydraCharacter* Self, const FVector& From, const FVector& Direction, float DistanceCm) const
+{
+	FHitResult Hit;
+	const FCollisionQueryParams Params(SCENE_QUERY_STAT(HydraAIWay), false, Self);
+	const float Radius = Self->GetCapsuleComponent()->GetScaledCapsuleRadius() * 0.85f;
+	return DistanceCm > 1.f && GetWorld()->SweepSingleByObjectType(Hit, From, From + Direction * DistanceCm, FQuat::Identity,
+		FCollisionObjectQueryParams(ECC_WorldStatic), FCollisionShape::MakeSphere(Radius), Params);
+}
+
+FVector AHydraAIController::SteerTowards(const AHydraCharacter* Self, const FVector& ToTarget, double Now)
+{
+	const FVector Direction = ToTarget.GetSafeNormal2D();
+	if (Now < DetourUntil)
+	{
+		return DetourDirection;
+	}
+	const FVector Location = Self->GetActorLocation();
+	const float Probe = FMath::Min(ToTarget.Size2D(), HydraAI::ProbeAheadCm);
+	if (!IsWayBlocked(Self, Location, Direction, Probe))
+	{
+		return Direction;
+	}
+	// Something is in the way: step sideways, to the side from which the way ahead is free
+	// (the side taken last first, so it does not dither in front of a wide obstacle).
+	const FVector Left = FVector::CrossProduct(Direction, FVector::UpVector);
+	const float Offset = Self->GetCapsuleComponent()->GetScaledCapsuleRadius() * 2.f + 60.f;
+	for (const float Side : { DetourSide, -DetourSide })
+	{
+		if (!IsWayBlocked(Self, Location + Left * Side * Offset, Direction, Probe))
+		{
+			DetourSide = Side;
+			break;
+		}
+	}
+	DetourDirection = (Left * DetourSide + Direction * 0.15f).GetSafeNormal2D();
+	DetourUntil = Now + HydraAI::DetourS;
+	return DetourDirection;
+}
+
 void AHydraAIController::OnAttackSeen(AHydraCharacter* Attacker)
 {
 	const AHydraCharacter* Self = GetHydraCharacter();
@@ -121,7 +177,7 @@ void AHydraAIController::OnAttackSeen(AHydraCharacter* Attacker)
 		return;
 	}
 	// Human mistakes: sometimes it misses the moment, and it always needs its reaction time.
-	const FHydraAiPracticeValues& A = UHydraValuesSubsystem::Get(this).ai_practice;
+	const FHydraAiValues& A = GetAiValues();
 	if (FMath::FRand() < A.error_rate)
 	{
 		return;
@@ -145,7 +201,7 @@ void AHydraAIController::React(AHydraCharacter* Self)
 	if (Reaction == EReaction::Block)
 	{
 		Self->InputBlock(true);
-		ReleaseBlockAt = GetWorld()->GetTimeSeconds() + UHydraValuesSubsystem::Get(this).ai_practice.block_hold_ms / 1000.f;
+		ReleaseBlockAt = GetWorld()->GetTimeSeconds() + GetAiValues().block_hold_ms / 1000.f;
 	}
 	else if (Reaction == EReaction::Dodge)
 	{
@@ -164,6 +220,10 @@ void AHydraAIController::Tick(float DeltaSeconds)
 	AHydraCharacter* Self = GetHydraCharacter();
 	if (!Self)
 	{
+		if (bHadPawn)
+		{
+			Destroy(); // its character is gone (a defeated wave enemy)
+		}
 		return;
 	}
 	const double Now = GetWorld()->GetTimeSeconds();
@@ -178,6 +238,11 @@ void AHydraAIController::Tick(float DeltaSeconds)
 	{
 		ReleaseBlockAt = -1.0;
 		Self->InputBlock(false);
+	}
+	if (ReleaseCastAt > 0.0 && Now >= ReleaseCastAt)
+	{
+		ReleaseCastAt = -1.0;
+		Self->InputOffHand(false, Self->GetActorRotation().Yaw);
 	}
 	if (bPassive)
 	{
@@ -209,7 +274,7 @@ void AHydraAIController::Tick(float DeltaSeconds)
 	}
 
 	const FHydraCombatStats& Stats = Self->GetStats();
-	const FHydraAiPracticeValues& A = UHydraValuesSubsystem::Get(this).ai_practice;
+	const FHydraAiValues& A = GetAiValues();
 	const float ReachCm = Stats.Weapon.light.reach_m * 100.f;
 	const FVector ToTarget = T->GetActorLocation() - Self->GetActorLocation();
 	const float Gap = ToTarget.Size2D() - T->GetCapsuleComponent()->GetScaledCapsuleRadius();
@@ -219,9 +284,16 @@ void AHydraAIController::Tick(float DeltaSeconds)
 	SetFocus(const_cast<AHydraCharacter*>(T), EAIFocusPriority::Gameplay);
 	Move->bWantsStrafe = Gap < ReachCm * HydraAI::FaceBeyondReachFactor;
 
-	if (Gap > ReachCm * HydraAI::StandAtReachRatio)
+	// A caster keeps its distance while it has the mana for a bolt and a clear line to its
+	// target; otherwise it comes close.
+	const bool bCaster = Stats.bCanCast && !Stats.bHasShield && A.cast_range_m > 0.f;
+	const bool bRanged = bCaster && Self->GetMana() >= Stats.Bolt.mana_cost
+		&& !IsWayBlocked(Self, Self->GetActorLocation(), ToTarget.GetSafeNormal2D(), FMath::Max(0.f, ToTarget.Size2D() - T->GetCapsuleComponent()->GetScaledCapsuleRadius() - 10.f));
+	const float CastRangeCm = A.cast_range_m * 100.f;
+	const float StandGap = bRanged ? CastRangeCm * HydraAI::StandAtCastRangeRatio : ReachCm * HydraAI::StandAtReachRatio;
+	if (Gap > StandGap)
 	{
-		Self->AddMovementInput(ToTarget.GetSafeNormal2D(), 1.f);
+		Self->AddMovementInput(SteerTowards(Self, ToTarget, Now), 1.f);
 	}
 
 	// Attack: target inside reach and arc, pause over, hands free, stamina there.
@@ -236,6 +308,13 @@ void AHydraAIController::Tick(float DeltaSeconds)
 		Self->InputAttackPressed();
 		ReleaseAttackAt = Now + HoldS;
 		NextAttackTime = Now + HoldS + A.attack_pause_ms / 1000.f * FMath::FRandRange(0.75f, 1.25f);
+	}
+	// Cast: target out of melee reach and inside the cast range. Aimed where the target is now.
+	else if (bRanged && !bBusy && ReleaseAttackAt < 0.0 && ReleaseCastAt < 0.0 && Now >= NextCastTime && Gap > ReachCm && Gap <= CastRangeCm)
+	{
+		Self->InputOffHand(true, ToTarget.Rotation().Yaw);
+		ReleaseCastAt = Now + HydraAI::TapHoldS;
+		NextCastTime = Now + A.cast_pause_ms / 1000.f * FMath::FRandRange(0.75f, 1.25f);
 	}
 }
 

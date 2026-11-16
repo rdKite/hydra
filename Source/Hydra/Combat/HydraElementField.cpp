@@ -63,7 +63,7 @@ AHydraElementField* AHydraElementField::SpawnFireField(UWorld* World, const FVec
 	AHydraElementField* Field = World->SpawnActorDeferred<AHydraElementField>(AHydraElementField::StaticClass(), FTransform(Ground));
 	if (Field)
 	{
-		Field->RadiusCm = F.radius_m * 100.f;
+		Field->RadiusCm = F.radius_m * 100.f * (InSource ? InSource->GetStats().FieldRadiusFactor : 1.f);   // fire magic skill: a bigger field
 		Field->Source = InSource;
 		Field->FinishSpawning(FTransform(Ground));
 		Field->SetLifeSpan(FMath::Max(0.1f, F.duration_ms / 1000.f));

@@ -64,7 +64,7 @@ def main(root):
     c.check("host is the slime (start option ?Form=slime), client and AI are humanoids",
             (host.stats(1, H) or {}).get("form") == "slime" and (host.stats(1, C) or {}).get("form") == "humanoid" and (host.stats(1, AI) or {}).get("form") == "humanoid")
     c.check("client sees the host as a slime", (client.stats(1, H) or {}).get("form") == "slime")
-    c.check("the slime uses its model with all eleven animations", host.count("Form slime uses its model with 11 animations") >= 1 and client.count("Form slime uses its model with 11 animations") >= 1)
+    c.check("the slime uses its model with all eleven animations", host.count("Form slime uses the model slime with 11 animations") >= 1 and client.count("Form slime uses the model slime with 11 animations") >= 1)
     c.check("no error lines from the game in either log", host.count("LogHydra: Error") + client.count("LogHydra: Error") == 0)
     c.near("slime health from values.json", val(host, 1, H, "hp"), slime["hp_max"], 0.01)
     c.near("slime: little stamina", val(host, 1, H, "stamina"), slime["stamina_max"], 0.01)

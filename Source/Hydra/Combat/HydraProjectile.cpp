@@ -4,6 +4,7 @@
 #include "Abilities/HydraTags.h"
 #include "AbilitySystemComponent.h"
 #include "Character/HydraCharacter.h"
+#include "Character/HydraProgressionComponent.h"
 #include "Combat/HydraElementField.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
@@ -129,7 +130,7 @@ void AHydraProjectile::ServerStep(const FVector& From, const FVector& To)
 	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
 	{
 		AHydraCharacter* Target = *It;
-		if (Target == Caster.Get() || !Target->IsAlive())
+		if (Target == Caster.Get() || !Target->IsAlive() || (Caster.IsValid() && !Caster->CanHurt(Target)))
 		{
 			continue;
 		}
@@ -179,10 +180,12 @@ void AHydraProjectile::HitCharacter(AHydraCharacter* Target, const FVector& From
 	if (bBlocked)
 	{
 		// A bolt has no weight of its own: the block costs what a light hit of equal weight costs.
-		const float BlockCost = V.block.stamina_cost_per_hit;
+		const float BlockCost = V.block.stamina_cost_per_hit * TargetStats.BlockCostFactor;
 		if (HydraGas::CanAfford(TargetASC, BlockCost))
 		{
 			Result = TEXT("blocked");
+			++Target->Metrics.Blocks;
+			Target->GetProgression()->ServerAddSkillXp(TargetStats.ShieldSkill, V.skills.xp_per_block);
 			HydraGas::SpendStamina(TargetASC, BlockCost, V.stamina);
 			Raw *= FMath::Clamp(V.block.projectile_damage_through, 0.f, 1.f);
 			// Bursts in front of the shield: the field lies between the two, not under the blocker.
@@ -193,9 +196,24 @@ void AHydraProjectile::HitCharacter(AHydraCharacter* Target, const FVector& From
 		{
 			Result = TEXT("blockbreak");
 			bBlocked = false;
+			++Target->Metrics.BlockBreaks;
 			HydraGas::SpendStamina(TargetASC, Target->GetStamina(), V.stamina);
 			const FGameplayTagContainer BlockTag(HydraTags::Ability_Block);
 			TargetASC->CancelAbilities(&BlockTag);
+		}
+	}
+	if (!bBlocked)
+	{
+		++Target->Metrics.HitsTaken;
+		if (Source)
+		{
+			// The bolt is the body skill projectile; with an element it is also a cast of that element.
+			++Source->Metrics.BoltHits;
+			Source->GetProgression()->ServerAddSkillXp(TEXT("projectile"), V.skills.xp_per_bolt_hit);
+			if (bFire)
+			{
+				Source->GetProgression()->ServerAddSkillXp(TEXT("fire_magic"), V.skills.xp_per_bolt_hit);
+			}
 		}
 	}
 	const float Dealt = AHydraCharacter::ServerDealDamage(Source, Target, Raw, DamageType);

@@ -1,0 +1,8 @@
+{
+  "_note": "Enemy types of the waves. IDs are stable (lower snake_case). form: forms.json ID (the enemy is an ordinary character of that form, same rules as players). imprint: element whose imprint it has (elements.json; empty = none) - with fire its bolt carries fire. Numbers (level, nXP, reaction time, error rate, ...) live in values.json, section enemies; which enemies come in which wave: values.json, section waves.",
+  "enemies": [
+    { "id": "grunt", "name": "Grunt", "form": "humanoid", "imprint": "" },
+    { "id": "veteran", "name": "Veteran", "form": "humanoid", "imprint": "" },
+    { "id": "ember_slime", "name": "Ember slime", "form": "fire_elemental_slime", "imprint": "fire" }
+  ]
+}

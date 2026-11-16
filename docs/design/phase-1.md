@@ -499,7 +499,7 @@ skills (by use), attributes (fixed in Phase 1, §6). Phase 1 needs the following
 ### Arena rules
 
 - **Start at fixed levels** (e.g. shortly before a level cap) so evolution can be tested at
-  once. Exact start levels per form: TBD (tune in playtests).
+  once. Start levels per form: `forms.<id>.start_level` (see §25).
 - No lasting progress and **no respawn penalty** in the arena.
 
 *Not in Phase 1:* hXP and threat rating, hardship rating, skill titles and traits, veteran
@@ -621,6 +621,39 @@ Like §23: assumptions to be confirmed or changed in playtests; numbers in
 | Fire field | a circle of `fire_field.radius_m` for `duration_ms`; it burns everyone in it, the caster too |
 | Burning | in a field: first stack at once, then +1 per `stack_interval_ms`; outside −1 per interval (it keeps burning after leaving). The interval is divided by (1 − fire resistance). Damage: `damage_per_s_per_stack` × stacks, in ticks of `tick_interval_ms`, as fire damage |
 | Mana | per form (`mana_max`, `mana_regen_per_s`); regenerates without a delay; the humanoid has none |
+
+## 25. Rules as built in M4 (progression and waves, starting formulas)
+
+Like §23 and §24: assumptions to be confirmed or changed in playtests; numbers in
+`data/values.json` (`data/CHANGELOG.md` v5).
+
+| Rule | As built |
+|---|---|
+| Start | every player starts at `forms.<id>.start_level` with every skill of the form at `start_skill_level` (humanoid 9 / 6, slime 29 / 20); nothing is kept between sessions |
+| Character level | nXP for level L → L + 1 = `xp_base + xp_per_level × L` (`progression`). Per level: maximum HP × (1 + `hp_bonus_per_level` × level), damage of weapon, body attack, bolt and element body × (1 + `damage_bonus_per_level` × level). No level above the form's `level_cap`; nXP at the cap is lost |
+| nXP | an enemy gives `nxp_base × (1 + nxp_bonus_per_enemy_level × its level)` – by its type and level only. **Every player in the arena gets it in full** (assumption; groups and sharing are out of scope) |
+| Skills of a form | from `forms.json`; plus the element skill (fire magic) once the element is awakened |
+| Skill XP | per landed, unblocked weapon or body attack (`xp_per_hit`, to the weapon's skill), per hit taken on the block (`xp_per_block`, shield skill), per dodge that avoided a hit (`xp_per_dodge`), per bolt that hit unblocked (`xp_per_bolt_hit`, to projectile and, for a fire bolt, also to fire magic). Earned XP is **pending** until the wave is cleared, then credited; a player who is defeated loses what is pending ("only on victory") |
+| Dodge counts | only against a real attack: during the strike the server finds the target outside the hit area, the target started a dodge within the last `dodge.duration_ms + recovery_ms`, and the place where the step began was inside the hit area. Once per attack. (Melee only; bolts do not count yet) |
+| Skill levels | at each character level-up every skill whose credited XP reaches `xp_base + xp_per_level × skill level` rises by one (at most one per level-up and skill, never above the character level); the rest of the XP waits. The last enemy of a wave credits first and gives its nXP second, so that level-up can already raise skills |
+| What a skill level does | × (1 + `damage_bonus_per_level` × level) damage and × max(`min_cost_factor`, 1 − `cost_reduction_per_level` × level) cost for the skill's actions (weapon skill: attacks; shield skill: cost of a blocked hit; dodge: the step; projectile: the bolt's damage and mana). Also: block arc + `block_arc_deg_per_level` per level (shield), dodge step × (1 + `dodge_distance_bonus_per_level` × level), fire field radius × (1 + `field_radius_bonus_per_level` × fire magic level) |
+| Imprint progress | from contact with fire: fire damage taken × `progress_per_damage_taken` plus fire damage dealt × `progress_per_damage_dealt` (bolt, burning, element body). Progress is kept up to what the next level needs (`progress_first_level`, later `progress_per_further_level`) |
+| Milestone | reaching a level divisible by `milestone_every_levels`, or the level cap, opens a milestone. **It stays open until it is used** (assumption: so the imprint can still be earned after the level was reached). The HUD offers only what was earned |
+| Imprint | at an open milestone with enough progress: the imprint starts or rises by one (key R), the milestone is used, progress starts again. Per level: fire resistance + `resistance_per_level`, fire damage × (1 + `damage_bonus_per_level` × level). Level 1 awakens fire: fire magic starts at level 1, a bolt carries fire |
+| Evolution | offered (key E) if the form has an evolution (`forms.json`), a milestone is open **or the level cap is reached**, and the new form's imprint is there or earned (it is then taken together with the evolution). Slime → fire elemental slime |
+| After the evolution | level 0, nXP 0, every skill level 0 and skill XP 0, milestones used; the fire elemental slime keeps the fire imprint at level 1 (fire magic 1); full bars with the base values of the new form |
+| Instinct | per skill the ratio old skill level ÷ old level cap is kept (the highest ever reached). The skill counts as `skill_level_bonus_max × ratio` levels higher for good, and earns × (1 + `xp_bonus_max × ratio`) skill XP. Skills the new form lacks keep their ratio for later |
+| Fire elemental slime | own numbers in `forms.fire_elemental_slime`; shown with the slime's model, tinted and glowing. **Element body:** an unblockable `element_body_damage` × level factor of fire damage back to whoever lands a melee hit on it (after the target's fire resistance) |
+| Enemy types | `enemies.json` (form, imprint) with `enemies.<id>` in `values.json`: level, skill level (all skills of the form), nXP and the AI numbers – reaction time, error rate, pauses and chances per type. They are ordinary characters: same stamina, mana, turn rate, telegraphs, level and skill rules |
+| Enemy behaviour | as the practice opponent of M2. New: a form with the bolt and `cast_range_m` > 0 stands at 60 % of that range while it has the mana and casts where its target stands (no leading – walking sideways avoids the bolt); without mana it comes close and slams |
+| Sides | AI characters do not hurt each other with attacks and bolts (assumption; their fire fields burn everyone). Players can hurt each other |
+| Waves | `waves.list` in order, `first_delay_ms` after the start, `break_ms` after a wave is cleared; enemies appear at spots near the arena border. After the last wave the list starts again with every enemy `level_bonus_per_loop` levels higher. A defeated enemy lies for `character.respawn_delay_ms` and is removed; a defeated player respawns as before, the wave goes on |
+| Metrics | on the server, one CSV per session (`Saved/Metrics/metrics_<time>.csv`): at every cleared wave and at the end of the session one row per player and one per enemy type with what happened since the last row – attacks, hits, hits that were blocked, misses, hits taken, blocks, block breaks, dodges, dodges that avoided a hit, casts, bolt hits, damage dealt and taken, stamina and mana used, deaths, kills |
+
+Not built in M4: a menu for the milestone choice (two keys and a HUD line instead), enemies
+that feint (feints are out of the plan), wave enemies with other weapons or of the plain
+slime form, a pause or an end screen, navigation around obstacles (enemies walk straight at
+their target).
 
 Not built in M3: gravity or drop for the bolt, aim assist for the bolt, the bolt's own lag
 compensation (it is simulated on the server; what the caster sees is the replicated

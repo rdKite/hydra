@@ -26,8 +26,13 @@ TIMEOUT_S="${HYDRA_LIVE_TIMEOUT:-300}"
 [ -f "$ROOT/Content/Maps/Arena.umap" ] || { echo "Content/Maps/Arena.umap missing - run Scripts/create_arena_map.sh"; exit 1; }
 [ -f "$ROOT/Content/Characters/slime/SK_slime.uasset" ] || { echo "Content/Characters/slime missing - run Scripts/build_art.sh"; exit 1; }
 
-rm -rf "$ROOT/Saved/Screenshots/LiveSlime"
-mkdir -p "$ROOT/Saved/Logs"
+# The run reads a copy of data/ in which everyone starts at level 0 without skill levels and
+# the imprint gives no bonus: it measures the plain rules (see check_live.py --plain-start).
+LIVE="$ROOT/Saved/LiveSlime"
+rm -rf "$LIVE" "$ROOT/Saved/Screenshots/LiveSlime"
+mkdir -p "$LIVE/data" "$ROOT/Saved/Logs"
+cp "$ROOT"/data/*.json "$LIVE/data/"
+"$PYTHON" "$(cygpath -w "$ROOT/Scripts/check_live.py")" --plain-start "$(cygpath -w "$LIVE/data/values.json")" > /dev/null
 rm -f "$ROOT/Saved/Logs/SlimeHost.log" "$ROOT/Saved/Logs/SlimeClient.log"
 
 H="1:HydraStats;1.5:HydraTeleport|0|500|90;2.5:HydraAttack|0;3.2:HydraStats;4:HydraAttack|3000;5.7:HydraStats"
@@ -39,7 +44,7 @@ H+=";27:HydraTeleport|0|0|0;27.2:HydraLook|90|-10;27.5:HydraOffHand|0;28.8:Hydra
 
 C="1:HydraStats;3.2:HydraStats;10.8:HydraStats;12.6:HydraTeleport|80|600|180;14:HydraStats;16:HydraTeleport|400|0|180;23.5:HydraStats;26:HydraStats;27.9:HydraTeleport|250|0|180"
 
-COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound -HydraWaitPlayers=2 -HydraQuit=29.5)
+COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound "-HydraDataDir=$(cygpath -w "$LIVE/data")" -HydraWaitPlayers=2 -HydraQuit=29.5)
 export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 
 "$EDITOR" "$PROJ" "/Game/Maps/Arena?listen?Form=slime" "${COMMON[@]}" -WinX=0 -WinY=40 -log=SlimeHost.log -HydraAIPassive \
@@ -50,7 +55,7 @@ sleep 6
   -HydraShotDir=LiveSlime -HydraShotName=client -HydraShot=0.3,5.8,13.2,28.6 "-HydraExec=$C" > /dev/null 2>&1 &
 CLIENT=$!
 
-( sleep "$TIMEOUT_S"; kill $HOST $CLIENT 2> /dev/null ) &
+( sleep "$TIMEOUT_S"; kill $HOST $CLIENT 2> /dev/null ) > /dev/null 2>&1 &
 WATCHDOG=$!
 wait $HOST $CLIENT
 kill $WATCHDOG 2> /dev/null

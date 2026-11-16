@@ -34,6 +34,126 @@ into its movement, so stepping backwards was impossible without lock-on. Built:
   covers about the strafe speed, without it the character turns around; a blocker without
   lock-on turns to the camera direction at the blocking turn rate; slime run 76).
 
+**M4 – Progression and waves.** Rules as built: `docs/design/phase-1.md` §25; numbers:
+`data/values.json` v5 (all guesses, `data/CHANGELOG.md`).
+
+**Item 1 – character level, skill XP by use, one imprint, fixed start levels.**
+`UHydraProgressionComponent` on every character (server decides, replicated): level and
+nXP, skills with credited and pending XP, fire imprint level and progress, open milestones.
+`HydraCombatMath::BuildStats` takes the progress and works out the numbers (HP and damage by
+level; damage, cost, block arc, dodge step, field size by skill; fire resistance and fire
+damage by imprint), so server and client use the same. The HUD shows form, level, XP bar,
+skills with their XP, imprint progress and what a milestone offers; keys E (evolve) and R
+(imprint).
+Verified live (`Scripts/run_live_waves.sh`): slime starts at level 29 with skills at 20,
+humanoid at 9 / 6; a dodge that takes the slime out of a grunt's attack counts for the dodge
+skill, one into the air would not; two slams deal weapon × level × skill damage and cost
+less by the skill; skill XP is pending during the wave, credited when it is cleared; the
+grunt's nXP takes the slime to level 30 and the humanoid to 11 as the XP curve says; the slam
+skill rises by one, the dodge skill keeps its XP for later; contact with fire (the ember
+slime's element body) fills the imprint progress; the client starts its imprint at its open
+milestone through the RPC and gets fire magic at level 1.
+
+**Item 2 – evolution to the fire elemental slime with an instinct.** New form
+`fire_elemental_slime` (own numbers, the slime's model tinted and glowing through two
+material parameters the import script now adds; element body: fire damage back on melee
+hits). Evolution is offered at an open milestone or at the level cap once the fire imprint is
+there or earned.
+Verified live: at level 30 with the imprint earned the HUD offers both; after E: fire
+elemental slime, level 0, skills 0, fire imprint 1, fire magic 1, full bars of the new form
+(80 HP, 130 mana), instinct 0.70 for slam (21 of 30) – the slam costs 14.69 instead of 15
+stamina at skill level 0; the next slam deals level-0 damage with that bonus; the new form
+levels again from 0; server and client agree; the model shows orange (screenshot
+`Saved/Screenshots/LiveWaves/host_16.8.png`).
+
+**Item 3 – AI enemies in waves.** `enemies.json` (grunt, veteran, ember slime) with level,
+skill level, nXP and AI numbers per type in `values.json`; five waves in `waves.list`,
+looping with stronger enemies. Wave mode is the default of `Scripts/play.sh` (`WAVES=0` for
+the practice opponent; the two older live runs still use that). Enemies are ordinary
+characters with the AI controller of M2, which now reads its numbers per enemy type, casts
+(ember slime: fire bolts from a distance, slam up close), steps around obstacles and casts
+only with a clear line. AI characters do not hurt each other.
+Verified live: waves come as the data says, the second after the break; enemy level, HP and
+form are right and replicated; the element body deals 4.2 fire damage back per hit; a
+defeated enemy is removed; switched to active the remaining grunt comes for the players.
+Separately, by hand-started probe runs with active enemies: ember slimes hit a standing
+player with fire bolts from about 7 m, leave fire fields and cause burning; one that spawned
+behind the low cover walked around it (before the fix it stood there and shot the cover).
+
+**Item 4 – metrics as CSV.** Counters per character on the server; the game mode appends one
+row per player and per enemy type at every cleared wave and at the end of the session
+(`Saved/Metrics/metrics_<time>.csv`, `-HydraMetricsDir=` overrides).
+Verified live: the file of the run has the expected rows; wave 1: host 2 attacks, 2 hits, 1
+dodge that avoided a hit, 1 kill, stamina use = one dodge plus two slams to 0.2, damage
+dealt as logged; grunt 1 attack, 1 miss, 2 hits taken, 1 death; the rest at session end.
+
+**Verification.** `Scripts/run_all.sh`: 19 automation tests, combat run 153 checks, slime run 76, waves run 99 - all green.
+
+**Assumptions (to be confirmed by the human):**
+- Humanoid level cap 50 (the design names none). Start levels 9 (humanoid) and 29 (slime).
+- Every player in the arena gets the full nXP of a defeated enemy.
+- "Only on victory": skill XP of a wave is lost when the player is defeated in it; the wave
+  goes on, the player respawns as before.
+- The last enemy of a wave credits skill XP first and gives nXP second, so that level-up can
+  raise skills at once.
+- A milestone stays open until it is used; evolution is also possible at the level cap
+  without an open milestone (otherwise a slime that spent its last milestone on the imprint
+  could never evolve).
+- Imprint progress is kept only up to what the next level needs.
+- Instinct = (old skill level ÷ old level cap) × 3 skill levels for good and up to 50 % more
+  skill XP; the highest ratio ever reached is kept.
+- After the evolution fire magic is 1 although the level is 0 (awakening beats "skills
+  never exceed the level").
+- Element body: fire damage back on every melee hit that lands, blocked or not, scaled by
+  the level of the body.
+- AI characters do not hurt each other with attacks and bolts; their fire fields burn
+  everyone.
+- Dodges count only against melee attacks, not against bolts.
+- The practice mode gives no nXP and credits no skill XP (progression runs in waves).
+- The two older live runs read a data copy with start level 0 and without imprint bonuses,
+  so they keep measuring the plain rules; the waves run reads a copy with low thresholds and
+  two small waves. The real `data/values.json` is checked by the automation tests (three
+  waves give enough nXP for a level-up of either form).
+
+**Problems and workarounds.**
+- The first waves run failed in one place by its own geometry: the scripted dodge ended in
+  the low cover next to the spawn spot. The script now approaches from the side.
+- An enemy that spawned behind the cover stood still (the AI walked straight at its target)
+  – found in a probe run, not by a check. Fixed with a short probe ahead and a step to the
+  free side; no navigation mesh.
+- `Scripts/run_all.sh` waited five minutes after every live run: the watchdog's `sleep`
+  kept the output pipe open after the run had ended. Its output is detached now.
+- Compiled Python files (`__pycache__`) had been committed with M3; removed from git.
+
+**Interventions:** none.
+
+**Ideas noted, not built:** a choice menu for milestones; bolts counting for the dodge
+skill; an end-of-wave summary on the HUD from the same counters as the CSV; enemies that
+lead their target with the bolt; per-enemy looks (they are told apart by the name above
+their bars); a wave enemy of the plain slime form.
+
+**To decide before M5 (human):**
+
+1. **Is the evolution worth it in the arena?** A slime at level 30 with skills around 20
+   becomes a fire elemental slime at level 0 with skills at 0 – as the design says, but in a
+   10–15 minute session it is weaker for most of what is left (base values are higher, level
+   and skill bonuses are gone, the instinct gives back about 2 skill levels). Options: leave
+   it (the long game pays it back), a stronger instinct, or higher base values.
+2. **Strength of levels and skills:** 1 % HP and damage per level, 1 % damage and cost per
+   skill level. A level-29 slime with skills at 20 hits about 55 % harder than a new one. Too
+   much, too little?
+3. **nXP for everyone in full** – or split between the players?
+4. **Losing a wave's skill XP on defeat** – right reading of "only on victory"?
+5. **Imprint speed:** two fire bolt hits (about 36 fire damage) are enough for the first
+   level; the milestone is the real gate. Fine, or slower?
+6. **Enemy mix and difficulty** are untested by a human. Standing still, a level-9 humanoid
+   lasts about 6 seconds against wave 3 (two ember slimes and a grunt).
+7. **Bolt charge and precise movement** (from the feedback before M4): should the caster
+   follow the camera while it charges, like a raised block?
+8. **Keys:** X for precise movement, E and R at a milestone – fine?
+
+Session end: 19:46.
+
 ### 2026-11-16 – M3 Slime and magic (agent session, start 16:40)
 
 Before M3, answers of the human to the M2 questions: **jump on Space, dodge on Left Alt**

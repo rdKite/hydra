@@ -36,6 +36,13 @@ public:
 	bool IsPacketLossOn() const { return bPacketLoss; }
 	float GetPacketLossRatio() const;
 
+	/** Server: what the HUD shows about the waves. NextWaveTime: server time of the next wave, 0 = a wave is running. */
+	void SetWaveState(bool bInWaves, int32 InWave, int32 InEnemiesLeft, float InNextWaveTime);
+	bool IsWaveMode() const { return bWaves; }
+	int32 GetWave() const { return Wave; }
+	int32 GetEnemiesLeft() const { return EnemiesLeft; }
+	float GetNextWaveTime() const { return NextWaveTime; }
+
 	/** Applies the replicated setting to this process's net driver. */
 	void ApplyLocal();
 
@@ -52,4 +59,16 @@ protected:
 
 	UPROPERTY(ReplicatedUsing = OnRep_NetSimulation)
 	bool bPacketLoss = false;
+
+	UPROPERTY(Replicated)
+	bool bWaves = false;
+
+	UPROPERTY(Replicated)
+	int32 Wave = 0;
+
+	UPROPERTY(Replicated)
+	int32 EnemiesLeft = 0;
+
+	UPROPERTY(Replicated)
+	float NextWaveTime = 0.f;
 };

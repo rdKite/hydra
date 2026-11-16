@@ -5,8 +5,26 @@
 #include "Data/HydraValues.h"
 
 /**
+ * What a character has grown into: character level, skill levels (with the instinct bonus
+ * already added) and the level of its fire imprint. Level 0 everywhere = the plain numbers
+ * of the form.
+ */
+struct FHydraProgressView
+{
+	int32 Level = 0;
+	int32 ImprintLevel = 0;
+	TMap<FName, float> SkillLevels;
+
+	float Skill(FName Id) const
+	{
+		const float* Found = SkillLevels.Find(Id);
+		return Found ? *Found : 0.f;
+	}
+};
+
+/**
  * What a character is made of for combat: its form with the loadout resolved and the
- * numbers that follow from weight and strength. Built from forms.json (loadout) and
+ * numbers that follow from weight and strength, level, skills and imprint. Built from forms.json (loadout) and
  * values.json (numbers per form, weapon and shield); rebuilt after
  * Hydra.ReloadValues.
  */
@@ -33,16 +51,37 @@ struct FHydraCombatStats
 	float ManaRegenPerS = 0.f;
 	FHydraResistanceValues Resistance;
 
+	int32 Level = 0;
+	int32 LevelCap = 0;
+	int32 ImprintLevel = 0;
+
 	/** The form has the body skill projectile: its off-hand button casts the bolt. */
 	bool bCanCast = false;
+	/** The bolt with this character's level, skill and cost factor applied (damage, mana_cost). */
+	FHydraBoltValues Bolt;
+	/** Damage factor for fire damage it deals (imprint). */
+	float FireDamageFactor = 1.f;
+	/** Radius factor of its fire fields (fire magic skill). */
+	float FieldRadiusFactor = 1.f;
+	/** Element body: fire damage a melee hit against it deals back. */
+	float ElementBodyDamage = 0.f;
 
 	bool bHasWeapon = false;
+	/** The weapon in the hand; its damage already includes level and skill. */
 	FHydraWeaponValues Weapon;
+	/** Skills that grow by using the weapon / the shield (weapons.json). */
+	FName WeaponSkill;
+	FName ShieldSkill;
 	/** "slash", "pierce" or "blunt" (weapons.json). */
 	FName LightDamageType;
 	FName HeavyDamageType;
 	bool bHasShield = false;
+	/** The shield; its block arc already includes the skill. */
 	FHydraShieldValues Shield;
+	/** Factor on the stamina a blocked hit costs (shield skill). */
+	float BlockCostFactor = 1.f;
+	/** Factor on the length of the dodge step (dodge skill). */
+	float DodgeDistanceFactor = 1.f;
 
 	/** Weapon weight / strength: drives attack cost and the weak-point bonus. */
 	float WeaponWeightRatio = 0.f;
@@ -320,11 +359,83 @@ namespace HydraCombatMath
 		return Steps[(Steps.IndexOfByKey(Current) + 1) % Steps.Num()];
 	}
 
+	// --- Progression ------------------------------------------------------------------------
+
+	/** nXP needed for the step from Level to Level + 1. */
+	inline float XpForNextLevel(const FHydraProgressionValues& P, int32 Level)
+	{
+		return FMath::Max(1.f, P.xp_base + P.xp_per_level * FMath::Max(0, Level));
+	}
+
+	/** nXP for defeating an enemy: by its type and level only, never by the level of the winner. */
+	inline float EnemyNxp(const FHydraProgressionValues& P, float NxpBase, int32 EnemyLevel)
+	{
+		return NxpBase * (1.f + P.nxp_bonus_per_enemy_level * FMath::Max(0, EnemyLevel));
+	}
+
+	/** A milestone: every milestone_every_levels levels, and the form's level cap. */
+	inline bool IsMilestone(const FHydraProgressionValues& P, int32 Level, int32 LevelCap)
+	{
+		return Level > 0 && ((P.milestone_every_levels > 0 && Level % P.milestone_every_levels == 0) || Level == LevelCap);
+	}
+
+	/** Factor from the character level (HP, base damage): 1 + bonus per level x level. */
+	inline float LevelFactor(float BonusPerLevel, int32 Level)
+	{
+		return 1.f + BonusPerLevel * FMath::Max(0, Level);
+	}
+
+	/** Skill XP needed for the step from SkillLevel to SkillLevel + 1. */
+	inline float SkillXpForNextLevel(const FHydraSkillsValues& S, int32 SkillLevel)
+	{
+		return FMath::Max(1.f, S.xp_base + S.xp_per_level * FMath::Max(0, SkillLevel));
+	}
+
+	inline float SkillDamageFactor(const FHydraSkillsValues& S, float SkillLevel)
+	{
+		return 1.f + S.damage_bonus_per_level * FMath::Max(0.f, SkillLevel);
+	}
+
+	/** A higher skill lowers the cost of its actions, down to min_cost_factor. */
+	inline float SkillCostFactor(const FHydraSkillsValues& S, float SkillLevel)
+	{
+		return FMath::Max(S.min_cost_factor, 1.f - S.cost_reduction_per_level * FMath::Max(0.f, SkillLevel));
+	}
+
+	/** Imprint progress needed for the next imprint level; the first one is the easiest. */
+	inline float ImprintProgressNeeded(const FHydraImprintValues& I, int32 CurrentImprintLevel)
+	{
+		return CurrentImprintLevel <= 0 ? I.progress_first_level : I.progress_per_further_level;
+	}
+
+	/** Instinct: how high a skill was relative to the old form's level cap (0..1). */
+	inline float InstinctRatio(int32 OldSkillLevel, int32 OldLevelCap)
+	{
+		return OldLevelCap > 0 ? FMath::Clamp(static_cast<float>(OldSkillLevel) / OldLevelCap, 0.f, 1.f) : 0.f;
+	}
+
+	/** Skill level as the rules use it: the level plus the permanent instinct bonus. */
+	inline float EffectiveSkillLevel(const FHydraInstinctValues& I, int32 SkillLevel, float Ratio)
+	{
+		return SkillLevel + I.skill_level_bonus_max * FMath::Clamp(Ratio, 0.f, 1.f);
+	}
+
+	/** Skill XP an action gives; a skill with an instinct is relearned faster. */
+	inline float SkillXpGain(const FHydraInstinctValues& I, float Amount, float Ratio)
+	{
+		return Amount * (1.f + I.xp_bonus_max * FMath::Clamp(Ratio, 0.f, 1.f));
+	}
+
 	// --- Stats ------------------------------------------------------------------------------
 
-	/** Resolves a form and its loadout and derives the weight-based numbers. bValid is false for an unknown form or one without numbers. */
-	inline FHydraCombatStats BuildStats(const FHydraDefinitions& Defs, const FHydraValues& V, FName FormId)
+	/**
+	 * Resolves a form and its loadout and derives the numbers that follow from weight and
+	 * strength and from the progress (level, skills, imprint). bValid is false for an unknown
+	 * form or one without numbers.
+	 */
+	inline FHydraCombatStats BuildStats(const FHydraDefinitions& Defs, const FHydraValues& V, FName FormId, const FHydraProgressView& Progress = FHydraProgressView())
 	{
+		static const FName SkillDodge(TEXT("dodge")), SkillProjectile(TEXT("projectile")), ElementFire(TEXT("fire"));
 		FHydraCombatStats S;
 		S.FormId = FormId;
 		const FHydraFormDef* Form = Defs.FindForm(FormId);
@@ -340,15 +451,31 @@ namespace HydraCombatMath
 		S.bValid = true;
 		S.BodyWeight = Numbers->body_weight;
 		S.Strength = Numbers->strength;
-		S.HpMax = Numbers->hp_max;
+		S.Level = Progress.Level;
+		S.LevelCap = Numbers->level_cap;
+		S.ImprintLevel = Progress.ImprintLevel;
+		// Each level gives a little more HP and base damage; most strength comes from skills.
+		const float LevelDamage = LevelFactor(V.progression.damage_bonus_per_level, Progress.Level);
+		S.HpMax = Numbers->hp_max * LevelFactor(V.progression.hp_bonus_per_level, Progress.Level);
 		S.StaminaMax = Numbers->stamina_max;
 		S.StaminaRegenPerS = Numbers->stamina_regen_per_s;
 		S.ManaMax = Numbers->mana_max;
 		S.ManaRegenPerS = Numbers->mana_regen_per_s;
 		S.Resistance = Numbers->resistance;
+		// Imprint: resistance against the element and more damage with it.
+		S.Resistance.fire = FMath::Min(0.95f, S.Resistance.fire + V.imprint.resistance_per_level * Progress.ImprintLevel);
+		S.FireDamageFactor = 1.f + V.imprint.damage_bonus_per_level * Progress.ImprintLevel;
+		S.ElementBodyDamage = Form->element_body == ElementFire ? Numbers->element_body_damage * LevelDamage : 0.f;
 		S.BodyRadiusCm = Numbers->body_radius_m * 100.f;
 		S.BodyHalfHeightCm = FMath::Max(Numbers->body_height_m * 50.f, S.BodyRadiusCm);
-		S.bCanCast = Form->skills.Contains(FName(TEXT("projectile")));
+		S.bCanCast = Form->skills.Contains(SkillProjectile);
+		S.Bolt = V.bolt;
+		S.Bolt.damage *= LevelDamage * SkillDamageFactor(V.skills, Progress.Skill(SkillProjectile));
+		S.Bolt.mana_cost *= SkillCostFactor(V.skills, Progress.Skill(SkillProjectile));
+		if (const FHydraElementDef* Fire = Defs.FindElement(ElementFire))
+		{
+			S.FieldRadiusFactor = 1.f + V.skills.field_radius_bonus_per_level * Progress.Skill(Fire->element_skill);
+		}
 		S.TotalWeight = S.BodyWeight;
 		// Everything carried counts towards the weight; the first weapon and the first shield are in the hands.
 		for (const FName Item : Form->loadout)
@@ -364,6 +491,7 @@ namespace HydraCombatMath
 					{
 						S.LightDamageType = Def->light_damage_type;
 						S.HeavyDamageType = Def->heavy_damage_type;
+						S.WeaponSkill = Def->skill;
 					}
 				}
 			}
@@ -374,17 +502,34 @@ namespace HydraCombatMath
 				{
 					S.bHasShield = true;
 					S.Shield = *Sh;
+					if (const FHydraWeaponDef* Def = Defs.FindWeapon(Item))
+					{
+						S.ShieldSkill = Def->skill;
+					}
 				}
 			}
 		}
 		S.WeightRatio = WeightRatio(S.TotalWeight, S.Strength);
 		S.TurnRateDegS = TurnRateDegS(V.turn_rate, S.WeightRatio);
-		S.DodgeStaminaCost = DodgeStaminaCost(V.dodge, S.WeightRatio);
+		// Skills: lower cost, more damage, and per kind a longer dodge step and a wider block arc.
+		S.DodgeStaminaCost = DodgeStaminaCost(V.dodge, S.WeightRatio) * SkillCostFactor(V.skills, Progress.Skill(SkillDodge));
+		S.DodgeDistanceFactor = 1.f + V.skills.dodge_distance_bonus_per_level * Progress.Skill(SkillDodge);
 		if (S.bHasWeapon)
 		{
+			const float WeaponSkill = Progress.Skill(S.WeaponSkill);
+			const float Cost = SkillCostFactor(V.skills, WeaponSkill);
+			const float Damage = LevelDamage * SkillDamageFactor(V.skills, WeaponSkill);
 			S.WeaponWeightRatio = WeightRatio(S.Weapon.weight, S.Strength);
-			S.LightStaminaCost = AttackStaminaCost(V.attack.light_stamina_per_weight_ratio, S.Weapon.weight, S.Strength);
-			S.HeavyStaminaCost = AttackStaminaCost(V.attack.heavy_stamina_per_weight_ratio, S.Weapon.weight, S.Strength);
+			S.LightStaminaCost = AttackStaminaCost(V.attack.light_stamina_per_weight_ratio, S.Weapon.weight, S.Strength) * Cost;
+			S.HeavyStaminaCost = AttackStaminaCost(V.attack.heavy_stamina_per_weight_ratio, S.Weapon.weight, S.Strength) * Cost;
+			S.Weapon.light.damage *= Damage;
+			S.Weapon.heavy.damage *= Damage;
+		}
+		if (S.bHasShield)
+		{
+			const float ShieldSkill = Progress.Skill(S.ShieldSkill);
+			S.BlockCostFactor = SkillCostFactor(V.skills, ShieldSkill);
+			S.Shield.block_half_arc_deg = FMath::Min(180.f, S.Shield.block_half_arc_deg + V.skills.block_arc_deg_per_level * ShieldSkill);
 		}
 		return S;
 	}

@@ -45,6 +45,13 @@ struct FHydraFormValues
 	UPROPERTY() float mana_max = 0.f;
 	UPROPERTY() float mana_regen_per_s = 0.f;
 	UPROPERTY() FHydraResistanceValues resistance;
+	/** Highest character level of the form. */
+	UPROPERTY() int32 level_cap = 0;
+	/** Arena rule: a player starts at this level with every skill of the form at start_skill_level. */
+	UPROPERTY() int32 start_level = 0;
+	UPROPERTY() int32 start_skill_level = 0;
+	/** Element body: damage of the body's element a melee hit against this form deals back (0 = none). */
+	UPROPERTY() float element_body_damage = 0.f;
 };
 
 /** Light attack of a weapon: press the hand's button. */
@@ -232,8 +239,9 @@ struct FHydraLagCompensationValues
 	UPROPERTY() float max_rewind_ms = 0.f;
 };
 
+/** How an AI plays: the practice opponent (ai_practice) and every enemy type (enemies.<id>.ai). */
 USTRUCT()
-struct FHydraAiPracticeValues
+struct FHydraAiValues
 {
 	GENERATED_BODY()
 	UPROPERTY() float engage_range_m = 0.f;
@@ -248,6 +256,119 @@ struct FHydraAiPracticeValues
 	UPROPERTY() float block_chance = 0.f;
 	UPROPERTY() float dodge_chance = 0.f;
 	UPROPERTY() float block_hold_ms = 0.f;
+	/** A form with the bolt casts it at targets inside this range (0 = never) ... */
+	UPROPERTY() float cast_range_m = 0.f;
+	/** ... and waits this long between two casts. */
+	UPROPERTY() float cast_pause_ms = 0.f;
+};
+
+/** Numbers of one enemy type of the waves (enemies.json). */
+USTRUCT()
+struct FHydraEnemyValues
+{
+	GENERATED_BODY()
+	UPROPERTY() int32 level = 0;
+	/** Level of every skill of its form. */
+	UPROPERTY() int32 skill_level = 0;
+	/** nXP for defeating it = nxp_base x (1 + progression.nxp_bonus_per_enemy_level x its level). */
+	UPROPERTY() float nxp_base = 0.f;
+	UPROPERTY() FHydraAiValues ai;
+};
+
+USTRUCT()
+struct FHydraWaveGroupValues
+{
+	GENERATED_BODY()
+	/** enemies.json ID. */
+	UPROPERTY() FName enemy;
+	UPROPERTY() int32 count = 0;
+};
+
+USTRUCT()
+struct FHydraWaveValues
+{
+	GENERATED_BODY()
+	UPROPERTY() TArray<FHydraWaveGroupValues> groups;
+};
+
+/** The waves of the arena, in order; after the last one they start again with stronger enemies. */
+USTRUCT()
+struct FHydraWavesValues
+{
+	GENERATED_BODY()
+	UPROPERTY() float first_delay_ms = 0.f;
+	/** Pause between a cleared wave and the next. */
+	UPROPERTY() float break_ms = 0.f;
+	/** Levels every enemy gains per completed pass through the list. */
+	UPROPERTY() int32 level_bonus_per_loop = 0;
+	UPROPERTY() TArray<FHydraWaveValues> list;
+};
+
+/** Character level. nXP needed for the step from level L to L + 1 = xp_base + xp_per_level x L. */
+USTRUCT()
+struct FHydraProgressionValues
+{
+	GENERATED_BODY()
+	UPROPERTY() float xp_base = 0.f;
+	UPROPERTY() float xp_per_level = 0.f;
+	UPROPERTY() float nxp_bonus_per_enemy_level = 0.f;
+	/** Each level: this share more maximum HP and base damage. */
+	UPROPERTY() float hp_bonus_per_level = 0.f;
+	UPROPERTY() float damage_bonus_per_level = 0.f;
+	UPROPERTY() int32 milestone_every_levels = 0;
+};
+
+/**
+ * Skills (grow by use). Skill XP for the step from skill level L to L + 1 = xp_base +
+ * xp_per_level x L. What a level does: more damage and lower cost for the skill's actions,
+ * and per kind a wider block arc, a longer dodge step, a bigger element field.
+ */
+USTRUCT()
+struct FHydraSkillsValues
+{
+	GENERATED_BODY()
+	UPROPERTY() float xp_base = 0.f;
+	UPROPERTY() float xp_per_level = 0.f;
+	/** Skill XP per landed weapon or body attack, per hit taken on the block, per dodge that avoided a hit, per bolt that hit. */
+	UPROPERTY() float xp_per_hit = 0.f;
+	UPROPERTY() float xp_per_block = 0.f;
+	UPROPERTY() float xp_per_dodge = 0.f;
+	UPROPERTY() float xp_per_bolt_hit = 0.f;
+	UPROPERTY() float damage_bonus_per_level = 0.f;
+	/** Cost factor = 1 - this x level, never below min_cost_factor. */
+	UPROPERTY() float cost_reduction_per_level = 0.f;
+	UPROPERTY() float min_cost_factor = 0.f;
+	UPROPERTY() float block_arc_deg_per_level = 0.f;
+	UPROPERTY() float dodge_distance_bonus_per_level = 0.f;
+	UPROPERTY() float field_radius_bonus_per_level = 0.f;
+};
+
+/** Imprint: an acquired alignment to an element. Progress comes from contact with the element. */
+USTRUCT()
+struct FHydraImprintValues
+{
+	GENERATED_BODY()
+	UPROPERTY() int32 max_level = 0;
+	/** Progress per point of that element's damage taken / dealt. */
+	UPROPERTY() float progress_per_damage_taken = 0.f;
+	UPROPERTY() float progress_per_damage_dealt = 0.f;
+	/** Progress needed for the first level and for each further one (the first is clearly easier). */
+	UPROPERTY() float progress_first_level = 0.f;
+	UPROPERTY() float progress_per_further_level = 0.f;
+	/** Per imprint level: resistance against the element and damage with it. */
+	UPROPERTY() float resistance_per_level = 0.f;
+	UPROPERTY() float damage_bonus_per_level = 0.f;
+};
+
+/** Instinct after an evolution, scaled by (old skill level / old form's level cap). */
+USTRUCT()
+struct FHydraInstinctValues
+{
+	GENERATED_BODY()
+	/** Permanent bonus on the skill, in skill levels, at ratio 1. */
+	UPROPERTY() float skill_level_bonus_max = 0.f;
+	/** Extra share of skill XP for that skill at ratio 1 (it is relearned faster). */
+	UPROPERTY() float xp_bonus_max = 0.f;
 };
 
 /**
@@ -331,7 +452,14 @@ struct FHydraValues
 	UPROPERTY() FHydraDodgeValues dodge;
 	UPROPERTY() FHydraWeakPointValues weak_point;
 	UPROPERTY() FHydraLagCompensationValues lag_compensation;
-	UPROPERTY() FHydraAiPracticeValues ai_practice;
+	UPROPERTY() FHydraAiValues ai_practice;
+	/** Per ID from enemies.json. */
+	UPROPERTY() TMap<FName, FHydraEnemyValues> enemies;
+	UPROPERTY() FHydraWavesValues waves;
+	UPROPERTY() FHydraProgressionValues progression;
+	UPROPERTY() FHydraSkillsValues skills;
+	UPROPERTY() FHydraImprintValues imprint;
+	UPROPERTY() FHydraInstinctValues instinct;
 	UPROPERTY() FHydraBoltValues bolt;
 	UPROPERTY() FHydraFireFieldValues fire_field;
 	UPROPERTY() FHydraBurningValues burning;

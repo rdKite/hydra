@@ -10,7 +10,8 @@
 # Don't click into the windows while it runs (the first click captures the mouse).
 # The run takes about a minute and a half. Both windows read a copy of data/
 # (Saved/Live/data), so the script can change values during the run without touching the
-# real files. The AI opponent starts passive and is driven by dev commands, so every
+# real files; in the copy everyone starts at level 0 without skill levels, so the run
+# measures the plain rules. The AI opponent starts passive and is driven by dev commands, so every
 # situation is the same in every run; it is switched to active at the end.
 # Screenshots are only taken in quiet moments or long phases: the first one of a process
 # stalls it for a few hundred milliseconds (hence the warm-up shot at 0.3 s).
@@ -52,6 +53,8 @@ mkdir -p "$LIVE/data" "$ROOT/Saved/Logs"
 cp "$ROOT"/data/*.json "$LIVE/data/"
 rm -f "$ROOT/Saved/Logs/LiveHost.log" "$ROOT/Saved/Logs/LiveClient.log"
 DATA_DIR="$(cygpath -w "$LIVE/data")"
+# The plain rules: everyone at level 0 without skill levels (see check_live.py).
+"$PYTHON" "$(cygpath -w "$ROOT/Scripts/check_live.py")" --plain-start "$(cygpath -w "$LIVE/data/values.json")" > /dev/null
 
 H="1:HydraStats;1.5:HydraTeleport|0|440|90;2:HydraStats"
 H+=";2.5:HydraAttack|0;3.3:HydraAttack|0;4.1:HydraAttack|0;4.6:HydraStats;7:HydraStats;7.2:HydraAttack|0;8:HydraResetAll"
@@ -92,7 +95,7 @@ sleep 6
 CLIENT=$!
 
 # Watchdog: never hang (first start compiles shaders and can take a while).
-( sleep "$TIMEOUT_S"; kill $HOST $CLIENT 2> /dev/null ) &
+( sleep "$TIMEOUT_S"; kill $HOST $CLIENT 2> /dev/null ) > /dev/null 2>&1 &
 WATCHDOG=$!
 
 # While the run is in its first part (the reload is at 50 s): change the copied values.

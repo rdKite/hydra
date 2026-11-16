@@ -30,6 +30,9 @@ public:
 	/** Player spawn points (world space): two spots facing each other near the centre. */
 	TArray<FTransform> GetSpawnTransforms() const;
 
+	/** Where wave enemies appear: spots near the border, clear of the obstacles, facing the centre. */
+	TArray<FTransform> GetWaveSpawnTransforms() const;
+
 	/** Where the AI opponent starts. */
 	FTransform GetDummySpawnTransform() const;
 
