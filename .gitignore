@@ -1,0 +1,25 @@
+# Unreal
+Binaries/
+Intermediate/
+Saved/
+DerivedDataCache/
+.vs/
+.idea/
+*.sln
+*.slnx
+*.suo
+*.VC.db
+*.opensdf
+*.sdf
+Build/Windows/FileOpenOrder/
+
+# Copied from data/values.json at build time (the dev checkout reads data/ directly)
+Config/Hydra/values.json
+
+# Blender
+*.blend1
+*.blend2
+
+# OS
+.DS_Store
+Thumbs.db
