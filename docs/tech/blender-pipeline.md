@@ -3,7 +3,8 @@
 Models, rigs and textures are made by agents with Blender Python scripts – no manual
 steps, repeatable. **Animations are designed by the human** (in Blender or a tool like
 Cascadeur); agents prepare the rigs, export and import them and wire them into the game, and
-may make simple placeholder animations by script for tests. Mixamo is only a placeholder. First used in M3 (slime playable, wolf pup as a pipeline test).
+may make simple placeholder animations by script for tests. Mixamo is only a placeholder.
+First used in M3 (slime playable, wolf pup as a pipeline test).
 
 ## Rules
 
