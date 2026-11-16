@@ -355,7 +355,7 @@ The Phase 1 humanoid has a fixed loadout: **longsword in one hand, shield in the
 - **Attacks:** a **slam** (melee) and a **projectile** (body skill, base skill of the slime).
   Both start without element. With an element imprint, the projectile takes on that element.
 - No rubber jump.
-- Rarity: common. **Level cap: 30.**
+- Rarity: common. **Level cap: 30** (confirmed – the slime is meant to be the weakest monster).
 - The slime can dodge (pure movement) like everyone else (assumption: the notes give it no
   defence type, but dodge is a general rule).
 
@@ -381,6 +381,10 @@ The Phase 1 humanoid has a fixed loadout: **longsword in one hand, shield in the
 
 Phase 1 has one element (**fire**), one spell form (**bolt**), the **fire element field** and
 the **burning** debuff.
+
+**Decision (2026-11-16): in Phase 1 only the slime casts** (through its body). The humanoid
+holds longsword and shield and stays purely physical; casting with a free hand comes with
+the hand wheels in Phase 1b.
 
 ### Rules that apply
 
@@ -498,11 +502,11 @@ German design notes.
 - Enemies should be challenging at equal level, more so above it.
 - AI is the most expensive part. Start with simple behaviour and make it smarter step by
   step.
+- **Some wave enemies deal fire damage** or leave fire fields – that is the slime's path to
+  its fire imprint in the arena (decision 2026-11-16).
 - M2: one simple AI opponent for practice. M4: enemies in **waves**.
 - Enemies protect their weak points (turn to face the player).
-- Enemy roster, wave size and wave progression: TBD (tune in playtests). Fire damage from
-  enemies or fire fields in the arena should give the slime a path to its fire imprint
-  (assumption).
+- Enemy roster, wave size and wave progression: TBD (tune in playtests).
 
 ## 19. Metrics
 

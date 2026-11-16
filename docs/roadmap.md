@@ -49,13 +49,15 @@ pure logic).
       make it playable; the wolf pup only as a pipeline test (model, rig, a few
       animations, not playable) – is the topology good enough for animation?
 - [ ] Slime: slam and projectile; mana.
-- [ ] Minimal magic: fire bolt, fire element field with the burning debuff.
+- [ ] Minimal magic (slime only; the humanoid stays physical in Phase 1): fire bolt, fire
+      element field with the burning debuff.
 
 ### M4 – Progression and waves (about 1 week)
 
 - [ ] Character level, skill XP by use, one imprint; start at fixed levels.
 - [ ] Evolution to the fire elemental slime with an instinct.
 - [ ] AI enemies in waves, same rules as players (reaction time and error rate per enemy).
+      Some deal fire damage – the slime's path to its fire imprint.
 - [ ] Metrics (hits, blocked hits, dodges, stamina use) as CSV for later tuning.
 
 ### M5 – Look and playtest (a few days)
