@@ -88,6 +88,8 @@ dodge that avoided a hit, 1 kill, stamina use = one dodge plus two slams to 0.2,
 dealt as logged; grunt 1 attack, 1 miss, 2 hits taken, 1 death; the rest at session end.
 
 **Verification.** `Scripts/run_all.sh`: 19 automation tests, combat run 153 checks, slime run 76, waves run 99 - all green.
+The same from a **fresh clone** of `main` after the push (build from nothing, LFS assets
+from the remote): all green.
 
 **Assumptions (to be confirmed by the human):**
 - Humanoid level cap 50 (the design names none). Start levels 9 (humanoid) and 29 (slime).
