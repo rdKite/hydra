@@ -17,6 +17,34 @@ skills grow by use; online from the start.
 
 Details: [`docs/roadmap.md`](docs/roadmap.md).
 
+## Build, test, play
+
+Needs Unreal Engine 5.8 (launcher build), Visual Studio with the C++ game workload and Git
+LFS. Set the environment variable `UE_ROOT` to the engine folder once
+(`setx UE_ROOT "D:\dev\Epic Games\UE_5.8"`, then open a new terminal). All commands run in
+Git Bash from the repository root.
+
+| Command | What it does |
+|---|---|
+| `Scripts/build.sh` | builds the editor target (used for tests and for playing) |
+| `Scripts/run_tests.sh` | build + automation tests, headless |
+| `Scripts/create_arena_map.sh` | recreates `Content/Maps/Arena.umap` (only if the map is lost) |
+| `Scripts/play.sh` | **play:** host window plus a client window (`host` / `client` for one only) |
+| `Scripts/run_live.sh` | scripted live run: host + client, automated input, screenshots, checks |
+
+Without the script, from any shell (after a build):
+
+```
+"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "C:\code\hydra\Hydra.uproject" "/Game/Maps/Arena?listen" -game -windowed -ResX=1280 -ResY=720
+"%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "C:\code\hydra\Hydra.uproject" 127.0.0.1 -game -windowed -ResX=1280 -ResY=720
+```
+
+Controls: WASD move, mouse look, Left Alt walk, Q or middle mouse lock-on, F5 reload
+`data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console
+(`Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`,
+`HydraSpendStamina 40`, `HydraAimAssist`, `HydraStats`). Gamepad: sticks, right stick click
+for lock-on.
+
 ## Where things are
 
 - [`CLAUDE.md`](CLAUDE.md) – rules for the agents that build the game.
@@ -26,6 +54,12 @@ Details: [`docs/roadmap.md`](docs/roadmap.md).
 - [`docs/decisions.md`](docs/decisions.md) – history of design decisions.
 - [`GLOSSARY.md`](GLOSSARY.md) – English names for all game terms.
 - [`data/values.json`](data/values.json) – all gameplay numbers.
+- [`data/`](data) `forms.json`, `skills.json`, `elements.json`, `weapons.json` – what exists
+  in the game, with stable IDs (no numbers).
+- [`Source/Hydra/`](Source/Hydra) – the C++ game module: `Data/` (values and definitions),
+  `Abilities/` (GAS helper layer, stamina), `Character/`, `Core/` (game mode, network
+  emulation, controller, HUD, dev tools), `Arena/`, `Tests/`.
+- [`Scripts/`](Scripts) – build, test, map and run scripts.
 - [`docs/tech/`](docs/tech) – tech-test findings, Blender pipeline.
 - [`docs/dev-log.md`](docs/dev-log.md) – sessions, interventions, assumptions.
 

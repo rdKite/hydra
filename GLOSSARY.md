@@ -167,3 +167,7 @@ crafting plans, because that is Unreal's visual scripting).
 | Protokoll | **dev log** |
 | Meilenstein (Fahrplan) | **roadmap milestone** (M1–M5) – not the level milestone |
 | Stufe 1 / 2 / 3 (Ausbau: Arena, feste Maps, MMO) | **stage 1 / 2 / 3** – not "tier" (building sites) and not "level" |
+| – | **definition files** – `data/forms.json`, `skills.json`, `elements.json`, `weapons.json`: what exists, with stable IDs |
+| – | **latency step** – one setting of the simulated round-trip latency (`net_simulation.latency_steps_ms`) |
+| – | **training dummy** – passive character in the arena to lock on to (M1; not the AI opponent) |
+| – | **scripted live run** – host plus client window driven by automated input, checked from logs and screenshots |
