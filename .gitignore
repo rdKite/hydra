@@ -13,8 +13,8 @@ DerivedDataCache/
 *.sdf
 Build/Windows/FileOpenOrder/
 
-# Copied from data/values.json at build time (the dev checkout reads data/ directly)
-Config/Hydra/values.json
+# Copied from data/*.json at build time (the dev checkout reads data/ directly)
+Config/Hydra/
 
 # Blender
 *.blend1
