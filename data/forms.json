@@ -1,0 +1,21 @@
+{
+  "_note": "Forms (what a player can be). IDs are stable (lower snake_case). loadout: weapons.json IDs; skills: skills.json IDs. Numbers live in values.json.",
+  "forms": [
+    {
+      "id": "humanoid",
+      "name": "Humanoid",
+      "line": "humanoid",
+      "starting_form": true,
+      "loadout": ["longsword", "round_shield"],
+      "skills": ["sword_fighting", "shield_fighting", "dodge"]
+    },
+    {
+      "id": "slime",
+      "name": "Slime",
+      "line": "slime",
+      "starting_form": true,
+      "loadout": [],
+      "skills": ["dodge"]
+    }
+  ]
+}

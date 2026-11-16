@@ -1,0 +1,11 @@
+{
+  "_note": "Elements. IDs are stable (lower snake_case) and never change once used. Numbers live in values.json.",
+  "elements": [
+    {
+      "id": "fire",
+      "name": "Fire",
+      "debuff": "burning",
+      "element_skill": "fire_magic"
+    }
+  ]
+}

@@ -1,0 +1,9 @@
+{
+  "_note": "Skills (grow by use). kind: weapon_family, movement or element. IDs are stable (lower snake_case). Numbers live in values.json.",
+  "skills": [
+    { "id": "sword_fighting", "name": "Sword fighting", "kind": "weapon_family" },
+    { "id": "shield_fighting", "name": "Shield fighting", "kind": "weapon_family" },
+    { "id": "dodge", "name": "Dodge", "kind": "movement" },
+    { "id": "fire_magic", "name": "Fire magic", "kind": "element" }
+  ]
+}

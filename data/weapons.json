@@ -1,0 +1,23 @@
+{
+  "_note": "Weapons and shields. IDs are stable (lower snake_case). Damage types: slash, pierce, blunt (empty = none). Numbers live in values.json.",
+  "weapons": [
+    {
+      "id": "longsword",
+      "name": "Longsword",
+      "family": "sword",
+      "skill": "sword_fighting",
+      "light_damage_type": "slash",
+      "heavy_damage_type": "pierce",
+      "blocks": false
+    },
+    {
+      "id": "round_shield",
+      "name": "Round shield",
+      "family": "shield",
+      "skill": "shield_fighting",
+      "light_damage_type": "",
+      "heavy_damage_type": "",
+      "blocks": true
+    }
+  ]
+}
