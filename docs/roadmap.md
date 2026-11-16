@@ -30,16 +30,16 @@ pure logic).
 
 ### M2 – Combat core, humanoid (1–2 weeks)
 
-- [ ] Longsword and shield; one button per hand; light and heavy attack; chains; interrupt
+- [x] Longsword and shield; one button per hand; light and heavy attack; chains; interrupt
       by weight; weight costs stamina.
-- [ ] Directional block (arc per shield), dodge as pure movement without invulnerability,
+- [x] Directional block (arc per shield), dodge as pure movement without invulnerability,
       rebound on the attacker, clear telegraphs (long wind-ups for heavy attacks).
-- [ ] Turn rate from weight ÷ strength (with floor and cap; slower while blocking and
+- [x] Turn rate from weight ÷ strength (with floor and cap; slower while blocking and
       attacking).
-- [ ] Weak points (back) instead of random crits.
-- [ ] **Hit detection with lag compensation** (rewind for melee hits and the block arc) –
+- [x] Weak points (back) instead of random crits.
+- [x] **Hit detection with lag compensation** (rewind for melee hits and the block arc) –
       built early and tested with simulated latency.
-- [ ] Simple AI opponent for practice (same rules as players).
+- [x] Simple AI opponent for practice (same rules as players).
 
 ### M3 – Slime and magic (about 1 week)
 

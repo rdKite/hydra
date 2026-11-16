@@ -302,3 +302,13 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   values, Phase 1 design, findings from the tech test.
 - Phase 1: only the slime casts spells. Fire enemies in the waves as the path to the fire
   imprint. Level caps slime 30 and elemental slime 50 confirmed.
+- **All gameplay numbers stay in `data/values.json`**, also the numbers of one form, weapon or
+  shield: they are sections keyed by ID (`forms`, `weapons`, `shields`). `forms.json` and
+  `weapons.json` keep identity and relations only. (Decided first, the same day, to put these
+  numbers into `forms.json` / `weapons.json`; changed back before it shipped – one file is
+  easier to tune.)
+- **Aim assist respects the turn rate:** it gives the character a facing to turn towards
+  during an attack, at its turn rate, instead of snapping it (the tech-test behaviour).
+- Frame cap of 120 fps as the default (two game windows on one machine otherwise starve the
+  one in the background).
+- The M1 training dummy is replaced by the M2 AI opponent, which has a passive mode.

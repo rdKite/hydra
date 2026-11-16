@@ -39,11 +39,22 @@ Without the script, from any shell (after a build):
 "%UE_ROOT%\Engine\Binaries\Win64\UnrealEditor.exe" "C:\code\hydra\Hydra.uproject" 127.0.0.1 -game -windowed -ResX=1280 -ResY=720
 ```
 
-Controls: WASD move, mouse look, Left Alt walk, Q or middle mouse lock-on, F5 reload
-`data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console
-(`Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`,
-`HydraSpendStamina 40`, `HydraAimAssist`, `HydraStats`). Gamepad: sticks, right stick click
-for lock-on.
+Controls (one button per hand):
+
+| | Mouse/keyboard | Gamepad |
+|---|---|---|
+| Move / look | WASD / mouse | left / right stick |
+| Weapon hand: press = light attack, hold = heavy attack | left mouse | right shoulder |
+| Shield hand: hold = directional block | right mouse | left shoulder |
+| Dodge | Space | B / circle |
+| Lock-on | Q or middle mouse | right stick click |
+| Walk | Left Alt | – |
+
+F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console:
+`Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`
+(AI opponent passive / active, on the host), `Hydra.LagCompensation [0|1]`, `HydraStats`,
+`HydraResetAll`, `HydraTeleport x y yaw`. The blade shows the telegraph: yellow in the
+wind-up, towards red while a heavy attack charges.
 
 ## Where things are
 
@@ -55,10 +66,11 @@ for lock-on.
 - [`GLOSSARY.md`](GLOSSARY.md) – English names for all game terms.
 - [`data/values.json`](data/values.json) – all gameplay numbers.
 - [`data/`](data) `forms.json`, `skills.json`, `elements.json`, `weapons.json` – what exists
-  in the game, with stable IDs (no numbers).
+  in the game, with stable IDs (no numbers; those are in `values.json`, per ID).
 - [`Source/Hydra/`](Source/Hydra) – the C++ game module: `Data/` (values and definitions),
-  `Abilities/` (GAS helper layer, stamina), `Character/`, `Core/` (game mode, network
-  emulation, controller, HUD, dev tools), `Arena/`, `Tests/`.
+  `Abilities/` (GAS helper layer, stamina and health, attack / block / dodge),
+  `Character/` (combat rules, hit resolution, lag compensation), `AI/` (practice opponent),
+  `Core/` (game mode, network emulation, controller, HUD, dev tools), `Arena/`, `Tests/`.
 - [`Scripts/`](Scripts) – build, test, map and run scripts.
 - [`docs/tech/`](docs/tech) – tech-test findings, Blender pipeline.
 - [`docs/dev-log.md`](docs/dev-log.md) – sessions, interventions, assumptions.

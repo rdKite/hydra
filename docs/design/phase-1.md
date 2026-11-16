@@ -75,8 +75,11 @@ These rules shape implementation decisions everywhere.
   evolution. Clients predict only what the engine predicts well (movement, ability
   activation).
 - **Data-driven.** Forms, skills, elements, weapons and all numbers are data files with
-  stable IDs (`values.json` and similar). They are reloadable at runtime without
-  recompiling. This is the basis for balancing and later mods.
+  stable IDs. They are reloadable at runtime without recompiling. This is the basis for
+  balancing and later mods. **All numbers are in `data/values.json`** – general rules as
+  sections, the numbers of one form, weapon or shield in the sections `forms`, `weapons`
+  and `shields`, keyed by ID (decision 2026-11-16). `forms.json`, `skills.json`,
+  `elements.json` and `weapons.json` say what exists and how it relates.
 
 ## 4. Resources
 
@@ -143,7 +146,9 @@ Perception is not used in Phase 1 (stealth is out of scope).
 - Third-person camera behind or over the shoulder. Size differences (slime vs. humanoid)
   and weak points at the back need real positioning.
 - **Soft aim assist** plus optional **lock-on**. Lock-on **turns only the camera**, never
-  the character faster. Turn rate always applies.
+  the character faster. Turn rate always applies – also to aim assist: at the start of an
+  attack it gives the character a facing part of the way towards a target in front, and the
+  character turns there at its turn rate (decision 2026-11-16).
 - Controller and mouse/keyboard.
 
 ### Attacks: one button per hand
@@ -558,3 +563,31 @@ Needed by Phase 1, not set in the notes – all TBD (tune in playtests):
 - element-body damage of the fire elemental slime;
 - XP curves, imprint thresholds, instinct size, start levels;
 - wave composition, AI reaction time and error rate.
+
+## 23. Rules as built in M2 (starting formulas)
+
+The sections above leave several formulas open ("TBD"). M2 needed them, so these are the
+formulas in the game now. They are **assumptions to be confirmed or changed in playtests**;
+all numbers are in `data/values.json` (see `data/CHANGELOG.md` v2). "Weight ratio" = weight
+÷ strength; weight = body plus load.
+
+| Rule | Formula (values.json section) |
+|---|---|
+| Unit | body weight, weapon weight and strength share one unit; at weight ratio 1 the rules below apply unchanged |
+| Turn rate | `base ÷ ratio^exponent`, capped; × `blocking_factor` while blocking, × `attacking_factor` while an attack binds; never below the floor (`turn_rate`) |
+| Attack cost | `light/heavy_stamina_per_weight_ratio × weapon weight ÷ strength` (`attack`); skill factor comes with M4 |
+| Dodge cost | `dodge.stamina_cost × weight ratio` of the character |
+| Heavy attack | every attack starts as a light one and pays the light cost. If the button is still held when the light wind-up is over and the extra stamina is there, it becomes a heavy attack (pays the difference), strikes on release – not before `min_windup_ms` – or at `max_charge_ms`; damage grows linearly to × `full_charge_damage_factor` |
+| Chain | damage × (1 + `damage_bonus_per_hit` × hits so far, capped at `max_bonus`); ends `reset_after_ms` after the last hit or when the attacker is interrupted (`chain`). Blocked hits get the multiplier but do not advance the chain |
+| Interrupt | a hit cancels the target's attack while it binds (wind-up, charge, strike) if damage ≥ `damage_threshold_per_weight × (target weight + attacking_weapon_weight_factor × its weapon weight)` (`interrupt`). No stun |
+| Block cost | `stamina_cost_per_hit × r × (heavy_attack_factor for heavy attacks)`, r = attacking weapon weight ÷ shield weight, limited to `weight_ratio_min … max` (`block`) |
+| Rebound | attacker loses `rebound_attacker_stamina_ratio × its attack cost ÷ r` |
+| Block break | if the blocker cannot pay the block cost: its stamina goes to 0, the block ends, the hit lands in full |
+| Weak point | attacker inside `back_half_arc_deg` around the target's back: damage × `1 + (damage_multiplier − 1) × reference_weapon_weight_ratio ÷ (weapon weight ÷ strength)`, capped at `max_damage_multiplier` (`weak_point`) |
+| Hit area | target's body (capsule radius) reaches into `reach_m` and its centre is inside `half_arc_deg` of the attacker's facing; checked every server tick during `hit_ms`, each target once |
+| Lag compensation | targets are checked where they were `min(attacker's ping, max_rewind_ms)` ago: position (hit area), facing and block state (block arc, weak point). The attacker itself is taken at the server's present |
+| Bind | from the press to the end of the strike: no dodge, no block, slow turning, movement × `attack.move_speed_ratio`; in the recovery a dodge may cancel |
+| Dodge | a step of `distance_m` over `duration_ms` in the input direction (backwards without input), then `recovery_ms` without actions; no invulnerability |
+
+Not built in M2 (not on the roadmap list): **feints**, block with the weapon, stamina cost for
+running, hit stop as more than a short freeze of the pose.

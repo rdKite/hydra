@@ -11,6 +11,137 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-16 – M2 Combat core, humanoid (agent session, start 15:50)
+
+Answers of the human to the M1 questions: per-form and per-weapon numbers first "into
+`forms.json` / `weapons.json`", then during the session **"all values into `values.json`
+after all"** (done that way: sections `forms`, `weapons`, `shields` keyed by ID); aim assist
+must respect the turn rate; 120 fps cap is fine; the dummy stays until the AI opponent
+replaces it. `UE_ROOT` is still not set on this machine (passed per command again).
+
+**Data (values v2).** `FHydraValues` got maps keyed by ID; the key checks now also walk into
+those sections; new check `Hydra.Data.NumbersForEveryId` (every form, weapon and shield has
+numbers, no numbers for unknown IDs). `HydraCombatMath::BuildStats` turns a form into
+`FHydraCombatStats` (weight = body plus load, weight ratio, costs, turn rate). Details of
+every number: `data/CHANGELOG.md` v2. Formulas: `docs/design/phase-1.md` §23.
+
+**Item 1 – longsword and shield, one button per hand, light and heavy, chains, interrupt,
+weight costs stamina.** `UHydraGameplayAbility` (base: locally predicted, one instance per
+character, timers) and `UHydraGA_Attack`: every attack starts with the light wind-up; still
+held when it is over → heavy attack (charge, strikes on release, not before the minimum
+wind-up, or at full charge). Hits are resolved in `HydraCharacterCombat.cpp`. Health is a
+new attribute; death and respawn after `respawn_delay_ms` at the spawn point.
+Verified live: three light hits 20 / 22 / 24 with chain 1-2-3, chain gone after 2 s, heavy
+released early = 40 at 400 ms, full charge = 60 at 1200 ms, attack costs 25 / 40, a light
+hit (20) does not interrupt a charging humanoid (threshold 24.45) and its attack lands, a
+heavy hit (40) does and the attack never lands; AI defeated and back after 3.0 s.
+
+**Item 2 – directional block, dodge, rebound, telegraphs.** `UHydraGA_Block` (hold; no
+regeneration, slower movement), `UHydraGA_Dodge` (predicted root-motion step, then
+recovery; nothing else – no invulnerability). Verified live: hit from the front into the
+block 6 damage instead of 20, blocker pays 15 (light) and 24 (heavy), attacker rebound 6,
+no regeneration while blocking, hit from behind ignores the block, block break at 5
+stamina (hit lands in full, stamina 0); the AI attacks, the host dodges 3 m back and the
+attack is a miss while an undodged one hits.
+
+- Telegraphs with the placeholder body: sword and shield from primitives, posed by the
+  action (wind-up cocked back, heavy charge pulled back, strike, block with the shield in
+  front); the blade is yellow in the wind-up and turns red while a heavy attack charges;
+  short white flash on a hit, blue on a block. The action is replicated
+  (`FHydraActionState`); the owning client shows its own predicted actions at once.
+- The camera now sits higher over the right shoulder: with the M1 camera the own body hid
+  an opponent at sword distance.
+
+**Item 3 – turn rate.** `UHydraMovementComponent` computes the rate every tick from weight
+ratio, block and attack state (tags) inside floor and cap, and every turn goes through it:
+movement direction, lock-on, and aim assist (a facing goal during the attack). Verified
+live with the turn rate lowered by a reload: lock-on turn 63°/s free, 31°/s while blocking;
+aim assist reaches only what the attack turn rate allows (11° of the 14° it wanted).
+Unit test: slime vs. humanoid with shield differ clearly (720 vs. 565°/s).
+
+**Item 4 – weak points.** Back arc, fixed multiplier, scaled by weapon weight ÷ strength.
+Verified live: light hit on the back 30 instead of 20.
+
+**Item 5 – hit detection with lag compensation.** Geometric test on the server (reach to
+the body, arc), every tick during the strike. `FHydraPoseHistory` per character (position,
+facing, block state; 0.5 s); the targets are rewound by the attacker's ping (capped by
+`lag_compensation.max_rewind_ms`). Verified live at latency step 150 ms (measured ping
+170 ms), both from one run:
+- position: the host runs away from the client; the client's attack is timed by what the
+  client sees. Server: rewound by 169 ms the target is 238 cm away → hit; at the server's
+  present it was at 322 cm, outside the reach of 255 cm.
+- block arc: the host raises its block 170 ms after it sees the client's attack start. On
+  the server the block is up when the hit lands, but not at the moment the attacker saw →
+  the hit is not blocked.
+- `Hydra.LagCompensation 0` switches it off for comparison.
+
+**Item 6 – AI opponent.** `AHydraAIController` plays an ordinary character through the same
+inputs as a player (attack button, block button, dodge): walks up, keeps facing the player,
+attacks light or heavy, reacts to attacks it sees after its reaction time with block or
+dodge or not at all (error rate). Passive mode (`Hydra.AI 0`, `-HydraAIPassive`) for
+scripted runs and quiet testing. Verified live: switched to active it walks 6 m to the
+player, faces it, attacks and pays stamina; in one run it defeated the standing host and
+went for the other player.
+
+**Verification.** `Scripts/run_tests.sh` 16/16; `Scripts/run_live.sh` 144/144 (about 70 s;
+the checker works the expected numbers out from `values.json` by itself). Fresh clone of
+`main`: see the end of this entry.
+
+**Assumptions (to confirm in playtests or by decision).**
+- Units: weights and strength share a unit; ratio 1 = rules unchanged. All new numbers are
+  guesses (`data/CHANGELOG.md` v2).
+- Heavy attack: starts as a light one; the light cost is paid at the press, the difference
+  when it turns heavy. Light or heavy is decided on the server by when the release arrives
+  there; right at the 250 ms boundary client and server can disagree for one attack (the
+  server wins).
+- Charge: damage grows linearly to ×1.5 at full charge; the cost does not grow.
+- Chain: blocked hits get the chain multiplier but do not advance the chain; being
+  interrupted ends your chain; being hit otherwise does not.
+- Interrupt works while the target's attack binds (wind-up, charge, strike), not in its
+  recovery.
+- Block cost and rebound scale with attacking weapon weight ÷ shield weight. Strength of
+  the blocker does not lower the block cost yet (the design mentions it).
+- Lag compensation rewinds by the measured round trip (no extra term for interpolation);
+  the block state counts as the attacker saw it, which favours the attacker by design.
+- Aim assist: the facing goal is fixed at the start of the attack and replaces steering
+  by movement input for that attack; nothing while locked on.
+- Movement while an attack binds: 30 % speed (`attack.move_speed_ratio`).
+- AI: no navigation mesh, walks straight at the target; targets players only.
+- Hit stop is cosmetic (pose freeze), the timeline of the attack is not stretched.
+
+**Not built (not on the M2 list, noted):** feints (cancel an attack with the other hand's
+button), block with the weapon, stamina cost for running or sprinting, real sound, hit
+react animation. `block.weapon_half_arc_deg` is in `values.json` but unused.
+
+**Problems and workarounds.**
+- The first screenshot of a process stalls it for about 350 ms and delayed a running
+  attack. The live run now takes a warm-up shot at 0.3 s and only shoots in quiet moments.
+- Lock-on right after a scripted camera turn in the same frame found no target (the camera
+  view is one frame old). The live run leaves 0.3 s between the two.
+- The auto-attack used for the lag-compensation check under-estimated the distance while
+  the target was still accelerating; start distance and trigger were chosen with margin.
+- Shell: here-documents with apostrophes fail in this environment; edit scripts are written
+  as files first.
+
+**Interventions:** none.
+
+**Ideas noted, not built:** Mixamo assets from `C:\code\tmp\engine-test` (X Bot, Y Bot,
+dodge, great sword pack) as an interim look – offered by the human; not taken over in M2
+because it needs its own animation code that M3 (Blender pipeline) replaces. Stats overlay
+for playtests. A second weapon to see the weight rules differ.
+
+**To decide before M3 (human):**
+1. **Feints** are in the design (§7, §8) but on no roadmap milestone. Add them to M2 as a
+   follow-up, or to M4 with the smarter AI?
+2. **Mixamo interim look:** take the Mixamo character and animations for M2–M4 playtests,
+   or stay with the placeholder until our own models exist (M3)?
+3. **Block and the attacker's view:** a block counts only if the attacker could see it
+   (lag compensation). At 150 ms that makes a late block fail. Keep, or give the defender
+   the benefit?
+4. Starting numbers that shape the feel most and are pure guesses: interrupt threshold
+   (a single light hit never interrupts a humanoid), block cost 15 / rebound 6, AI reaction
+   300 ms and error rate 25 %.
+
 ### 2026-11-16 – M1 Foundation (agent session, start 14:40)
 
 **Environment check.** Engine 5.8.4 (launcher build) at `D:\dev\Epic Games\UE_5.8`,

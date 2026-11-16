@@ -169,5 +169,9 @@ crafting plans, because that is Unreal's visual scripting).
 | Stufe 1 / 2 / 3 (Ausbau: Arena, feste Maps, MMO) | **stage 1 / 2 / 3** – not "tier" (building sites) and not "level" |
 | – | **definition files** – `data/forms.json`, `skills.json`, `elements.json`, `weapons.json`: what exists, with stable IDs |
 | – | **latency step** – one setting of the simulated round-trip latency (`net_simulation.latency_steps_ms`) |
-| – | **training dummy** – passive character in the arena to lock on to (M1; not the AI opponent) |
+| – | **AI opponent** – the simple practice enemy of M2; **passive mode** = it only follows dev commands (stand-in for a training dummy) |
+| – | **weight ratio** – weight ÷ strength (weight = body plus load); drives turn rate and costs |
+| – | **strike** – the hit window of an attack, between wind-up and recovery |
+| – | **an attack binds** – from the press to the end of the strike it cannot be dodged out of or blocked from (German: "Angriffe binden") |
+| Blockbruch | **block break** – a block that fails because the stamina is empty |
 | – | **scripted live run** – host plus client window driven by automated input, checked from logs and screenshots |
