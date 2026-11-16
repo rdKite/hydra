@@ -224,6 +224,13 @@ def main(root):
     c.check("the charge is visible to the other player (telegraph)", (client.stats(11, H) or {}).get("action") == "HeavyCharge", (client.stats(11, H) or {}).get("action"))
     c.check("the attacker shows it too", (host.stats(11, H) or {}).get("action") == "HeavyCharge")
 
+    print("--- jump")
+    rise = None if None in (val(host, 12.75, H, "z"), val(host, 11, H, "z")) else val(host, 12.75, H, "z") - val(host, 11, H, "z")
+    jump_h = v["movement"]["jump_height_m"] * 100
+    c.between("0.35 s after the jump button the character is in the air, below movement.jump_height_m", rise, jump_h * 0.5, jump_h + 3)
+    seen = None if None in (val(client, 12.75, H, "z"), val(client, 11, H, "z")) else val(client, 12.75, H, "z") - val(client, 11, H, "z")
+    c.between("the client sees the host in the air", seen, 15, jump_h + 3)
+
     print("--- weak point (back), death and respawn")
     wk = one("light attack on the back hits", host.find("HydraHit", 13.6, 14.4, attacker=H, target=AI))
     c.check("it is a weak-point hit", wk.get("weak") == 1.0)

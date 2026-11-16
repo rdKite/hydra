@@ -321,3 +321,8 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   M3 tests it on slime and wolf pup; M5 decides the look and shows how much texture work it
   needs; AI image generation (e.g. ComfyUI, with style references painted by the human) only
   if hand-painted detail turns out to be needed.
+- **Jump on Space, dodge on Left Alt** (walk moves to Left Ctrl). Gamepad: jump on A / cross.
+- **Feints are out of the plan for now** (they were in the design, on no milestone).
+- Mixamo interim look: not needed, wait for our own models.
+- A block counts only if the attacker could see it (lag compensation of the block state):
+  kept as built.

@@ -67,6 +67,8 @@ public:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void Tick(float DeltaSeconds) override;
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
+	/** No jump while an attack binds, while blocking, during a dodge or when defeated. */
+	virtual bool CanJumpInternal_Implementation() const override;
 
 	// IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
@@ -115,6 +117,7 @@ public:
 	void InputAttackReleased();
 	void InputBlock(bool bPressed);
 	void InputDodge();
+	void InputJump(bool bPressed);
 
 	/** AI: direction for the next dodge (players dodge in their input direction). */
 	void SetDodgeDirection(const FVector& Direction) { PendingDodgeDirection = Direction; }

@@ -161,7 +161,9 @@ Each hand has one button (e.g. left and right shoulder button). It does what the
 | Shield | – (free) | directional block |
 | Spell form (bolt) | cast bolt | charge bolt |
 
-Dodge is on its own action button.
+Dodge is on its own action button (keyboard: Left Alt), jump on another (Space). A jump is
+ordinary movement: no stamina cost for now, not possible while an attack binds, while
+blocking or during a dodge.
 
 - **Light attack:** fast, little stamina, little damage.
 - **Heavy attack:** holding the button charges it; more stamina, more damage. The charge is
@@ -171,7 +173,8 @@ Dodge is on its own action button.
 
 ### Attacks bind
 
-- A started attack plays out. The only way to cancel it is a **feint** (costs stamina, §8).
+- A started attack plays out. (The **feint** – cancelling it for stamina, §8 – is out of the
+  plan for now, decision 2026-11-16.)
 - After the hit moment, the recovery can be cancelled with a dodge.
 
 ### Chains
@@ -248,8 +251,8 @@ fairly, even with different pings.
 
 - No stamina regeneration while blocking.
 - When stamina is empty, the **block breaks**: you take the hit but are not stunned.
-- **Feints:** cancelling your own attack (with the block button, i.e. the other hand's
-  button) costs stamina. It can bait the opponent into a block (no regeneration) or a dodge
+- **Feints** (out of the plan for now, decision 2026-11-16): cancelling your own attack (with
+  the block button, i.e. the other hand's button) costs stamina. It can bait the opponent into a block (no regeneration) or a dodge
   (costs stamina).
 
 ### Projectiles against a block
@@ -530,6 +533,7 @@ evolve once** on the way, and the metrics deliver first numbers.
 
 ## 21. Out of scope for Phase 1
 
+- **Feints** (taken out of the plan on 2026-11-16; to be revisited).
 - Online play over real servers; source-built engine; dedicated servers.
 - **Reserve** (long-term bar).
 - Hand wheels, magic wheel and **augments** (bound mana); switching weapons or grip in combat.
@@ -589,5 +593,5 @@ all numbers are in `data/values.json` (see `data/CHANGELOG.md` v2). "Weight rati
 | Bind | from the press to the end of the strike: no dodge, no block, slow turning, movement × `attack.move_speed_ratio`; in the recovery a dodge may cancel |
 | Dodge | a step of `distance_m` over `duration_ms` in the input direction (backwards without input), then `recovery_ms` without actions; no invulnerability |
 
-Not built in M2 (not on the roadmap list): **feints**, block with the weapon, stamina cost for
+Not built in M2 (not on the roadmap list): feints (out of the plan, see §21), block with the weapon, stamina cost for
 running, hit stop as more than a short freeze of the pose.

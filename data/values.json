@@ -1,6 +1,6 @@
 {
   "_note": "All gameplay numbers for hydra. Times in milliseconds, rates per second, distances in metres, angles in degrees (arcs as half angles). 'Weight ratio' always means weight / strength. The sections forms, weapons and shields hold the numbers per ID from forms.json and weapons.json; body_weight, weapon weight and strength share one unit: at weight / strength = 1 the general rules apply unchanged. Starting values - tune in playtests. Every change: bump version and add a line to data/CHANGELOG.md.",
-  "version": 2,
+  "version": 3,
   "forms": {
     "humanoid": {
       "body_weight": 70,
@@ -55,7 +55,8 @@
   "movement": {
     "walk_speed_m_s": 2.0,
     "run_speed_m_s": 5.0,
-    "strafe_speed_m_s": 3.0
+    "strafe_speed_m_s": 3.0,
+    "jump_height_m": 0.9
   },
   "turn_rate": {
     "base_deg_s": 540,

@@ -23,6 +23,8 @@ void UHydraMovementComponent::ApplyValues(const FHydraValues& Values, float InWe
 	TurnRate = Values.turn_rate;
 	WeightRatio = InWeightRatio;
 	MaxWalkSpeed = RunSpeedCm;
+	// Take-off speed for the wanted height: v = sqrt(2 g h).
+	JumpZVelocity = FMath::Sqrt(2.f * FMath::Abs(GetGravityZ()) * FMath::Max(0.f, Values.movement.jump_height_m * 100.f));
 	RotationRate = FRotator(0.f, GetCurrentTurnRateDegS(), 0.f);
 }
 

@@ -1,5 +1,10 @@
 # values.json changelog
 
+## v3 – 2026-11-16 (jump)
+
+- New `movement.jump_height_m` 0.9 (guess, not playtested). A jump costs no stamina for now
+  and is not possible while an attack binds, while blocking or during a dodge.
+
 ## v2 – 2026-11-16 (M2, combat core)
 
 All numbers stay in `values.json` (decision 2026-11-16). New: sections keyed by the IDs

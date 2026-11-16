@@ -384,6 +384,18 @@ void AHydraCharacter::InputDodge()
 	AbilitySystem->TryActivateAbilityByClass(UHydraGA_Dodge::StaticClass());
 }
 
+void AHydraCharacter::InputJump(bool bPressed)
+{
+	// Jumping is ordinary character movement (predicted by the engine).
+	bPressed ? Jump() : StopJumping();
+}
+
+bool AHydraCharacter::CanJumpInternal_Implementation() const
+{
+	return Super::CanJumpInternal_Implementation() && IsAlive()
+		&& !HasStateTag(HydraTags::State_AttackCommitted) && !HasStateTag(HydraTags::State_Blocking) && !HasStateTag(HydraTags::State_Dodging);
+}
+
 FVector AHydraCharacter::ConsumeDodgeDirection()
 {
 	const FVector Direction = PendingDodgeDirection;

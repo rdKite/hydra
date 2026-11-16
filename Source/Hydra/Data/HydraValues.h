@@ -90,6 +90,8 @@ struct FHydraMovementValues
 	UPROPERTY() float walk_speed_m_s = 0.f;
 	UPROPERTY() float run_speed_m_s = 0.f;
 	UPROPERTY() float strafe_speed_m_s = 0.f;
+	/** How high a jump lifts the feet. */
+	UPROPERTY() float jump_height_m = 0.f;
 };
 
 USTRUCT()

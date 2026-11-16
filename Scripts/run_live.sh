@@ -21,6 +21,7 @@
 #    2.5  H: three light attacks from the front (chain), 7.2 a fourth after the chain ended
 #    5    C: attack into the air (miss), 6 dodge, 9 block
 #    8.5  H: heavy attack released early, 10.5 heavy attack fully charged (telegraph screenshots)
+#   12.4  H: jump
 #   13.6  H: light attack on the back (weak point), 14.5 charged heavy on the back: AI dies, respawns
 #   20.5  AI blocks: H light and heavy into the block (block cost, rebound), 24 from behind,
 #   25.6  block break at empty stamina
@@ -52,7 +53,7 @@ DATA_DIR="$(cygpath -w "$LIVE/data")"
 
 H="1:HydraStats;1.5:HydraTeleport|0|440|90;2:HydraStats"
 H+=";2.5:HydraAttack|0;3.3:HydraAttack|0;4.1:HydraAttack|0;4.6:HydraStats;7:HydraStats;7.2:HydraAttack|0;8:HydraResetAll"
-H+=";8.5:HydraAttack|300;9.3:HydraStats;10:HydraResetAll;10.5:HydraAttack|3000;11:HydraStats"
+H+=";8.5:HydraAttack|300;9.3:HydraStats;10:HydraResetAll;10.5:HydraAttack|3000;11:HydraStats;12.4:HydraJump;12.75:HydraStats"
 H+=";13:HydraResetAll;13:HydraTeleport|0|760|-90;13.6:HydraAttack|0;14.5:HydraAttack|700;17:HydraStats;19.8:HydraStats"
 H+=";20:HydraResetAll;20:HydraTeleport|0|440|90;20.5:HydraAI|block|1;21:HydraStats;21.2:HydraAttack|0;22.2:HydraAttack|300;23.2:HydraStats"
 H+=";23.5:HydraTeleport|0|760|-90;24:HydraAttack|0"
@@ -70,7 +71,7 @@ H+=";56:HydraTeleport|0|440|-90;56.3:HydraBlock|1;56.8:HydraStats;57:HydraLook|9
 H+=";59:HydraResetAll;59:HydraTeleport|0|0|90;59.2:Hydra.AI|1;63:HydraStats;66.5:HydraStats"
 
 C="1:HydraStats;2:HydraStats;4.6:HydraStats;5:HydraAttack|0;5.4:HydraStats;6:HydraDodge;7:HydraStats;9:HydraBlock|1;9.5:HydraStats;10:HydraBlock|0"
-C+=";11:HydraStats;17:HydraStats;19.8:HydraStats;21:HydraStats;38.3:HydraStats"
+C+=";11:HydraStats;12.75:HydraStats;17:HydraStats;19.8:HydraStats;21:HydraStats;38.3:HydraStats"
 C+=";39.5:HydraTeleport|-900|-1000|180;41:Hydra.PacketLoss|0;43.5:HydraStats;44:HydraAutoAttack|170;46.8:HydraStats;48:HydraAttack|0;51:HydraStats;63:HydraStats"
 
 COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound "-HydraDataDir=$DATA_DIR" -HydraWaitPlayers=2 -HydraQuit=67)

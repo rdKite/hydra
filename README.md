@@ -46,9 +46,10 @@ Controls (one button per hand):
 | Move / look | WASD / mouse | left / right stick |
 | Weapon hand: press = light attack, hold = heavy attack | left mouse | right shoulder |
 | Shield hand: hold = directional block | right mouse | left shoulder |
-| Dodge | Space | B / circle |
+| Jump | Space | A / cross |
+| Dodge | Left Alt | B / circle |
 | Lock-on | Q or middle mouse | right stick click |
-| Walk | Left Alt | – |
+| Walk | Left Ctrl | – |
 
 F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console:
 `Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`

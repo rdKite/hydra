@@ -17,11 +17,12 @@ class AHydraCharacter;
  *   Action                      Mouse/keyboard        Gamepad
  *   Move                        WASD                  left stick
  *   Look                        mouse                 right stick
- *   Walk (hold)                 Left Alt              -
+ *   Jump                        Space                 A / cross
+ *   Dodge                       Left Alt              B / circle
+ *   Walk (hold)                 Left Ctrl             -
  *   Weapon hand: press = light  left mouse            right shoulder
  *                hold = heavy
  *   Shield hand: hold = block   right mouse           left shoulder
- *   Dodge                       Space                 B / circle
  *   Lock-on                     Q / middle mouse      right stick click
  *   Reload values               F5                    -
  *   Latency step                F6                    -
@@ -86,6 +87,10 @@ public:
 	UFUNCTION(Exec)
 	void HydraDodge();
 
+	/** Press the jump button. */
+	UFUNCTION(Exec)
+	void HydraJump();
+
 	/**
 	 * Arm a light attack that fires by itself so that its strike begins when this window sees
 	 * the nearest other character StrikeDistanceCm away (for the lag-compensation check: the
@@ -148,6 +153,8 @@ private:
 	void OnBlockPressed(const FInputActionValue& Value);
 	void OnBlockReleased(const FInputActionValue& Value);
 	void OnDodge(const FInputActionValue& Value);
+	void OnJumpPressed(const FInputActionValue& Value);
+	void OnJumpReleased(const FInputActionValue& Value);
 	void OnLockOn(const FInputActionValue& Value);
 	void OnReloadValues(const FInputActionValue& Value);
 	void OnLatencyStep(const FInputActionValue& Value);
@@ -165,6 +172,7 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UInputAction> AttackAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> BlockAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> DodgeAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> JumpAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> LockOnAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> ReloadValuesAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> LatencyStepAction;
