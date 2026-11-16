@@ -34,7 +34,9 @@ the human decides, and settled answers go into the design docs and `docs/decisio
   `UAnimInstance` (pattern from the tech test) until a decision says otherwise.
 - **Assets by script.** Maps, FBX imports and materials are created headlessly with Python
   commandlets in `Scripts/` (`UnrealEditor-Cmd.exe … -run=pythonscript -script=…`).
-  Models, rigs and animations come from Blender scripts (`docs/tech/blender-pipeline.md`).
+  Models, rigs and textures come from Blender scripts (`docs/tech/blender-pipeline.md`).
+  **Animations are designed by the human**; agents prepare rigs and the import path and may
+  make placeholder animations for tests.
   Any step a human has to do by hand in an editor is an **intervention** → `docs/dev-log.md`.
 - **Never hard-code gameplay values.** Every gameplay number comes from `data/values.json`,
   loaded at runtime and reloadable without recompiling (console `Hydra.ReloadValues`). Level

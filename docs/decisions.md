@@ -312,3 +312,12 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
 - Frame cap of 120 fps as the default (two game windows on one machine otherwise starve the
   one in the background).
 - The M1 training dummy is replaced by the M2 AI opponent, which has a passive mode.
+- **Animations are designed by the human**, all of them where possible (humanoids and
+  monsters). Agents build models and rigs, the export/import pipeline and the integration
+  into the game; they may make simple placeholder animations by script for tests. Mixamo
+  (character and animations) is only a placeholder until our own animations exist.
+- **Textures: procedural in Blender by Python script** – shader nodes (noise, gradients,
+  edge wear, color variation) baked to textures headlessly, scripts in the repo. Workflow:
+  M3 tests it on slime and wolf pup; M5 decides the look and shows how much texture work it
+  needs; AI image generation (e.g. ComfyUI, with style references painted by the human) only
+  if hand-painted detail turns out to be needed.

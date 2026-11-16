@@ -43,11 +43,13 @@ pure logic).
 
 ### M3 – Slime and magic (about 1 week)
 
-- [ ] Blender pipeline by script: model, rig, animations, FBX export with fixed settings
-      for Unreal (`docs/tech/blender-pipeline.md`).
-- [ ] **"Models by script" test:** build, rig, animate and export the slime agentically and
-      make it playable; the wolf pup only as a pipeline test (model, rig, a few
-      animations, not playable) – is the topology good enough for animation?
+- [ ] Blender pipeline by script: model, rig, procedural textures baked by script, FBX
+      export with fixed settings for Unreal; import path for animations made by the human
+      (`docs/tech/blender-pipeline.md`).
+- [ ] **"Models by script" test:** build, rig, texture and export the slime agentically and
+      make it playable (placeholder animations by script until the human's animations
+      exist); the wolf pup only as a pipeline test (model, rig, texture, not playable) – is
+      the topology good enough for animation?
 - [ ] Slime: slam and projectile; mana.
 - [ ] Minimal magic (slime only; the humanoid stays physical in Phase 1): fire bolt, fire
       element field with the burning debuff.
@@ -62,7 +64,10 @@ pure logic).
 
 ### M5 – Look and playtest (a few days)
 
-- [ ] **Decide the look** based on our own models (toon or not – still open).
+- [ ] **Decide the look** based on our own models (toon or not – still open), and with it how
+      much texture work is needed (procedural only, or hand-painted detail as well).
+- [ ] Decide which placeholder animations are replaced first by the human's own animations
+      (combat animations first: they carry the telegraphs).
 - [ ] Playtest: Are combat and progression fun? Is it too complicated?
 
 **Not in Phase 1:** online play over real servers and a source-built engine, reserve, hand

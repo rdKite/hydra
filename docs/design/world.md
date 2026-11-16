@@ -116,8 +116,12 @@ no longer apply, or are even reversed. This needs many players.
 ## Look
 
 - Stylized, rather drawn; no high-end graphics needed.
-- **Whether it becomes a toon look is still open.** The decision depends on the results of
-  the tech test (check item "look"; see [tech stack](../tech/tech-stack.md)).
+- **Whether it becomes a toon look is still open.** It is decided in Phase 1 (M5) with our
+  own models.
+- **Animations are designed by the human**, all of them where possible; Mixamo is only a
+  placeholder.
+- **Textures** are made procedurally in Blender by script; hand-painted detail only if the
+  look needs it (see [Blender pipeline](../tech/blender-pipeline.md)).
 
 ## Expansion in three stages
 

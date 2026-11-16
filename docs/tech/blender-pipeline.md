@@ -1,7 +1,9 @@
 # Blender pipeline (by script)
 
-Models, rigs and animations are made by agents with Blender Python scripts – no manual
-steps, repeatable. First used in M3 (slime playable, wolf pup as a pipeline test).
+Models, rigs and textures are made by agents with Blender Python scripts – no manual
+steps, repeatable. **Animations are designed by the human** (in Blender or a tool like
+Cascadeur); agents prepare the rigs, export and import them and wire them into the game, and
+may make simple placeholder animations by script for tests. Mixamo is only a placeholder. First used in M3 (slime playable, wolf pup as a pipeline test).
 
 ## Rules
 
@@ -15,6 +17,19 @@ steps, repeatable. First used in M3 (slime playable, wolf pup as a pipeline test
   proportions – saves a lot of animation work.
 - **Materials** don't transfer 1:1: textures are exported, the look is made in Unreal (still
   open, decided in M5).
+
+## Textures (procedural, by script)
+
+- Materials are built from Blender shader nodes by Python (noise, gradients, edge wear,
+  color variation, vertex colors) and **baked to textures headlessly** (PNG, Git LFS). The
+  script is the source; textures are a build product of it.
+- Good for stone, wood, earth, slime gel, skin and fur as a base. The more stylized the
+  look, the fewer textures are needed – much can come from vertex colors, gradient maps and
+  the shader in Unreal.
+- Workflow: M3 tries it on slime and wolf pup → M5 decides the look and shows how much
+  texture work it needs → only if hand-painted detail is needed, add AI image generation
+  (e.g. ComfyUI, workflows as JSON in the repo, local GPU) with style references painted by
+  the human. Check model licenses and disclose AI content on Steam if used.
 
 ## Export settings (to verify and fix in M3)
 
