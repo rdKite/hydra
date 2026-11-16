@@ -1,5 +1,6 @@
 #include "Data/HydraValuesSubsystem.h"
 
+#include "Core/HydraPlayerController.h"
 #include "Data/HydraDataLoader.h"
 #include "Engine/GameInstance.h"
 #include "Engine/World.h"
@@ -67,10 +68,31 @@ const FHydraValues& UHydraValuesSubsystem::Get(const UObject* WorldContext)
 
 void UHydraValuesSubsystem::ReloadEverywhere(UWorld* World)
 {
-	// Networked part (client asks server, server tells clients) follows with the player controller.
+	if (!World)
+	{
+		return;
+	}
+	// The server is authoritative: a client asks the server, the server reloads its own copy
+	// and tells every remote client to reload theirs.
+	if (World->GetNetMode() == NM_Client)
+	{
+		if (AHydraPlayerController* PC = Cast<AHydraPlayerController>(World->GetFirstPlayerController()))
+		{
+			PC->ServerReloadValues();
+		}
+		return;
+	}
 	if (UHydraValuesSubsystem* Subsystem = GetSubsystem(World))
 	{
 		Subsystem->Reload();
+	}
+	for (FConstPlayerControllerIterator It = World->GetPlayerControllerIterator(); It; ++It)
+	{
+		AHydraPlayerController* PC = Cast<AHydraPlayerController>(It->Get());
+		if (PC && !PC->IsLocalController())
+		{
+			PC->ClientReloadValues();
+		}
 	}
 }
 
