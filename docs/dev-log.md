@@ -84,8 +84,11 @@ player, faces it, attacks and pays stamina; in one run it defeated the standing 
 went for the other player.
 
 **Verification.** `Scripts/run_tests.sh` 16/16; `Scripts/run_live.sh` 144/144 (about 70 s;
-the checker works the expected numbers out from `values.json` by itself). Fresh clone of
-`main`: see the end of this entry.
+the checker works the expected numbers out from `values.json` by itself). A fresh clone of
+`main` builds and gives the same results (16/16, 144/144). The live run passed three times
+in a row at the end; its AI-active part is not deterministic and is checked loosely.
+M2 came as two commits (code, then scripts and docs) instead of one per item: the combat
+pieces depend on each other and would not have built separately. Session end: 16:45.
 
 **Assumptions (to confirm in playtests or by decision).**
 - Units: weights and strength share a unit; ratio 1 = rules unchanged. All new numbers are
