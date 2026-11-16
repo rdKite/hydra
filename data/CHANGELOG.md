@@ -1,5 +1,13 @@
 # values.json changelog
 
+## v6 – 2026-11-16 (answers to the M5 questions)
+
+- `imprint.progress_first_level` 30 → **100**, `imprint.progress_per_further_level` 60 →
+  **250** (guesses, decided by the human to tune in playtests): the first fire imprint
+  should take roughly one wave of real fire contact (taking about 100 fire damage, or
+  dealing about 200, or a mix), not two bolt hits; later levels clearly harder than the
+  first, as the design says.
+
 ## v5 – 2026-11-16 (M4, progression and waves)
 
 **Everything new here is a guess, not yet playtested.** The formulas are in

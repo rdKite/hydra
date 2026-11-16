@@ -335,3 +335,18 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   levels, who gets nXP, when a milestone closes, instinct size, ...). They are listed in
   `docs/dev-log.md` (session M4) and `docs/design/phase-1.md` §25 and are **not decided
   yet**.
+- Answers to the questions before M5:
+  - **Evolution in the arena:** no workaround. The weak moment right after the evolution
+    comes from the arena's test start levels; in the full game everyone starts at stage 1,
+    level 0, and the evolution makes sense again.
+  - **Level and skill strength** (1 % per level and per skill level) stays for now; to be
+    tuned after playtests.
+  - **nXP:** every player gets the full nXP of a defeated enemy.
+  - **Skill XP "only on victory" counts per enemy, not per wave:** skill XP is credited when
+    an enemy is defeated; being defeated loses only what is pending since the last enemy
+    defeat.
+  - **Imprint speed:** first level ≈ one wave of real fire contact, later levels clearly
+    harder (values v6: 100 / 250); details from playtests.
+  - **Enemy mix and difficulty:** to be judged in the M5 playtest.
+  - **The fire bolt follows the camera while it charges**, like a raised block (and later
+    drawing a bow).

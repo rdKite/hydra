@@ -455,8 +455,10 @@ skills (by use), attributes (fixed in Phase 1, §6). Phase 1 needs the following
 ### Skill XP by use
 
 - Skills level by use, not by skill points. Each skill collects its own skill XP.
-- Skill XP is credited **at the end of a fight, only on victory.** In waves: credited at the
-  end of each wave (assumption).
+- Skill XP is credited **at the end of a fight, only on victory.** In waves the fight is
+  each **single enemy** (decision 2026-11-16): skill XP earned is credited when an enemy is
+  defeated; a player who is defeated loses only what is still pending since the last enemy
+  defeat – not the whole wave.
 - Only actions against real attacks count: blocking counts on a hit inside the arc; dodging
   counts only if the attack would otherwise have hit (server checks the hit area).
 - On each **character level-up**, every skill with enough skill XP rises – **at most one
@@ -633,7 +635,7 @@ Like §23 and §24: assumptions to be confirmed or changed in playtests; numbers
 | Character level | nXP for level L → L + 1 = `xp_base + xp_per_level × L` (`progression`). Per level: maximum HP × (1 + `hp_bonus_per_level` × level), damage of weapon, body attack, bolt and element body × (1 + `damage_bonus_per_level` × level). No level above the form's `level_cap`; nXP at the cap is lost |
 | nXP | an enemy gives `nxp_base × (1 + nxp_bonus_per_enemy_level × its level)` – by its type and level only. **Every player in the arena gets it in full** (assumption; groups and sharing are out of scope) |
 | Skills of a form | from `forms.json`; plus the element skill (fire magic) once the element is awakened |
-| Skill XP | per landed, unblocked weapon or body attack (`xp_per_hit`, to the weapon's skill), per hit taken on the block (`xp_per_block`, shield skill), per dodge that avoided a hit (`xp_per_dodge`), per bolt that hit unblocked (`xp_per_bolt_hit`, to projectile and, for a fire bolt, also to fire magic). Earned XP is **pending** until the wave is cleared, then credited; a player who is defeated loses what is pending ("only on victory") |
+| Skill XP | per landed, unblocked weapon or body attack (`xp_per_hit`, to the weapon's skill), per hit taken on the block (`xp_per_block`, shield skill), per dodge that avoided a hit (`xp_per_dodge`), per bolt that hit unblocked (`xp_per_bolt_hit`, to projectile and, for a fire bolt, also to fire magic). Earned XP is **pending** until the next enemy is defeated, then credited; a player who is defeated loses only what is pending since then ("only on victory", per enemy – decision 2026-11-16) |
 | Dodge counts | only against a real attack: during the strike the server finds the target outside the hit area, the target started a dodge within the last `dodge.duration_ms + recovery_ms`, and the place where the step began was inside the hit area. Once per attack. (Melee only; bolts do not count yet) |
 | Skill levels | at each character level-up every skill whose credited XP reaches `xp_base + xp_per_level × skill level` rises by one (at most one per level-up and skill, never above the character level); the rest of the XP waits. The last enemy of a wave credits first and gives its nXP second, so that level-up can already raise skills |
 | What a skill level does | × (1 + `damage_bonus_per_level` × level) damage and × max(`min_cost_factor`, 1 − `cost_reduction_per_level` × level) cost for the skill's actions (weapon skill: attacks; shield skill: cost of a blocked hit; dodge: the step; projectile: the bolt's damage and mana). Also: block arc + `block_arc_deg_per_level` per level (shield), dodge step × (1 + `dodge_distance_bonus_per_level` × level), fire field radius × (1 + `field_radius_bonus_per_level` × fire magic level) |

@@ -1,6 +1,6 @@
 {
   "_note": "All gameplay numbers for hydra. Times in milliseconds, rates per second, distances in metres, angles in degrees (arcs as half angles). 'Weight ratio' always means weight / strength. The sections forms, weapons and shields hold the numbers per ID from forms.json and weapons.json; body_weight, weapon weight and strength share one unit: at weight / strength = 1 the general rules apply unchanged. Starting values - tune in playtests. Every change: bump version and add a line to data/CHANGELOG.md.",
-  "version": 5,
+  "version": 6,
   "forms": {
     "humanoid": {
       "body_weight": 70,
@@ -279,8 +279,8 @@
     "max_level": 5,
     "progress_per_damage_taken": 1.0,
     "progress_per_damage_dealt": 0.5,
-    "progress_first_level": 30,
-    "progress_per_further_level": 60,
+    "progress_first_level": 100,
+    "progress_per_further_level": 250,
     "resistance_per_level": 0.1,
     "damage_bonus_per_level": 0.1
   },

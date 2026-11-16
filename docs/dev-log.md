@@ -11,6 +11,21 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-16 – answers to the M5 questions (human, recorded in the design session)
+
+To do at the start of the next agent session, before M5 work:
+1. **Skill XP per enemy:** credit pending skill XP when an enemy is defeated (not when the
+   wave is cleared); on defeat only the XP pending since the last enemy defeat is lost.
+   Rule: `docs/design/phase-1.md` (skill XP).
+2. **Fire bolt charge follows the camera** at the attacking turn rate, like a raised block.
+3. **Imprint thresholds** changed in `data/values.json` v6 (100 / 250) – check the waves
+   live run still passes and adjust its expectations if it hard-codes the old numbers.
+4. No change for: evolution in the arena (no workaround), 1 % per level/skill (stays), full
+   nXP for everyone (already so).
+5. Keys E (evolve) and R (imprint) at a milestone: explained to the human; open whether
+   they stay – see question 8 in the M4 entry.
+
+
 ### 2026-11-16 – precise movement, then M4 (agent session, start 18:55)
 
 **Before M4 – feedback from the human's first hands-on test.** The character always turned
