@@ -9,6 +9,12 @@ UHydraGE_StaminaChange::UHydraGE_StaminaChange()
 	AddAmountTo(UHydraAttributeSet::GetStaminaAttribute());
 }
 
+UHydraGE_Damage::UHydraGE_Damage()
+{
+	MakeInstant();
+	AddAmountTo(UHydraAttributeSet::GetIncomingDamageAttribute());
+}
+
 UHydraGE_StaminaRegen::UHydraGE_StaminaRegen()
 {
 	MakeInfinite(TickS);

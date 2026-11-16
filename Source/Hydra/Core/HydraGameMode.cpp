@@ -1,5 +1,6 @@
 #include "Core/HydraGameMode.h"
 
+#include "AI/HydraAIController.h"
 #include "Arena/HydraArena.h"
 #include "Character/HydraCharacter.h"
 #include "Core/HydraGameState.h"
@@ -46,12 +47,16 @@ void AHydraGameMode::StartPlay()
 	if (const AHydraArena* Arena = FindArena())
 	{
 		const FTransform Spot = Arena->GetDummySpawnTransform();
-		TrainingDummy = GetWorld()->SpawnActorDeferred<AHydraCharacter>(AHydraCharacter::StaticClass(), Spot, nullptr, nullptr,
+		AIOpponent = GetWorld()->SpawnActorDeferred<AHydraCharacter>(AHydraCharacter::StaticClass(), Spot, nullptr, nullptr,
 			ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn);
-		if (TrainingDummy)
+		if (AIOpponent)
 		{
-			TrainingDummy->SetTrainingDummy();
-			UGameplayStatics::FinishSpawningActor(TrainingDummy, Spot);
+			AIOpponent->SetAIControlled();
+			UGameplayStatics::FinishSpawningActor(AIOpponent, Spot);
+			if (AHydraAIController* AI = GetWorld()->SpawnActor<AHydraAIController>())
+			{
+				AI->Possess(AIOpponent);
+			}
 		}
 	}
 	else

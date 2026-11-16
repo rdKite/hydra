@@ -12,6 +12,7 @@
 namespace HydraHUDStyle
 {
 	const FLinearColor Back(0.f, 0.f, 0.f, 0.55f);
+	const FLinearColor Health(0.8f, 0.12f, 0.1f);
 	const FLinearColor Stamina(0.2f, 0.75f, 0.25f);
 	const FLinearColor LockOn(1.f, 0.85f, 0.2f);
 	constexpr float OverheadRangeCm = 2500.f;
@@ -74,7 +75,7 @@ void AHydraHUD::DrawNetInfo()
 	DrawText(FString::Printf(TEXT("%s | latency step %d ms (F6) | measured ping %s | packet loss %.0f%% (F8) | values v%d (F5 reloads) | %.0f fps"),
 		GetNetMode() == NM_Client ? TEXT("client") : TEXT("host"), GS->GetLatencyStepMs(), *Rtt, GS->GetPacketLossRatio() * 100.f,
 		Values ? Values->GetValues().version : 0, SmoothedFps), FLinearColor::White, 20.f, 16.f, Font);
-	DrawText(TEXT("WASD move | mouse look | Left Alt walk | Q lock-on | ~ console"), FLinearColor(1.f, 1.f, 1.f, 0.7f), 20.f, 34.f, Font);
+	DrawText(TEXT("WASD move | mouse look | LMB attack (hold = heavy) | RMB block | Space dodge | Q lock-on | Left Alt walk | ~ console"), FLinearColor(1.f, 1.f, 1.f, 0.7f), 20.f, 34.f, Font);
 }
 
 void AHydraHUD::DrawOwnBars()
@@ -85,11 +86,22 @@ void AHydraHUD::DrawOwnBars()
 		return;
 	}
 	const float X = 40.f;
-	const float Y = Canvas->ClipY - 60.f;
+	const float Y = Canvas->ClipY - 80.f;
+	const float MaxHp = FMath::Max(1.f, Self->GetMaxHealth());
 	const float Max = FMath::Max(1.f, Self->GetMaxStamina());
 	// Bar length grows with the maximum, so a bigger bar is visibly bigger.
-	DrawBar(X, Y, Max * HydraHUDStyle::PixelsPerStaminaPoint, 12.f, Self->GetStamina() / Max, HydraHUDStyle::Stamina);
-	DrawText(FString::Printf(TEXT("Stamina %.0f / %.0f"), Self->GetStamina(), Max), FLinearColor::White, X, Y - 20.f, GEngine->GetSmallFont());
+	DrawBar(X, Y, MaxHp * HydraHUDStyle::PixelsPerStaminaPoint, 14.f, Self->GetHealth() / MaxHp, HydraHUDStyle::Health);
+	DrawBar(X, Y + 22.f, Max * HydraHUDStyle::PixelsPerStaminaPoint, 10.f, Self->GetStamina() / Max, HydraHUDStyle::Stamina);
+	FString Text = FString::Printf(TEXT("HP %.0f / %.0f   Stamina %.0f / %.0f"), Self->GetHealth(), MaxHp, Self->GetStamina(), Max);
+	if (Self->GetChainCount() > 0)
+	{
+		Text += FString::Printf(TEXT("   chain x%d"), Self->GetChainCount());
+	}
+	if (!Self->IsAlive())
+	{
+		Text += TEXT("   DEFEATED - respawning");
+	}
+	DrawText(Text, FLinearColor::White, X, Y - 20.f, GEngine->GetSmallFont());
 }
 
 void AHydraHUD::DrawOverheadBars()
@@ -102,7 +114,7 @@ void AHydraHUD::DrawOverheadBars()
 	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
 	{
 		const AHydraCharacter* C = *It;
-		if (C == SelfPawn || FVector::Dist(C->GetActorLocation(), SelfPawn->GetActorLocation()) > HydraHUDStyle::OverheadRangeCm)
+		if (C == SelfPawn || !C->IsAlive() || FVector::Dist(C->GetActorLocation(), SelfPawn->GetActorLocation()) > HydraHUDStyle::OverheadRangeCm)
 		{
 			continue;
 		}
@@ -112,7 +124,8 @@ void AHydraHUD::DrawOverheadBars()
 			continue;
 		}
 		const float W = 60.f;
-		DrawBar(Screen.X - W * 0.5f, Screen.Y, W, 4.f, C->GetStamina() / FMath::Max(1.f, C->GetMaxStamina()), HydraHUDStyle::Stamina);
+		DrawBar(Screen.X - W * 0.5f, Screen.Y, W, 5.f, C->GetHealth() / FMath::Max(1.f, C->GetMaxHealth()), HydraHUDStyle::Health);
+		DrawBar(Screen.X - W * 0.5f, Screen.Y + 7.f, W, 3.f, C->GetStamina() / FMath::Max(1.f, C->GetMaxStamina()), HydraHUDStyle::Stamina);
 	}
 }
 

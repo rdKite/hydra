@@ -1,17 +1,23 @@
+// AHydraCharacter: setup, state, input and looks. Combat on the server: HydraCharacterCombat.cpp.
+
 #include "Character/HydraCharacter.h"
 
 #include "Abilities/HydraAttributeSet.h"
+#include "Abilities/HydraCombatAbilities.h"
 #include "Abilities/HydraGas.h"
+#include "Abilities/HydraTags.h"
 #include "AbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
-#include "Character/HydraCombatMath.h"
 #include "Character/HydraMovementComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Components/StaticMeshComponent.h"
 #include "Data/HydraValuesSubsystem.h"
 #include "Engine/StaticMesh.h"
 #include "EngineUtils.h"
+#include "GameFramework/GameStateBase.h"
+#include "GameFramework/PlayerState.h"
 #include "GameFramework/SpringArmComponent.h"
+#include "Hydra.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "Materials/MaterialInterface.h"
 #include "Net/UnrealNetwork.h"
@@ -22,13 +28,33 @@ namespace HydraCharacterLook
 	// Placeholder look and camera feel - not gameplay values.
 	constexpr float CapsuleRadius = 35.f;
 	constexpr float CapsuleHalfHeight = 90.f;
-	constexpr float CameraArmLength = 380.f;
-	const FVector CameraShoulderOffset(0.f, 40.f, 60.f);
+	constexpr float CameraArmLength = 430.f;
+	const FVector CameraShoulderOffset(0.f, 85.f, 105.f); // high over the right shoulder: the opponent in front stays visible
 
 	const FLinearColor OwnColor(0.10f, 0.30f, 0.85f);
 	const FLinearColor OtherColor(0.80f, 0.15f, 0.10f);
-	const FLinearColor DummyColor(0.65f, 0.60f, 0.35f);
+	const FLinearColor AIColor(0.65f, 0.60f, 0.35f);
 	const FLinearColor VisorColor(0.02f, 0.02f, 0.02f);
+	const FLinearColor ShieldColor(0.35f, 0.22f, 0.12f);
+	const FLinearColor SteelColor(0.70f, 0.72f, 0.78f);
+	const FLinearColor WindupColor(1.00f, 0.85f, 0.10f);     // telegraph of an attack
+	const FLinearColor FullChargeColor(1.00f, 0.15f, 0.05f); // heavy attack fully charged
+	const FLinearColor StrikeColor(1.00f, 1.00f, 1.00f);
+	const FLinearColor HitFlashColor(1.00f, 1.00f, 1.00f);
+	const FLinearColor BlockFlashColor(0.60f, 0.80f, 1.00f);
+	constexpr float HitFlashS = 0.12f;
+
+	// Poses of sword and shield relative to the body (cm, degrees).
+	const FVector SwordRest(18.f, 30.f, 5.f);
+	const FRotator SwordRestRot(55.f, 0.f, 0.f);
+	const FRotator SwordLightWindupRot(35.f, 100.f, 0.f);    // cocked back to the right
+	const FRotator SwordLightStrikeEndRot(0.f, -75.f, 0.f);  // slash across the front
+	const FVector SwordHeavyChargeLoc(-25.f, 30.f, 15.f);    // pulled back for a thrust
+	const FVector SwordHeavyStrikeLoc(60.f, 12.f, 15.f);
+	const FVector ShieldRest(8.f, -34.f, 0.f);
+	const FRotator ShieldRestRot(0.f, -55.f, 0.f);
+	const FVector ShieldBlock(34.f, -6.f, 12.f);
+	const FRotator ShieldBlockRot(0.f, 0.f, 0.f);
 }
 
 AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
@@ -36,6 +62,7 @@ AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
 {
 	using namespace HydraCharacterLook;
 
+	PrimaryActorTick.bCanEverTick = true;
 	GetCapsuleComponent()->InitCapsuleSize(CapsuleRadius, CapsuleHalfHeight);
 
 	// Facing is driven by the movement component (turn rate), never directly by the controller.
@@ -45,7 +72,6 @@ AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
 	UCharacterMovementComponent* Move = GetCharacterMovement();
 	Move->MinAnalogWalkSpeed = 20.f;
 	Move->BrakingDecelerationWalking = 2000.f;
-	// The training dummy has no controller but must still stand on the floor.
 	Move->bRunPhysicsWithNoController = true;
 
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
@@ -53,10 +79,17 @@ AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
 	static ConstructorHelpers::FObjectFinder<UStaticMesh> Sphere(TEXT("/Engine/BasicShapes/Sphere.Sphere"));
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> ShapeMaterial(TEXT("/Engine/BasicShapes/BasicShapeMaterial.BasicShapeMaterial"));
 
-	auto MakePart = [this](FName Name, UStaticMesh* PartMesh, const FVector& Location, const FVector& Scale)
+	BodyRoot = CreateDefaultSubobject<USceneComponent>(TEXT("BodyRoot"));
+	BodyRoot->SetupAttachment(RootComponent);
+	SwordPivot = CreateDefaultSubobject<USceneComponent>(TEXT("SwordPivot"));
+	SwordPivot->SetupAttachment(BodyRoot);
+	ShieldPivot = CreateDefaultSubobject<USceneComponent>(TEXT("ShieldPivot"));
+	ShieldPivot->SetupAttachment(BodyRoot);
+
+	auto MakePart = [this](FName Name, USceneComponent* Parent, UStaticMesh* PartMesh, const FVector& Location, const FVector& Scale)
 	{
 		UStaticMeshComponent* Part = CreateDefaultSubobject<UStaticMeshComponent>(Name);
-		Part->SetupAttachment(RootComponent);
+		Part->SetupAttachment(Parent);
 		Part->SetStaticMesh(PartMesh);
 		Part->SetMaterial(0, ShapeMaterial.Object);
 		Part->SetRelativeLocation(Location);
@@ -67,9 +100,18 @@ AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
 		return Part;
 	};
 	// Engine shapes are 100 cm; the capsule centre is the origin (feet at -90).
-	BodyTorso = MakePart(TEXT("BodyTorso"), Cylinder.Object, FVector(0.f, 0.f, -25.f), FVector(0.6f, 0.6f, 1.3f));
-	BodyHead = MakePart(TEXT("BodyHead"), Sphere.Object, FVector(0.f, 0.f, 62.f), FVector(0.38f));
-	BodyVisor = MakePart(TEXT("BodyVisor"), Cube.Object, FVector(17.f, 0.f, 64.f), FVector(0.1f, 0.26f, 0.08f));
+	BodyTorso = MakePart(TEXT("BodyTorso"), BodyRoot, Cylinder.Object, FVector(0.f, 0.f, -25.f), FVector(0.6f, 0.6f, 1.3f));
+	BodyHead = MakePart(TEXT("BodyHead"), BodyRoot, Sphere.Object, FVector(0.f, 0.f, 62.f), FVector(0.38f));
+	BodyVisor = MakePart(TEXT("BodyVisor"), BodyRoot, Cube.Object, FVector(17.f, 0.f, 64.f), FVector(0.1f, 0.26f, 0.08f));
+	// Sword: the blade points along the pivot's +X. Shield: a disc whose face looks along +X.
+	SwordBlade = MakePart(TEXT("SwordBlade"), SwordPivot, Cube.Object, FVector(55.f, 0.f, 0.f), FVector(0.95f, 0.07f, 0.035f));
+	SwordGuard = MakePart(TEXT("SwordGuard"), SwordPivot, Cube.Object, FVector(6.f, 0.f, 0.f), FVector(0.03f, 0.2f, 0.03f));
+	ShieldDisc = MakePart(TEXT("ShieldDisc"), ShieldPivot, Cylinder.Object, FVector::ZeroVector, FVector(0.6f, 0.6f, 0.05f));
+	ShieldDisc->SetRelativeRotation(FRotator(90.f, 0.f, 0.f));
+	SwordPivot->SetRelativeLocation(SwordRest);
+	SwordPivot->SetRelativeRotation(SwordRestRot);
+	ShieldPivot->SetRelativeLocation(ShieldRest);
+	ShieldPivot->SetRelativeRotation(ShieldRestRot);
 
 	// Third-person camera over the right shoulder, following the control rotation.
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
@@ -84,8 +126,8 @@ AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
 	FollowCamera->SetupAttachment(CameraBoom, USpringArmComponent::SocketName);
 	FollowCamera->bUsePawnControlRotation = false;
 
-	// GAS: component on the pawn (players and dummy alike). Mixed: effects replicate to the
-	// owner only, attributes and tags to everyone.
+	// GAS: component on the pawn (players and AI alike). Mixed: effects replicate to the
+	// owner only, attributes to everyone.
 	AbilitySystem = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 	AbilitySystem->SetIsReplicated(true);
 	AbilitySystem->SetReplicationMode(EGameplayEffectReplicationMode::Mixed);
@@ -117,33 +159,82 @@ void AHydraCharacter::OnRep_Controller()
 	UpdateTint();
 }
 
-void AHydraCharacter::OnRep_TrainingDummy()
+void AHydraCharacter::OnRep_AIControlled()
 {
 	UpdateTint();
+}
+
+void AHydraCharacter::OnRep_FormId()
+{
+	RebuildStats();
+}
+
+void AHydraCharacter::OnRep_Dead()
+{
+	// The tag blocks abilities and movement on the client as well.
+	AbilitySystem->SetLooseGameplayTagCount(HydraTags::State_Dead, bDead ? 1 : 0);
+	if (bDead)
+	{
+		SetLockOnTarget(nullptr);
+		PredictedAction = FHydraActionState();
+	}
 }
 
 void AHydraCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const
 {
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
-	DOREPLIFETIME(AHydraCharacter, bTrainingDummy);
+	DOREPLIFETIME(AHydraCharacter, FormId);
+	DOREPLIFETIME(AHydraCharacter, bAIControlled);
+	DOREPLIFETIME(AHydraCharacter, bDead);
+	DOREPLIFETIME(AHydraCharacter, ActionState);
+	DOREPLIFETIME(AHydraCharacter, ChainCount);
 }
 
+float AHydraCharacter::GetHealth() const { return Attributes->GetHealth(); }
+float AHydraCharacter::GetMaxHealth() const { return Attributes->GetMaxHealth(); }
 float AHydraCharacter::GetStamina() const { return Attributes->GetStamina(); }
 float AHydraCharacter::GetMaxStamina() const { return Attributes->GetMaxStamina(); }
+
+bool AHydraCharacter::HasStateTag(const FGameplayTag& Tag) const
+{
+	return AbilitySystem->HasMatchingGameplayTag(Tag);
+}
 
 UHydraMovementComponent* AHydraCharacter::GetHydraMovement() const
 {
 	return CastChecked<UHydraMovementComponent>(GetCharacterMovement());
 }
 
+FString AHydraCharacter::GetLogId() const
+{
+	if (bAIControlled)
+	{
+		return TEXT("ai");
+	}
+	const APlayerState* PS = GetPlayerState();
+	return PS ? FString::FromInt(PS->GetPlayerId()) : FString(TEXT("unknown"));
+}
+
+float AHydraCharacter::GetServerTime() const
+{
+	const UWorld* World = GetWorld();
+	const AGameStateBase* GS = World ? World->GetGameState() : nullptr;
+	return GS ? static_cast<float>(GS->GetServerWorldTimeSeconds()) : (World ? World->GetTimeSeconds() : 0.f);
+}
+
 void AHydraCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+	SpawnTransform = GetActorTransform();
 	UpdateTint();
+	RebuildStats();
+	if (HasAuthority())
+	{
+		GrantAbilities();
+	}
 	if (UHydraValuesSubsystem* ValuesSubsystem = UHydraValuesSubsystem::GetSubsystem(this))
 	{
-		ApplyValues(ValuesSubsystem->GetValues());
-		ValuesReloadedHandle = ValuesSubsystem->OnReloaded.AddUObject(this, &AHydraCharacter::ApplyValues);
+		ValuesReloadedHandle = ValuesSubsystem->OnReloaded.AddUObject(this, &AHydraCharacter::OnValuesReloaded);
 	}
 }
 
@@ -156,41 +247,151 @@ void AHydraCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	Super::EndPlay(EndPlayReason);
 }
 
-void AHydraCharacter::ApplyValues(const FHydraValues& Values)
+void AHydraCharacter::OnValuesReloaded(const FHydraValues&)
 {
-	// Movement values are needed on both sides (prediction); attributes are server-only.
-	GetHydraMovement()->ApplyValues(Values);
-	if (HasAuthority())
-	{
-		HydraGas::ApplyStaminaValues(AbilitySystem, Values.stamina, StaminaRegenHandle, !bStaminaInitialized);
-		bStaminaInitialized = true;
-	}
+	RebuildStats();
 }
 
-void AHydraCharacter::UpdateTint()
+void AHydraCharacter::RebuildStats()
 {
-	using namespace HydraCharacterLook;
-	if (GetNetMode() == NM_DedicatedServer)
+	const UHydraValuesSubsystem* ValuesSubsystem = UHydraValuesSubsystem::GetSubsystem(this);
+	if (!ValuesSubsystem)
 	{
 		return;
 	}
-	const FLinearColor BodyColor = bTrainingDummy ? DummyColor : (IsLocallyControlled() ? OwnColor : OtherColor);
-	auto Tint = [](UStaticMeshComponent* Part, const FLinearColor& Color)
+	const FHydraValues& V = ValuesSubsystem->GetValues();
+	Stats = HydraCombatMath::BuildStats(ValuesSubsystem->GetDefinitions(), V, FormId);
+	if (!Stats.bValid)
 	{
-		UMaterialInstanceDynamic* Material = Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0));
-		if (!Material)
-		{
-			Material = Part->CreateAndSetMaterialInstanceDynamic(0);
-		}
-		if (Material)
-		{
-			Material->SetVectorParameterValue(TEXT("Color"), Color);
-		}
-	};
-	Tint(BodyTorso, BodyColor);
-	Tint(BodyHead, BodyColor);
-	Tint(BodyVisor, VisorColor);
+		UE_LOG(LogHydra, Error, TEXT("Character %s: form '%s' is unknown or has no numbers in values.json"), *GetName(), *FormId.ToString());
+	}
+	// Movement values are needed on both sides (prediction); attributes are server-only.
+	GetHydraMovement()->ApplyValues(V, Stats.WeightRatio);
+	SwordPivot->SetVisibility(Stats.bHasWeapon, true);
+	ShieldPivot->SetVisibility(Stats.bHasShield, true);
+	if (HasAuthority() && Stats.bValid)
+	{
+		HydraGas::ApplyHealthValues(AbilitySystem, Stats.HpMax, !bAttributesInitialized);
+		HydraGas::ApplyStaminaValues(AbilitySystem, Stats.StaminaMax, Stats.StaminaRegenPerS, StaminaRegenHandle, !bAttributesInitialized);
+		bAttributesInitialized = true;
+		UE_LOG(LogHydra, Log, TEXT("HydraCombatStats form=%s ai=%d weight=%.2f strength=%.2f ratio=%.4f turn=%.1f hp=%.1f stamina=%.1f regen=%.1f light_cost=%.2f heavy_cost=%.2f dodge_cost=%.2f"),
+			*FormId.ToString(), bAIControlled ? 1 : 0, Stats.TotalWeight, Stats.Strength, Stats.WeightRatio, Stats.TurnRateDegS, Stats.HpMax, Stats.StaminaMax,
+			Stats.StaminaRegenPerS, Stats.LightStaminaCost, Stats.HeavyStaminaCost, Stats.DodgeStaminaCost);
+	}
 }
+
+void AHydraCharacter::GrantAbilities()
+{
+	check(HasAuthority());
+	if (bAbilitiesGranted)
+	{
+		return;
+	}
+	bAbilitiesGranted = true;
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UHydraGA_Attack::StaticClass(), 1));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UHydraGA_Block::StaticClass(), 1));
+	AbilitySystem->GiveAbility(FGameplayAbilitySpec(UHydraGA_Dodge::StaticClass(), 1));
+}
+
+// --- Actions -----------------------------------------------------------------------------
+
+void AHydraCharacter::SetAction(EHydraAction Action, float DurationS)
+{
+	FHydraActionState NewState;
+	NewState.Action = Action;
+	NewState.StartServerTime = GetServerTime();
+	NewState.DurationS = DurationS;
+	if (HasAuthority())
+	{
+		ActionState = NewState;
+	}
+	else if (IsLocallyControlled())
+	{
+		PredictedAction = NewState;
+	}
+}
+
+void AHydraCharacter::ClearAction(std::initializer_list<EHydraAction> Actions)
+{
+	FHydraActionState& State = HasAuthority() ? ActionState : PredictedAction;
+	for (const EHydraAction Action : Actions)
+	{
+		if (State.Action == Action)
+		{
+			State = FHydraActionState();
+			State.StartServerTime = GetServerTime();
+			return;
+		}
+	}
+}
+
+const FHydraActionState& AHydraCharacter::GetShownAction() const
+{
+	// The owning client shows its own predicted actions (every action is one of its
+	// abilities); everyone else shows what the server replicates.
+	return (!HasAuthority() && IsLocallyControlled()) ? PredictedAction : ActionState;
+}
+
+// --- Input -------------------------------------------------------------------------------
+
+void AHydraCharacter::InputAttackPressed()
+{
+	AbilitySystem->TryActivateAbilityByClass(UHydraGA_Attack::StaticClass());
+}
+
+void AHydraCharacter::InputAttackReleased()
+{
+	NotifyAttackReleased();
+	if (!HasAuthority())
+	{
+		ServerAttackReleased();
+	}
+}
+
+void AHydraCharacter::ServerAttackReleased_Implementation()
+{
+	NotifyAttackReleased();
+}
+
+void AHydraCharacter::NotifyAttackReleased()
+{
+	const FGameplayAbilitySpec* Spec = AbilitySystem->FindAbilitySpecFromClass(UHydraGA_Attack::StaticClass());
+	if (Spec && Spec->IsActive())
+	{
+		if (UHydraGA_Attack* Attack = Cast<UHydraGA_Attack>(Spec->GetPrimaryInstance()))
+		{
+			Attack->OnInputReleased();
+		}
+	}
+}
+
+void AHydraCharacter::InputBlock(bool bPressed)
+{
+	bBlockHeld = bPressed;
+	if (bPressed)
+	{
+		AbilitySystem->TryActivateAbilityByClass(UHydraGA_Block::StaticClass());
+	}
+	else
+	{
+		const FGameplayTagContainer CancelTags(HydraTags::Ability_Block);
+		AbilitySystem->CancelAbilities(&CancelTags);
+	}
+}
+
+void AHydraCharacter::InputDodge()
+{
+	AbilitySystem->TryActivateAbilityByClass(UHydraGA_Dodge::StaticClass());
+}
+
+FVector AHydraCharacter::ConsumeDodgeDirection()
+{
+	const FVector Direction = PendingDodgeDirection;
+	PendingDodgeDirection = FVector::ZeroVector;
+	return Direction;
+}
+
+// --- Lock-on and aim assist --------------------------------------------------------------
 
 void AHydraCharacter::SetLockOnTarget(AHydraCharacter* NewTarget)
 {
@@ -206,7 +407,7 @@ AHydraCharacter* AHydraCharacter::FindBestTarget(const FVector& Origin, const FV
 	{
 		AHydraCharacter* Other = *It;
 		float Score = 0.f;
-		if (Other != this && HydraCombatMath::ScoreTargetInCone(Origin, Direction, Other->GetActorLocation(), RangeCm, MaxAngleDeg, Score) && Score < BestScore)
+		if (Other != this && Other->IsAlive() && HydraCombatMath::ScoreTargetInCone(Origin, Direction, Other->GetActorLocation(), RangeCm, MaxAngleDeg, Score) && Score < BestScore)
 		{
 			BestScore = Score;
 			Best = Other;
@@ -215,19 +416,185 @@ AHydraCharacter* AHydraCharacter::FindBestTarget(const FVector& Origin, const FV
 	return Best;
 }
 
-AHydraCharacter* AHydraCharacter::ApplyAimAssist()
+void AHydraCharacter::BeginAttackFacing()
 {
-	if (LockOnTarget.IsValid() || GetHydraMovement()->bWantsStrafe)
+	UHydraMovementComponent* Move = GetHydraMovement();
+	Move->ClearFacingGoal();
+	if (Move->bWantsStrafe)
 	{
-		return nullptr; // locked on: the character already turns towards the target
+		return; // locked on (or AI): the character already turns towards its target
 	}
 	const FHydraAimAssistValues& A = UHydraValuesSubsystem::Get(this).aim_assist;
-	AHydraCharacter* Target = FindBestTarget(GetActorLocation(), GetActorForwardVector(), A.range_m * 100.f, A.angle_deg);
-	if (Target)
+	if (const AHydraCharacter* Target = FindBestTarget(GetActorLocation(), GetActorForwardVector(), A.range_m * 100.f, A.angle_deg))
 	{
 		const float CurrentYaw = GetActorRotation().Yaw;
 		const float TargetYaw = (Target->GetActorLocation() - GetActorLocation()).Rotation().Yaw;
-		SetActorRotation(FRotator(0.f, HydraCombatMath::AimAssistYaw(CurrentYaw, TargetYaw, A.strength), 0.f));
+		Move->SetFacingGoal(HydraCombatMath::AimAssistYaw(CurrentYaw, TargetYaw, A.strength));
+		if (HasAuthority())
+		{
+			UE_LOG(LogHydra, Log, TEXT("HydraAimAssist attacker=%s yaw_before=%.1f yaw_to_target=%.1f yaw_goal=%.1f strength=%.2f"),
+				*GetLogId(), CurrentYaw, TargetYaw, HydraCombatMath::AimAssistYaw(CurrentYaw, TargetYaw, A.strength), A.strength);
+		}
 	}
-	return Target;
+}
+
+void AHydraCharacter::EndAttackFacing()
+{
+	GetHydraMovement()->ClearFacingGoal();
+}
+
+// --- Tick and looks ----------------------------------------------------------------------
+
+void AHydraCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	if (HasAuthority())
+	{
+		RecordPose();
+		// The chain ends after a pause without a hit.
+		if (ChainCount > 0 && GetChainHitsNow() == 0)
+		{
+			ClearChain();
+		}
+	}
+	// Holding the block button blocks as soon as it is possible (after an attack, a dodge).
+	if (bBlockHeld && IsLocallyControlled() && !HasStateTag(HydraTags::State_Blocking))
+	{
+		AbilitySystem->TryActivateAbilityByClass(UHydraGA_Block::StaticClass());
+	}
+	if (GetNetMode() != NM_DedicatedServer)
+	{
+		UpdatePose();
+	}
+}
+
+void AHydraCharacter::UpdateTint()
+{
+	using namespace HydraCharacterLook;
+	if (GetNetMode() == NM_DedicatedServer)
+	{
+		return;
+	}
+	auto Tint = [](UStaticMeshComponent* Part, const FLinearColor& Color)
+	{
+		UMaterialInstanceDynamic* Material = Cast<UMaterialInstanceDynamic>(Part->GetMaterial(0));
+		if (!Material)
+		{
+			Material = Part->CreateAndSetMaterialInstanceDynamic(0);
+		}
+		if (Material)
+		{
+			Material->SetVectorParameterValue(TEXT("Color"), Color);
+		}
+	};
+	const UWorld* World = GetWorld();
+	const double Now = World ? World->GetTimeSeconds() : 0.0;
+	FLinearColor BodyColor = bAIControlled ? AIColor : (IsLocallyControlled() ? OwnColor : OtherColor);
+	if (Now < HitFlashUntil)
+	{
+		BodyColor = HitFlashKind == 1 ? BlockFlashColor : HitFlashColor;
+	}
+	Tint(BodyTorso, BodyColor);
+	Tint(BodyHead, BodyColor);
+	Tint(BodyVisor, VisorColor);
+	Tint(ShieldDisc, ShieldColor);
+	Tint(SwordGuard, SteelColor);
+
+	// The blade carries the telegraph: yellow in the wind-up, towards red while a heavy attack charges.
+	const FHydraActionState& Shown = GetShownAction();
+	FLinearColor BladeColor = SteelColor;
+	if (IsAlive())
+	{
+		const float Elapsed = GetServerTime() - Shown.StartServerTime;
+		switch (Shown.Action)
+		{
+		case EHydraAction::LightWindup: BladeColor = WindupColor; break;
+		case EHydraAction::HeavyCharge: BladeColor = FMath::Lerp(WindupColor, FullChargeColor, Shown.DurationS > 0.f ? FMath::Clamp(Elapsed / Shown.DurationS, 0.f, 1.f) : 1.f); break;
+		case EHydraAction::LightStrike:
+		case EHydraAction::HeavyStrike: BladeColor = StrikeColor; break;
+		default: break;
+		}
+	}
+	Tint(SwordBlade, BladeColor);
+}
+
+void AHydraCharacter::UpdatePose()
+{
+	using namespace HydraCharacterLook;
+	UpdateTint();
+
+	// Dead: the body lies on its back.
+	BodyRoot->SetRelativeLocation(IsAlive() ? FVector::ZeroVector : FVector(-40.f, 0.f, -65.f));
+	BodyRoot->SetRelativeRotation(IsAlive() ? FRotator::ZeroRotator : FRotator(85.f, 0.f, 0.f));
+
+	// Hit stop: the pose freezes for a moment (looks only; the timeline of the ability runs on).
+	if (GetWorld()->GetTimeSeconds() < HitStopUntil)
+	{
+		return;
+	}
+
+	const FHydraActionState& Shown = GetShownAction();
+	const float Elapsed = FMath::Max(0.f, GetServerTime() - Shown.StartServerTime);
+	const float Alpha = Shown.DurationS > 0.f ? FMath::Clamp(Elapsed / Shown.DurationS, 0.f, 1.f) : FMath::Clamp(Elapsed / 0.1f, 0.f, 1.f);
+
+	FVector SwordLoc = SwordRest;
+	FRotator SwordRot = SwordRestRot;
+	FVector ShieldLoc = ShieldRest;
+	FRotator ShieldRot = ShieldRestRot;
+	switch (IsAlive() ? Shown.Action : EHydraAction::None)
+	{
+	case EHydraAction::LightWindup:
+		SwordRot = FMath::Lerp(SwordRestRot, SwordLightWindupRot, Alpha);
+		break;
+	case EHydraAction::HeavyCharge:
+		SwordLoc = FMath::Lerp(SwordRest, SwordHeavyChargeLoc, FMath::Min(1.f, Elapsed / 0.15f));
+		SwordRot = FRotator::ZeroRotator;
+		break;
+	case EHydraAction::LightStrike:
+		SwordRot = FMath::Lerp(SwordLightWindupRot, SwordLightStrikeEndRot, Alpha);
+		break;
+	case EHydraAction::HeavyStrike:
+		SwordLoc = FMath::Lerp(SwordHeavyChargeLoc, SwordHeavyStrikeLoc, Alpha);
+		SwordRot = FRotator::ZeroRotator;
+		break;
+	case EHydraAction::Recovery:
+		// From roughly where the strike ended back to rest.
+		SwordLoc = FMath::Lerp(SwordPivot->GetRelativeLocation(), SwordRest, 0.15f);
+		SwordRot = FMath::Lerp(SwordPivot->GetRelativeRotation(), SwordRestRot, 0.15f);
+		break;
+	case EHydraAction::Block:
+		ShieldLoc = FMath::Lerp(ShieldRest, ShieldBlock, Alpha);
+		ShieldRot = FMath::Lerp(ShieldRestRot, ShieldBlockRot, Alpha);
+		break;
+	default:
+		break;
+	}
+	SwordPivot->SetRelativeLocation(SwordLoc);
+	SwordPivot->SetRelativeRotation(SwordRot);
+	ShieldPivot->SetRelativeLocation(ShieldLoc);
+	ShieldPivot->SetRelativeRotation(ShieldRot);
+}
+
+void AHydraCharacter::MulticastHitFeedback_Implementation(uint8 Kind, float HitStopS)
+{
+	if (const UWorld* World = GetWorld())
+	{
+		const double Now = World->GetTimeSeconds();
+		HitStopUntil = Now + HitStopS;
+		if (Kind != 2)
+		{
+			HitFlashKind = Kind;
+			HitFlashUntil = Now + FMath::Max(HydraCharacterLook::HitFlashS, HitStopS);
+		}
+	}
+}
+
+void AHydraCharacter::ClientSetFacing_Implementation(float Yaw)
+{
+	SetActorRotation(FRotator(0.f, Yaw, 0.f));
+	if (AController* C = GetController())
+	{
+		C->SetControlRotation(FRotator(-10.f, Yaw, 0.f));
+	}
 }

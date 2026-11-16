@@ -16,6 +16,7 @@ public class Hydra : ModuleRules
 			"GameplayAbilities",
 			"GameplayTags",
 			"GameplayTasks",
+			"AIModule",
 			"Json",
 			"JsonUtilities",
 			"NetCore"

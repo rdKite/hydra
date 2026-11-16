@@ -43,5 +43,8 @@ namespace HydraDataLoader
 	/** IDs: non-empty, lower snake_case, unique per file; references between files resolve. */
 	HYDRA_API void ValidateDefinitions(const FHydraDefinitions& Defs, TArray<FString>& OutProblems);
 
+	/** values.json against the definition files: numbers for every form, weapon and shield, and none for unknown IDs. */
+	HYDRA_API void ValidateValues(const FHydraValues& V, const FHydraDefinitions& Defs, TArray<FString>& OutProblems);
+
 	HYDRA_API bool IsValidId(FName Id);
 }

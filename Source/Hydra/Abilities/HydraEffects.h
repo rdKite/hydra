@@ -15,6 +15,15 @@ public:
 	UHydraGE_StaminaChange();
 };
 
+/** Instant: IncomingDamage += Data.Amount (the attribute set takes it from Health). */
+UCLASS()
+class HYDRA_API UHydraGE_Damage : public UHydraGameplayEffect
+{
+	GENERATED_BODY()
+public:
+	UHydraGE_Damage();
+};
+
 /**
  * Stamina regeneration: lasts forever, adds Data.Amount every TickS seconds, pauses while
  * the character owns State.StaminaRegenBlocked. The caller passes

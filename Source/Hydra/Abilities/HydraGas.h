@@ -32,15 +32,26 @@ namespace HydraGas
 	HYDRA_API bool CanAfford(const UAbilitySystemComponent* Target, float StaminaCost);
 
 	/**
-	 * Takes Cost from the stamina and pauses regeneration for
+	 * Takes Cost from the stamina (never below 0) and pauses regeneration for
 	 * stamina.regen_delay_after_action_ms. Does not check CanAfford.
 	 */
 	HYDRA_API void SpendStamina(UAbilitySystemComponent* Target, float Cost, const FHydraStaminaValues& Values);
 
 	/**
-	 * Sets maximum and regeneration from values.json. Call at spawn (bFill: start with a full
-	 * bar) and again after Hydra.ReloadValues. InOutRegen is the handle of the running
-	 * regeneration effect, kept by the caller.
+	 * Sets maximum and regeneration (numbers of the form in values.json). Call at spawn (bFill: start
+	 * with a full bar) and again after Hydra.ReloadValues. InOutRegen is the handle of the
+	 * running regeneration effect, kept by the caller.
 	 */
-	HYDRA_API void ApplyStaminaValues(UAbilitySystemComponent* Target, const FHydraStaminaValues& Values, FActiveGameplayEffectHandle& InOutRegen, bool bFill);
+	HYDRA_API void ApplyStaminaValues(UAbilitySystemComponent* Target, float Max, float RegenPerS, FActiveGameplayEffectHandle& InOutRegen, bool bFill);
+
+	// --- Health ----------------------------------------------------------------------------
+
+	HYDRA_API float GetHealth(const UAbilitySystemComponent* Target);
+	HYDRA_API float GetMaxHealth(const UAbilitySystemComponent* Target);
+
+	/** Sets the maximum (from the form); bFill: full health, otherwise the current value is kept (clamped). */
+	HYDRA_API void ApplyHealthValues(UAbilitySystemComponent* Target, float Max, bool bFill);
+
+	/** Takes Amount from the target's health. Source = the attacker. */
+	HYDRA_API void DealDamage(UAbilitySystemComponent* Target, float Amount, UAbilitySystemComponent* Source);
 }

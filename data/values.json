@@ -1,10 +1,56 @@
 {
-  "_note": "Gameplay values for hydra. Times in milliseconds, rates per second, distances in metres, angles in degrees. Starting values – tune in playtests. Every change: bump version and add a line to data/CHANGELOG.md.",
-  "version": 1,
+  "_note": "All gameplay numbers for hydra. Times in milliseconds, rates per second, distances in metres, angles in degrees (arcs as half angles). 'Weight ratio' always means weight / strength. The sections forms, weapons and shields hold the numbers per ID from forms.json and weapons.json; body_weight, weapon weight and strength share one unit: at weight / strength = 1 the general rules apply unchanged. Starting values - tune in playtests. Every change: bump version and add a line to data/CHANGELOG.md.",
+  "version": 2,
+  "forms": {
+    "humanoid": {
+      "body_weight": 70,
+      "strength": 80,
+      "hp_max": 100,
+      "stamina_max": 100,
+      "stamina_regen_per_s": 35
+    },
+    "slime": {
+      "body_weight": 8,
+      "strength": 12,
+      "hp_max": 60,
+      "stamina_max": 50,
+      "stamina_regen_per_s": 20
+    }
+  },
+  "weapons": {
+    "longsword": {
+      "weight": 2.5,
+      "light": {
+        "damage": 20,
+        "windup_ms": 250,
+        "hit_ms": 100,
+        "recovery_ms": 350,
+        "hit_stop_ms": 80,
+        "reach_m": 2.2,
+        "half_arc_deg": 70
+      },
+      "heavy": {
+        "damage": 40,
+        "min_windup_ms": 400,
+        "max_charge_ms": 1200,
+        "full_charge_damage_factor": 1.5,
+        "hit_ms": 120,
+        "recovery_ms": 600,
+        "hit_stop_ms": 120,
+        "reach_m": 2.4,
+        "half_arc_deg": 35
+      }
+    }
+  },
+  "shields": {
+    "round_shield": {
+      "weight": 4.0,
+      "block_half_arc_deg": 70,
+      "block_damage_reduction": 0.7
+    }
+  },
   "character": {
-    "hp_max": 100,
-    "respawn_delay_ms": 3000,
-    "hit_react_ms": 430
+    "respawn_delay_ms": 3000
   },
   "movement": {
     "walk_speed_m_s": 2.0,
@@ -30,30 +76,12 @@
     "strength": 0.5
   },
   "stamina": {
-    "max": 100,
-    "regen_per_s": 35,
     "regen_delay_after_action_ms": 400
   },
-  "light_attack": {
-    "stamina_cost": 25,
-    "damage": 20,
-    "windup_ms": 250,
-    "hit_ms": 100,
-    "recovery_ms": 350,
-    "hit_stop_ms": 80,
-    "reach_m": 2.2,
-    "arc_deg": 70
-  },
-  "heavy_attack": {
-    "stamina_cost": 40,
-    "damage": 40,
-    "min_windup_ms": 400,
-    "max_charge_ms": 1200,
-    "hit_ms": 120,
-    "recovery_ms": 600,
-    "hit_stop_ms": 120,
-    "reach_m": 2.4,
-    "arc_deg": 90
+  "attack": {
+    "light_stamina_per_weight_ratio": 800,
+    "heavy_stamina_per_weight_ratio": 1280,
+    "move_speed_ratio": 0.3
   },
   "chain": {
     "damage_bonus_per_hit": 0.1,
@@ -61,14 +89,16 @@
     "reset_after_ms": 2000
   },
   "interrupt": {
-    "damage_threshold_per_weight": 15
+    "damage_threshold_per_weight": 0.3,
+    "attacking_weapon_weight_factor": 2.0
   },
   "block": {
-    "damage_reduction": 0.7,
-    "stamina_cost_per_hit": 15,
+    "stamina_cost_per_hit": 24,
+    "heavy_attack_factor": 1.6,
+    "weight_ratio_min": 0.25,
+    "weight_ratio_max": 4.0,
     "no_regen_while_holding": true,
     "move_speed_ratio": 0.4,
-    "round_shield_half_arc_deg": 70,
     "weapon_half_arc_deg": 40,
     "rebound_attacker_stamina_ratio": 0.15
   },
@@ -80,10 +110,22 @@
   },
   "weak_point": {
     "back_half_arc_deg": 60,
-    "damage_multiplier": 1.5
+    "damage_multiplier": 1.5,
+    "reference_weapon_weight_ratio": 0.03125,
+    "max_damage_multiplier": 2.5
   },
   "lag_compensation": {
     "max_rewind_ms": 250
+  },
+  "ai_practice": {
+    "engage_range_m": 25,
+    "reaction_time_ms": 300,
+    "error_rate": 0.25,
+    "attack_pause_ms": 1200,
+    "heavy_attack_chance": 0.3,
+    "block_chance": 0.5,
+    "dodge_chance": 0.25,
+    "block_hold_ms": 800
   },
   "mana": {
     "max": 100,

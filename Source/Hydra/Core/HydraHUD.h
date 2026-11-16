@@ -5,8 +5,8 @@
 #include "HydraHUD.generated.h"
 
 /**
- * Canvas HUD (no UMG widget assets): own stamina bar, stamina bars over other characters
- * (both sides see the bars), the lock-on marker and a line with the network emulation
+ * Canvas HUD (no UMG widget assets): own health and stamina bars, the same bars over other
+ * characters (both sides see the bars), the chain counter, the lock-on marker and a line with the network emulation
  * state. Bare minimum for Phase 1; colours and sizes are presentation, not gameplay values.
  */
 UCLASS()

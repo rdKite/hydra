@@ -71,15 +71,19 @@ bool FHydraStaminaTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	const FHydraStaminaValues& S = V.stamina;
-	const float DelayS = S.regen_delay_after_action_ms / 1000.f;
+	// The bar of the humanoid (values.json forms.humanoid) with the general regeneration delay.
+	struct FBar { float max; float regen_per_s; };
+	const FHydraFormValues& Form = V.forms.FindChecked(TEXT("humanoid"));
+	const FBar S{ Form.stamina_max, Form.stamina_regen_per_s };
+	const FHydraStaminaValues& Rules = V.stamina;
+	const float DelayS = Rules.regen_delay_after_action_ms / 1000.f;
 	const float Tick = S.regen_per_s * UHydraGE_StaminaRegen::TickS;   // regeneration per tick
 	const float Tolerance = 2.f * Tick + 0.01f;                        // regeneration comes in ticks
 
 	HydraTests::FTestWorld TestWorld;
 	UAbilitySystemComponent* ASC = TestWorld.SpawnCharacterLike();
 	FActiveGameplayEffectHandle Regen;
-	HydraGas::ApplyStaminaValues(ASC, S, Regen, true);
+	HydraGas::ApplyStaminaValues(ASC, S.max, S.regen_per_s, Regen, true);
 
 	// Start: full bar, and it stays at the maximum.
 	TestEqual(TEXT("max from values.json"), HydraGas::GetMaxStamina(ASC), S.max);
@@ -90,7 +94,7 @@ bool FHydraStaminaTest::RunTest(const FString& Parameters)
 	// Cost.
 	const float Cost = S.max * 0.4f;
 	TestTrue(TEXT("can afford 40 % of the bar"), HydraGas::CanAfford(ASC, Cost));
-	HydraGas::SpendStamina(ASC, Cost, S);
+	HydraGas::SpendStamina(ASC, Cost, Rules);
 	TestEqual(TEXT("cost taken"), HydraGas::GetStamina(ASC), S.max - Cost);
 	TestTrue(TEXT("regeneration blocked after the action"), ASC->HasMatchingGameplayTag(HydraTags::State_StaminaRegenBlocked));
 
@@ -100,7 +104,7 @@ bool FHydraStaminaTest::RunTest(const FString& Parameters)
 
 	// A second action inside the delay restarts it.
 	const float SmallCost = S.max * 0.1f;
-	HydraGas::SpendStamina(ASC, SmallCost, S);
+	HydraGas::SpendStamina(ASC, SmallCost, Rules);
 	TestWorld.Advance(DelayS * 0.75f);
 	TestEqual(TEXT("second action restarts the delay"), HydraGas::GetStamina(ASC), S.max - Cost - SmallCost);
 
@@ -117,17 +121,15 @@ bool FHydraStaminaTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("full again"), HydraGas::GetStamina(ASC), S.max);
 
 	// Empty bar: cannot afford, never below zero.
-	HydraGas::SpendStamina(ASC, S.max * 0.9f, S);
+	HydraGas::SpendStamina(ASC, S.max * 0.9f, Rules);
 	TestFalse(TEXT("cannot afford more than is left"), HydraGas::CanAfford(ASC, S.max * 0.2f));
-	HydraGas::SpendStamina(ASC, S.max, S);
+	HydraGas::SpendStamina(ASC, S.max, Rules);
 	TestEqual(TEXT("never below zero"), HydraGas::GetStamina(ASC), 0.f);
 
 	// Reload with other numbers: new maximum, bar clamped, new rate.
-	FHydraStaminaValues Changed = S;
-	Changed.max = S.max * 0.5f;
-	Changed.regen_per_s = S.regen_per_s * 2.f;
+	const FBar Changed{ S.max * 0.5f, S.regen_per_s * 2.f };
 	TestWorld.Advance(DelayS + 0.05f);
-	HydraGas::ApplyStaminaValues(ASC, Changed, Regen, false);
+	HydraGas::ApplyStaminaValues(ASC, Changed.max, Changed.regen_per_s, Regen, false);
 	TestEqual(TEXT("new max after reload"), HydraGas::GetMaxStamina(ASC), Changed.max);
 	const float Before = HydraGas::GetStamina(ASC);
 	TestWorld.Advance(0.5f);
@@ -136,6 +138,14 @@ bool FHydraStaminaTest::RunTest(const FString& Parameters)
 		FMath::Abs(Gained - Changed.regen_per_s * 0.5f) <= 2.f * Tolerance);
 	TestWorld.Advance(Changed.max / Changed.regen_per_s + 1.f);
 	TestEqual(TEXT("full at the new max"), HydraGas::GetStamina(ASC), Changed.max);
+
+	// Health: damage goes through the meta attribute, never below zero.
+	HydraGas::ApplyHealthValues(ASC, Form.hp_max, true);
+	TestEqual(TEXT("health starts full"), HydraGas::GetHealth(ASC), Form.hp_max);
+	HydraGas::DealDamage(ASC, Form.hp_max * 0.3f, nullptr);
+	TestEqual(TEXT("damage taken from health"), HydraGas::GetHealth(ASC), Form.hp_max * 0.7f);
+	HydraGas::DealDamage(ASC, Form.hp_max * 5.f, nullptr);
+	TestEqual(TEXT("health never below zero"), HydraGas::GetHealth(ASC), 0.f);
 
 	return true;
 }

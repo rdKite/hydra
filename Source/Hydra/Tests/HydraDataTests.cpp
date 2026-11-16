@@ -57,9 +57,13 @@ bool FHydraValuesLoadTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestTrue(TEXT("version > 0"), V.version > 0);
-	TestTrue(TEXT("stamina.max > 0"), V.stamina.max > 0.f);
-	TestTrue(TEXT("stamina.regen_per_s > 0"), V.stamina.regen_per_s > 0.f);
 	TestTrue(TEXT("stamina.regen_delay_after_action_ms >= 0"), V.stamina.regen_delay_after_action_ms >= 0.f);
+	TestTrue(TEXT("numbers per form are read (forms.humanoid)"), V.forms.Contains(TEXT("humanoid")) && V.forms[TEXT("humanoid")].stamina_max > 0.f);
+	TestTrue(TEXT("numbers per weapon are read (weapons.longsword)"), V.weapons.Contains(TEXT("longsword")) && V.weapons[TEXT("longsword")].heavy.max_charge_ms > 0.f);
+	TestTrue(TEXT("numbers per shield are read (shields.round_shield)"), V.shields.Contains(TEXT("round_shield")) && V.shields[TEXT("round_shield")].block_half_arc_deg > 0.f);
+	TestTrue(TEXT("heavy attacks cost more than light ones"), V.attack.heavy_stamina_per_weight_ratio > V.attack.light_stamina_per_weight_ratio);
+	TestTrue(TEXT("chain bonus has a cap"), V.chain.max_bonus >= V.chain.damage_bonus_per_hit);
+	TestTrue(TEXT("AI chances fit into 1"), V.ai_practice.block_chance + V.ai_practice.dodge_chance <= 1.f && V.ai_practice.error_rate <= 1.f);
 	TestTrue(TEXT("run speed above walk speed"), V.movement.run_speed_m_s > V.movement.walk_speed_m_s);
 	TestTrue(TEXT("turn rate min <= base <= max"), V.turn_rate.min_deg_s <= V.turn_rate.base_deg_s && V.turn_rate.base_deg_s <= V.turn_rate.max_deg_s);
 	TestTrue(TEXT("lock-on breaks beyond its range"), V.lock_on.break_range_m >= V.lock_on.range_m);
@@ -120,15 +124,25 @@ bool FHydraKeyCheckTest::RunTest(const FString& Parameters)
 {
 	// The two checks above are only worth something if they really find stray and missing keys.
 	TSharedPtr<FJsonObject> Json;
-	const FString Text = TEXT("{ \"_note\": \"x\", \"max\": 1, \"regen_per_s\": 2, \"typo_key\": 3 }");
+	const FString Text = TEXT("{ \"_note\": \"x\", \"stamina_cost\": 1, \"distance_m\": 2, \"duration_ms\": 3, \"typo_key\": 4 }");
 	FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text), Json);
 	TArray<FString> Unmapped, Missing;
-	HydraDataLoader::FindUnmappedKeys(Json, FHydraStaminaValues::StaticStruct(), TEXT("stamina."), Unmapped);
-	HydraDataLoader::FindMissingKeys(Json, FHydraStaminaValues::StaticStruct(), TEXT("stamina."), Missing);
+	HydraDataLoader::FindUnmappedKeys(Json, FHydraDodgeValues::StaticStruct(), TEXT("dodge."), Unmapped);
+	HydraDataLoader::FindMissingKeys(Json, FHydraDodgeValues::StaticStruct(), TEXT("dodge."), Missing);
 	TestEqual(TEXT("one stray key"), Unmapped.Num(), 1);
-	TestTrue(TEXT("stray key named"), Unmapped.Contains(TEXT("stamina.typo_key")));
+	TestTrue(TEXT("stray key named"), Unmapped.Contains(TEXT("dodge.typo_key")));
 	TestEqual(TEXT("one missing key"), Missing.Num(), 1);
-	TestTrue(TEXT("missing key named"), Missing.Contains(TEXT("stamina.regen_delay_after_action_ms")));
+	TestTrue(TEXT("missing key named"), Missing.Contains(TEXT("dodge.recovery_ms")));
+
+	// Entries of the sections keyed by ID (forms, weapons, shields) are checked too.
+	const FString MapText = TEXT("{ \"shields\": { \"round_shield\": { \"weight\": 4, \"block_half_arc_deg\": 70, \"oops\": 1 } } }");
+	FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(MapText), Json);
+	Unmapped.Reset();
+	Missing.Reset();
+	HydraDataLoader::FindUnmappedKeys(Json, FHydraValues::StaticStruct(), FString(), Unmapped);
+	HydraDataLoader::FindMissingKeys(Json, FHydraValues::StaticStruct(), FString(), Missing);
+	TestTrue(TEXT("stray key inside a section keyed by ID named"), Unmapped.Contains(TEXT("shields.round_shield.oops")));
+	TestTrue(TEXT("missing key inside a section keyed by ID named"), Missing.Contains(TEXT("shields.round_shield.block_damage_reduction")));
 
 	// Entries of arrays are checked too (definition files).
 	const FString ArrayText = TEXT("{ \"skills\": [ { \"id\": \"dodge\", \"name\": \"Dodge\", \"kind\": \"movement\", \"oops\": 1 } ] }");
@@ -198,6 +212,33 @@ bool FHydraDefinitionsValidationTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHydraValuesMatchDefinitionsTest, "Hydra.Data.NumbersForEveryId", HydraTests::Flags)
+bool FHydraValuesMatchDefinitionsTest::RunTest(const FString& Parameters)
+{
+	// Every form, weapon and shield of the definition files has its numbers in values.json,
+	// and values.json has no numbers for IDs that do not exist.
+	FHydraValues V;
+	FHydraDefinitions Defs;
+	TArray<FString> Problems;
+	TestTrue(TEXT("values.json loads"), HydraDataLoader::LoadValues(HydraTests::DataDir(), V, Problems));
+	TestTrue(TEXT("definition files load"), HydraDataLoader::LoadDefinitions(HydraTests::DataDir(), Defs, Problems));
+	HydraDataLoader::ValidateValues(V, Defs, Problems);
+	for (const FString& Problem : Problems)
+	{
+		AddError(Problem);
+	}
+
+	// The check must find what it is there for.
+	FHydraValues Broken = V;
+	Broken.forms.Remove(TEXT("slime"));                                        // form without numbers
+	Broken.weapons.Add(TEXT("no_such_sword"), FHydraWeaponValues());           // numbers without a weapon
+	Broken.shields.FindChecked(TEXT("round_shield")).block_half_arc_deg = 0.f; // implausible number
+	TArray<FString> Found;
+	HydraDataLoader::ValidateValues(Broken, Defs, Found);
+	TestEqual(TEXT("three problems found in a broken copy"), Found.Num(), 3);
+	return !HasAnyErrors();
+}
+
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHydraValuesReloadTest, "Hydra.Values.Reload", HydraTests::Flags)
 bool FHydraValuesReloadTest::RunTest(const FString& Parameters)
 {
@@ -222,25 +263,25 @@ bool FHydraValuesReloadTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	const float OldMax = Subsystem->GetValues().stamina.max;
+	const float OldMax = Subsystem->GetValues().forms[TEXT("humanoid")].stamina_max;
 
 	FString Text;
 	FFileHelper::LoadFileToString(Text, *(TempDir / TEXT("values.json")));
 	TSharedPtr<FJsonObject> Json;
 	FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text), Json);
-	Json->GetObjectField(TEXT("stamina"))->SetNumberField(TEXT("max"), OldMax + 23.0);
+	Json->GetObjectField(TEXT("forms"))->GetObjectField(TEXT("humanoid"))->SetNumberField(TEXT("stamina_max"), OldMax + 23.0);
 	FString NewText;
 	FJsonSerializer::Serialize(Json.ToSharedRef(), TJsonWriterFactory<>::Create(&NewText));
 	FFileHelper::SaveStringToFile(NewText, *(TempDir / TEXT("values.json")));
 
 	TestTrue(TEXT("reload after edit"), Subsystem->Reload());
-	TestEqual(TEXT("edited value is live"), Subsystem->GetValues().stamina.max, OldMax + 23.f);
+	TestEqual(TEXT("edited value is live"), Subsystem->GetValues().forms[TEXT("humanoid")].stamina_max, OldMax + 23.f);
 	TestEqual(TEXT("listeners were told twice"), Broadcasts, 2);
 
 	FFileHelper::SaveStringToFile(TEXT("{ this is not json"), *(TempDir / TEXT("values.json")));
 	AddExpectedError(TEXT("not valid JSON"), EAutomationExpectedErrorFlags::Contains, 1);
 	TestFalse(TEXT("broken file is rejected"), Subsystem->Reload());
-	TestEqual(TEXT("old values kept"), Subsystem->GetValues().stamina.max, OldMax + 23.f);
+	TestEqual(TEXT("old values kept"), Subsystem->GetValues().forms[TEXT("humanoid")].stamina_max, OldMax + 23.f);
 
 	Subsystem->OnReloaded.Clear();
 	FM.DeleteDirectory(*TempDir, false, true);

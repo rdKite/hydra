@@ -1,5 +1,6 @@
 #include "Core/HydraPlayerController.h"
 
+#include "AI/HydraAIController.h"
 #include "Abilities/HydraGas.h"
 #include "Abilities/HydraTags.h"
 #include "AbilitySystemComponent.h"
@@ -67,6 +68,9 @@ void AHydraPlayerController::BuildInput()
 	LookMouseAction = MakeAction(TEXT("IA_LookMouse"), EInputActionValueType::Axis2D);
 	LookStickAction = MakeAction(TEXT("IA_LookStick"), EInputActionValueType::Axis2D);
 	WalkAction = MakeAction(TEXT("IA_Walk"), EInputActionValueType::Boolean);
+	AttackAction = MakeAction(TEXT("IA_WeaponHand"), EInputActionValueType::Boolean);
+	BlockAction = MakeAction(TEXT("IA_ShieldHand"), EInputActionValueType::Boolean);
+	DodgeAction = MakeAction(TEXT("IA_Dodge"), EInputActionValueType::Boolean);
 	LockOnAction = MakeAction(TEXT("IA_LockOn"), EInputActionValueType::Boolean);
 	ReloadValuesAction = MakeAction(TEXT("IA_ReloadValues"), EInputActionValueType::Boolean);
 	LatencyStepAction = MakeAction(TEXT("IA_LatencyStep"), EInputActionValueType::Boolean);
@@ -95,6 +99,12 @@ void AHydraPlayerController::BuildInput()
 	}
 
 	Ctx->MapKey(WalkAction, EKeys::LeftAlt);
+	Ctx->MapKey(AttackAction, EKeys::LeftMouseButton);
+	Ctx->MapKey(AttackAction, EKeys::Gamepad_RightShoulder);
+	Ctx->MapKey(BlockAction, EKeys::RightMouseButton);
+	Ctx->MapKey(BlockAction, EKeys::Gamepad_LeftShoulder);
+	Ctx->MapKey(DodgeAction, EKeys::SpaceBar);
+	Ctx->MapKey(DodgeAction, EKeys::Gamepad_FaceButton_Right);
 	Ctx->MapKey(LockOnAction, EKeys::Q);
 	Ctx->MapKey(LockOnAction, EKeys::MiddleMouseButton);
 	Ctx->MapKey(LockOnAction, EKeys::Gamepad_RightThumbstick);
@@ -119,6 +129,11 @@ void AHydraPlayerController::SetupInputComponent()
 	EIC->BindAction(LookStickAction, ETriggerEvent::Triggered, this, &AHydraPlayerController::OnLookStick);
 	EIC->BindAction(WalkAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnWalkPressed);
 	EIC->BindAction(WalkAction, ETriggerEvent::Completed, this, &AHydraPlayerController::OnWalkReleased);
+	EIC->BindAction(AttackAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnAttackPressed);
+	EIC->BindAction(AttackAction, ETriggerEvent::Completed, this, &AHydraPlayerController::OnAttackReleased);
+	EIC->BindAction(BlockAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnBlockPressed);
+	EIC->BindAction(BlockAction, ETriggerEvent::Completed, this, &AHydraPlayerController::OnBlockReleased);
+	EIC->BindAction(DodgeAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnDodge);
 	EIC->BindAction(LockOnAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnLockOn);
 	EIC->BindAction(ReloadValuesAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnReloadValues);
 	EIC->BindAction(LatencyStepAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnLatencyStep);
@@ -179,10 +194,50 @@ void AHydraPlayerController::OnWalkReleased(const FInputActionValue&)
 	}
 }
 
+void AHydraPlayerController::OnAttackPressed(const FInputActionValue&)
+{
+	if (AHydraCharacter* C = GetHydraCharacter())
+	{
+		C->InputAttackPressed();
+	}
+}
+
+void AHydraPlayerController::OnAttackReleased(const FInputActionValue&)
+{
+	if (AHydraCharacter* C = GetHydraCharacter())
+	{
+		C->InputAttackReleased();
+	}
+}
+
+void AHydraPlayerController::OnBlockPressed(const FInputActionValue&)
+{
+	if (AHydraCharacter* C = GetHydraCharacter())
+	{
+		C->InputBlock(true);
+	}
+}
+
+void AHydraPlayerController::OnBlockReleased(const FInputActionValue&)
+{
+	if (AHydraCharacter* C = GetHydraCharacter())
+	{
+		C->InputBlock(false);
+	}
+}
+
+void AHydraPlayerController::OnDodge(const FInputActionValue&)
+{
+	if (AHydraCharacter* C = GetHydraCharacter())
+	{
+		C->InputDodge();
+	}
+}
+
 void AHydraPlayerController::OnLockOn(const FInputActionValue&)
 {
 	AHydraCharacter* C = GetHydraCharacter();
-	if (!C)
+	if (!C || !C->IsAlive())
 	{
 		return;
 	}
@@ -219,6 +274,13 @@ void AHydraPlayerController::PlayerTick(float DeltaTime)
 		ScriptedMoveRemaining -= DeltaTime;
 		OnMove(FInputActionValue(ScriptedMoveInput));
 	}
+	if (ScriptedAttackReleaseAt > 0.0 && GetWorld()->GetTimeSeconds() >= ScriptedAttackReleaseAt)
+	{
+		ScriptedAttackReleaseAt = -1.0;
+		OnAttackReleased(FInputActionValue());
+	}
+	UpdateAutoAttack();
+	UpdateAutoBlock();
 	UpdateLockOn(DeltaTime);
 }
 
@@ -226,7 +288,7 @@ void AHydraPlayerController::UpdateLockOn(float DeltaTime)
 {
 	AHydraCharacter* C = GetHydraCharacter();
 	AHydraCharacter* Target = C ? C->GetLockOnTarget() : nullptr;
-	if (!C || !C->GetLockOnTarget())
+	if (!Target)
 	{
 		if (C && C->GetHydraMovement()->bWantsStrafe)
 		{
@@ -234,9 +296,9 @@ void AHydraPlayerController::UpdateLockOn(float DeltaTime)
 		}
 		return;
 	}
-	// Break the lock when the target leaves lock_on.break_range_m.
+	// Break the lock when the target dies or leaves lock_on.break_range_m.
 	const FHydraLockOnValues& L = UHydraValuesSubsystem::Get(this).lock_on;
-	if (FVector::Dist2D(C->GetActorLocation(), Target->GetActorLocation()) > L.break_range_m * 100.f)
+	if (!Target->IsAlive() || FVector::Dist2D(C->GetActorLocation(), Target->GetActorLocation()) > L.break_range_m * 100.f)
 	{
 		C->SetLockOnTarget(nullptr);
 		return;
@@ -293,7 +355,7 @@ void AHydraPlayerController::ServerSetNetSimulation_Implementation(int32 StepMs,
 	}
 }
 
-// --- Scripted runs and console -----------------------------------------------------------
+// --- Scripted runs and console: input ----------------------------------------------------
 
 void AHydraPlayerController::HydraMove(float X, float Y, float Seconds)
 {
@@ -311,53 +373,104 @@ void AHydraPlayerController::HydraLockOn()
 	OnLockOn(FInputActionValue());
 }
 
-void AHydraPlayerController::HydraAimAssist()
+void AHydraPlayerController::HydraAttack(float HoldMs)
 {
-	AHydraCharacter* C = GetHydraCharacter();
-	if (!C)
+	OnAttackPressed(FInputActionValue());
+	if (HoldMs <= 0.f)
+	{
+		OnAttackReleased(FInputActionValue());
+	}
+	else
+	{
+		ScriptedAttackReleaseAt = GetWorld()->GetTimeSeconds() + HoldMs / 1000.f;
+	}
+}
+
+void AHydraPlayerController::HydraBlock(int32 Hold)
+{
+	Hold ? OnBlockPressed(FInputActionValue()) : OnBlockReleased(FInputActionValue());
+}
+
+void AHydraPlayerController::HydraDodge()
+{
+	OnDodge(FInputActionValue());
+}
+
+void AHydraPlayerController::HydraAutoAttack(float StrikeDistanceCm)
+{
+	AutoAttackDistanceCm = StrikeDistanceCm;
+}
+
+void AHydraPlayerController::UpdateAutoAttack()
+{
+	const AHydraCharacter* Self = GetHydraCharacter();
+	if (AutoAttackDistanceCm <= 0.f || !Self || !Self->GetStats().bHasWeapon)
 	{
 		return;
 	}
-	const float Before = C->GetActorRotation().Yaw;
-	const AHydraCharacter* Target = C->ApplyAimAssist();
-	const float ToTarget = Target ? (Target->GetActorLocation() - C->GetActorLocation()).Rotation().Yaw : 0.f;
-	UE_LOG(LogHydra, Log, TEXT("HydraAimAssist target=%s yaw_before=%.1f yaw_to_target=%.1f yaw_after=%.1f strength=%.2f"),
-		Target ? TEXT("yes") : TEXT("none"), Before, ToTarget, C->GetActorRotation().Yaw, UHydraValuesSubsystem::Get(this).aim_assist.strength);
-	if (!HasAuthority())
+	// Nearest other character as this window sees it right now.
+	const AHydraCharacter* Nearest = nullptr;
+	float NearestDist = TNumericLimits<float>::Max();
+	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
 	{
-		ServerDevAimAssist();
-	}
-}
-
-void AHydraPlayerController::ServerDevAimAssist_Implementation()
-{
-#if !UE_BUILD_SHIPPING
-	if (AHydraCharacter* C = GetHydraCharacter())
-	{
-		C->ApplyAimAssist();
-	}
-#endif
-}
-
-void AHydraPlayerController::HydraSpendStamina(float Amount)
-{
-	ServerDevSpendStamina(Amount);
-}
-
-void AHydraPlayerController::ServerDevSpendStamina_Implementation(float Amount)
-{
-#if !UE_BUILD_SHIPPING
-	if (AHydraCharacter* C = GetHydraCharacter())
-	{
-		UAbilitySystemComponent* ASC = C->GetAbilitySystemComponent();
-		const bool bCanAfford = HydraGas::CanAfford(ASC, Amount);
-		if (bCanAfford)
+		const float Dist = FVector::Dist2D(It->GetActorLocation(), Self->GetActorLocation());
+		if (*It != Self && It->IsAlive() && Dist < NearestDist)
 		{
-			HydraGas::SpendStamina(ASC, Amount, UHydraValuesSubsystem::Get(this).stamina);
+			NearestDist = Dist;
+			Nearest = *It;
 		}
-		UE_LOG(LogHydra, Log, TEXT("HydraSpendStamina amount=%.1f %s stamina=%.1f"), Amount, bCanAfford ? TEXT("spent") : TEXT("refused"), HydraGas::GetStamina(ASC));
 	}
-#endif
+	if (!Nearest)
+	{
+		return;
+	}
+	// Fire when the distance seen here will be the wanted one at the moment the strike begins.
+	const FVector Direction = (Nearest->GetActorLocation() - Self->GetActorLocation()).GetSafeNormal2D();
+	const float RadialSpeed = FVector::DotProduct(Nearest->GetVelocity() - Self->GetVelocity(), Direction);
+	const float WindupS = Self->GetStats().Weapon.light.windup_ms / 1000.f;
+	if (RadialSpeed > 50.f && NearestDist + RadialSpeed * WindupS >= AutoAttackDistanceCm)
+	{
+		UE_LOG(LogHydra, Log, TEXT("HydraAutoAttack fired seen_dist=%.0f radial_speed=%.0f strike_dist=%.0f"), NearestDist, RadialSpeed, AutoAttackDistanceCm);
+		AutoAttackDistanceCm = 0.f;
+		HydraAttack(0.f);
+	}
+}
+
+void AHydraPlayerController::HydraAutoBlock(float DelayMs)
+{
+	AutoBlockDelayS = DelayMs / 1000.f;
+}
+
+void AHydraPlayerController::UpdateAutoBlock()
+{
+	const double Now = GetWorld()->GetTimeSeconds();
+	if (AutoBlockPressAt > 0.0 && Now >= AutoBlockPressAt)
+	{
+		AutoBlockPressAt = -1.0;
+		AutoBlockReleaseAt = Now + 0.6;
+		UE_LOG(LogHydra, Log, TEXT("HydraAutoBlock pressed"));
+		OnBlockPressed(FInputActionValue());
+	}
+	if (AutoBlockReleaseAt > 0.0 && Now >= AutoBlockReleaseAt)
+	{
+		AutoBlockReleaseAt = -1.0;
+		OnBlockReleased(FInputActionValue());
+	}
+	if (AutoBlockDelayS < 0.f)
+	{
+		return;
+	}
+	// Armed: the first wind-up of another character seen in this window triggers it once.
+	const AHydraCharacter* Self = GetHydraCharacter();
+	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
+	{
+		if (*It != Self && It->GetShownAction().Action == EHydraAction::LightWindup)
+		{
+			AutoBlockPressAt = Now + AutoBlockDelayS;
+			AutoBlockDelayS = -1.f;
+			break;
+		}
+	}
 }
 
 void AHydraPlayerController::HydraStats()
@@ -365,25 +478,116 @@ void AHydraPlayerController::HydraStats()
 	const UHydraDevSubsystem* Dev = GetGameInstance() ? GetGameInstance()->GetSubsystem<UHydraDevSubsystem>() : nullptr;
 	const double Clock = Dev ? Dev->GetClock() : 0.0;
 	const TCHAR* Who = GetNetMode() == NM_Client ? TEXT("client") : TEXT("host");
+	const UEnum* ActionEnum = StaticEnum<EHydraAction>();
 	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
 	{
 		const AHydraCharacter* C = *It;
 		const bool bMe = C == GetPawn();
 		const APlayerState* PS = C->GetPlayerState();
-		const FString Id = C->IsTrainingDummy() ? FString(TEXT("dummy")) : (PS ? FString::FromInt(PS->GetPlayerId()) : FString(TEXT("unknown")));
 
 		FString Lock = TEXT("none");
 		float LockOff = 0.f;
 		if (const AHydraCharacter* Target = C->GetLockOnTarget())
 		{
-			const APlayerState* TargetPS = Target->GetPlayerState();
-			Lock = Target->IsTrainingDummy() ? FString(TEXT("dummy")) : (TargetPS ? FString::FromInt(TargetPS->GetPlayerId()) : FString(TEXT("unknown")));
+			Lock = Target->GetLogId();
 			const float ToTarget = (Target->GetActorLocation() - C->GetActorLocation()).Rotation().Yaw;
 			LockOff = FMath::Abs(FMath::FindDeltaAngleDegrees(GetControlRotation().Yaw, ToTarget));
 		}
-		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d stamina=%.1f max=%.1f x=%.0f y=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f ping=%.0f regenblocked=%d speed=%.0f"),
-			Clock, Who, *Id, bMe ? 1 : 0, C->GetStamina(), C->GetMaxStamina(), C->GetActorLocation().X, C->GetActorLocation().Y,
-			C->GetActorRotation().Yaw, bMe ? GetControlRotation().Yaw : 0.f, *Lock, LockOff, PS ? PS->GetPingInMilliseconds() : 0.f,
-			C->GetAbilitySystemComponent()->HasMatchingGameplayTag(HydraTags::State_StaminaRegenBlocked) ? 1 : 0, C->GetVelocity().Size2D());
+		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f x=%.0f y=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
+			Clock, Who, *C->GetLogId(), bMe ? 1 : 0, C->GetHealth(), C->GetMaxHealth(), C->GetStamina(), C->GetMaxStamina(),
+			C->GetActorLocation().X, C->GetActorLocation().Y, C->GetActorRotation().Yaw, bMe ? GetControlRotation().Yaw : 0.f, *Lock, LockOff,
+			PS ? PS->GetPingInMilliseconds() : 0.f, C->HasStateTag(HydraTags::State_StaminaRegenBlocked) ? 1 : 0, C->GetVelocity().Size2D(),
+			*ActionEnum->GetNameStringByValue(static_cast<int64>(C->GetShownAction().Action)), C->GetChainCount(), C->IsAlive() ? 0 : 1,
+			C->GetShownAction().Action == EHydraAction::Block ? 1 : 0);
 	}
+}
+
+// --- Scripted runs and console: game state -----------------------------------------------
+
+void AHydraPlayerController::HydraSpendStamina(float Amount)
+{
+	ServerDevCommand(FString::Printf(TEXT("spend %f"), Amount));
+}
+
+void AHydraPlayerController::HydraTeleport(float X, float Y, float Yaw)
+{
+	ServerDevCommand(FString::Printf(TEXT("teleport %f %f %f"), X, Y, Yaw));
+}
+
+void AHydraPlayerController::HydraAITeleport(float X, float Y, float Yaw)
+{
+	ServerDevCommand(FString::Printf(TEXT("aiteleport %f %f %f"), X, Y, Yaw));
+}
+
+void AHydraPlayerController::HydraAI(const FString& Verb, float Value)
+{
+	ServerDevCommand(FString::Printf(TEXT("ai %s %f"), *Verb, Value));
+}
+
+void AHydraPlayerController::HydraResetAll()
+{
+	ServerDevCommand(TEXT("reset"));
+}
+
+void AHydraPlayerController::ServerDevCommand_Implementation(const FString& Command)
+{
+#if !UE_BUILD_SHIPPING
+	TArray<FString> Args;
+	Command.ParseIntoArrayWS(Args);
+	if (Args.Num() == 0)
+	{
+		return;
+	}
+	auto Number = [&Args](int32 Index) { return Args.IsValidIndex(Index) ? FCString::Atof(*Args[Index]) : 0.f; };
+	AHydraCharacter* Self = GetHydraCharacter();
+	AHydraAIController* AI = nullptr;
+	for (TActorIterator<AHydraAIController> It(GetWorld()); It; ++It)
+	{
+		AI = *It;
+		break;
+	}
+	AHydraCharacter* AICharacter = AI ? Cast<AHydraCharacter>(AI->GetPawn()) : nullptr;
+	UE_LOG(LogHydra, Log, TEXT("HydraDevCommand from=%s '%s'"), Self ? *Self->GetLogId() : TEXT("?"), *Command);
+
+	if (Args[0] == TEXT("spend") && Self)
+	{
+		UAbilitySystemComponent* ASC = Self->GetAbilitySystemComponent();
+		const bool bCanAfford = HydraGas::CanAfford(ASC, Number(1));
+		if (bCanAfford)
+		{
+			HydraGas::SpendStamina(ASC, Number(1), UHydraValuesSubsystem::Get(this).stamina);
+		}
+		UE_LOG(LogHydra, Log, TEXT("HydraSpendStamina amount=%.1f %s stamina=%.1f"), Number(1), bCanAfford ? TEXT("spent") : TEXT("refused"), HydraGas::GetStamina(ASC));
+	}
+	else if (Args[0] == TEXT("teleport") && Self)
+	{
+		Self->ServerTeleport(FVector(Number(1), Number(2), Self->GetActorLocation().Z), Number(3));
+	}
+	else if (Args[0] == TEXT("aiteleport") && AICharacter)
+	{
+		AICharacter->ServerTeleport(FVector(Number(1), Number(2), AICharacter->GetActorLocation().Z), Number(3));
+	}
+	else if (Args[0] == TEXT("reset"))
+	{
+		for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
+		{
+			It->ServerResetState();
+		}
+	}
+	else if (Args[0] == TEXT("ai") && AI && AICharacter && Args.Num() >= 2)
+	{
+		if (Args[1] == TEXT("block"))
+		{
+			AI->CommandBlock(Number(2) != 0.f);
+		}
+		else if (Args[1] == TEXT("attack"))
+		{
+			AI->CommandAttack(Number(2));
+		}
+		else if (Args[1] == TEXT("stamina"))
+		{
+			AICharacter->ServerSetStamina(Number(2));
+		}
+	}
+#endif
 }

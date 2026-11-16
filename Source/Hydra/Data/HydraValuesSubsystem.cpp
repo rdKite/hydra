@@ -26,6 +26,10 @@ bool UHydraValuesSubsystem::Reload()
 	const bool bValuesOk = HydraDataLoader::LoadValues(Dir, NewValues, Problems);
 	const bool bDefinitionsOk = HydraDataLoader::LoadDefinitions(Dir, NewDefinitions, Problems);
 	const bool bOk = bValuesOk && bDefinitionsOk;
+	if (bOk)
+	{
+		HydraDataLoader::ValidateValues(NewValues, NewDefinitions, Problems);
+	}
 	for (const FString& Problem : Problems)
 	{
 		// Unreadable files are errors; stray or missing keys are warnings (the game still runs).

@@ -38,7 +38,8 @@ float HydraGas::GetMaxStamina(const UAbilitySystemComponent* Target)
 
 bool HydraGas::CanAfford(const UAbilitySystemComponent* Target, float StaminaCost)
 {
-	return StaminaCost <= 0.f || GetStamina(Target) >= StaminaCost;
+	// A hair of tolerance: costs and regeneration are floats that add up in ticks.
+	return StaminaCost <= 0.f || GetStamina(Target) >= StaminaCost - 0.001f;
 }
 
 void HydraGas::SpendStamina(UAbilitySystemComponent* Target, float Cost, const FHydraStaminaValues& Values)
@@ -55,14 +56,14 @@ void HydraGas::SpendStamina(UAbilitySystemComponent* Target, float Cost, const F
 	}
 }
 
-void HydraGas::ApplyStaminaValues(UAbilitySystemComponent* Target, const FHydraStaminaValues& Values, FActiveGameplayEffectHandle& InOutRegen, bool bFill)
+void HydraGas::ApplyStaminaValues(UAbilitySystemComponent* Target, float Max, float RegenPerS, FActiveGameplayEffectHandle& InOutRegen, bool bFill)
 {
 	if (!Target)
 	{
 		return;
 	}
-	const float Current = bFill ? Values.max : FMath::Min(GetStamina(Target), Values.max);
-	Target->SetNumericAttributeBase(UHydraAttributeSet::GetMaxStaminaAttribute(), Values.max);
+	const float Current = bFill ? Max : FMath::Min(GetStamina(Target), Max);
+	Target->SetNumericAttributeBase(UHydraAttributeSet::GetMaxStaminaAttribute(), Max);
 	Target->SetNumericAttributeBase(UHydraAttributeSet::GetStaminaAttribute(), Current);
 
 	// Restart regeneration with the current rate (a running effect keeps its magnitude).
@@ -70,5 +71,34 @@ void HydraGas::ApplyStaminaValues(UAbilitySystemComponent* Target, const FHydraS
 	{
 		Target->RemoveActiveGameplayEffect(InOutRegen);
 	}
-	InOutRegen = Apply(Target, UHydraGE_StaminaRegen::StaticClass(), Values.regen_per_s * UHydraGE_StaminaRegen::TickS);
+	InOutRegen = Apply(Target, UHydraGE_StaminaRegen::StaticClass(), RegenPerS * UHydraGE_StaminaRegen::TickS);
+}
+
+float HydraGas::GetHealth(const UAbilitySystemComponent* Target)
+{
+	return Target ? Target->GetNumericAttribute(UHydraAttributeSet::GetHealthAttribute()) : 0.f;
+}
+
+float HydraGas::GetMaxHealth(const UAbilitySystemComponent* Target)
+{
+	return Target ? Target->GetNumericAttribute(UHydraAttributeSet::GetMaxHealthAttribute()) : 0.f;
+}
+
+void HydraGas::ApplyHealthValues(UAbilitySystemComponent* Target, float Max, bool bFill)
+{
+	if (!Target)
+	{
+		return;
+	}
+	const float Current = bFill ? Max : FMath::Min(GetHealth(Target), Max);
+	Target->SetNumericAttributeBase(UHydraAttributeSet::GetMaxHealthAttribute(), Max);
+	Target->SetNumericAttributeBase(UHydraAttributeSet::GetHealthAttribute(), Current);
+}
+
+void HydraGas::DealDamage(UAbilitySystemComponent* Target, float Amount, UAbilitySystemComponent* Source)
+{
+	if (Amount > 0.f)
+	{
+		Apply(Target, UHydraGE_Damage::StaticClass(), Amount, 0.f, Source);
+	}
 }

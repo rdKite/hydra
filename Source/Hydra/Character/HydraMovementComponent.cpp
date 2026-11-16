@@ -1,7 +1,9 @@
 #include "Character/HydraMovementComponent.h"
 
+#include "Abilities/HydraTags.h"
+#include "AbilitySystemComponent.h"
+#include "AbilitySystemInterface.h"
 #include "Character/HydraCombatMath.h"
-#include "Data/HydraValues.h"
 #include "GameFramework/Character.h"
 
 UHydraMovementComponent::UHydraMovementComponent()
@@ -11,13 +13,29 @@ UHydraMovementComponent::UHydraMovementComponent()
 	bOrientRotationToMovement = true;
 }
 
-void UHydraMovementComponent::ApplyValues(const FHydraValues& Values)
+void UHydraMovementComponent::ApplyValues(const FHydraValues& Values, float InWeightRatio)
 {
 	WalkSpeedCm = Values.movement.walk_speed_m_s * 100.f;
 	RunSpeedCm = Values.movement.run_speed_m_s * 100.f;
 	StrafeSpeedCm = Values.movement.strafe_speed_m_s * 100.f;
+	BlockSpeedRatio = Values.block.move_speed_ratio;
+	AttackSpeedRatio = Values.attack.move_speed_ratio;
+	TurnRate = Values.turn_rate;
+	WeightRatio = InWeightRatio;
 	MaxWalkSpeed = RunSpeedCm;
-	RotationRate = FRotator(0.f, HydraCombatMath::TurnRateDegS(Values.turn_rate), 0.f);
+	RotationRate = FRotator(0.f, GetCurrentTurnRateDegS(), 0.f);
+}
+
+bool UHydraMovementComponent::OwnerHasTag(const FGameplayTag& Tag) const
+{
+	const IAbilitySystemInterface* ASI = Cast<IAbilitySystemInterface>(GetOwner());
+	const UAbilitySystemComponent* ASC = ASI ? ASI->GetAbilitySystemComponent() : nullptr;
+	return ASC && ASC->HasMatchingGameplayTag(Tag);
+}
+
+float UHydraMovementComponent::GetCurrentTurnRateDegS() const
+{
+	return HydraCombatMath::TurnRateDegS(TurnRate, WeightRatio, OwnerHasTag(HydraTags::State_Blocking), OwnerHasTag(HydraTags::State_AttackCommitted));
 }
 
 float UHydraMovementComponent::GetMaxSpeed() const
@@ -31,6 +49,14 @@ float UHydraMovementComponent::GetMaxSpeed() const
 	{
 		Speed = FMath::Min(Speed, WalkSpeedCm);
 	}
+	if (OwnerHasTag(HydraTags::State_Blocking))
+	{
+		Speed *= BlockSpeedRatio;
+	}
+	if (OwnerHasTag(HydraTags::State_AttackCommitted))
+	{
+		Speed *= AttackSpeedRatio;
+	}
 	return Speed;
 }
 
@@ -43,8 +69,22 @@ void UHydraMovementComponent::UpdateFromCompressedFlags(uint8 Flags)
 
 void UHydraMovementComponent::PhysicsRotation(float DeltaTime)
 {
-	// Same rule on client and server, driven by the predicted strafe flag. Either way the
-	// engine turns the character by at most RotationRate x DeltaTime.
+	// Same rule on client and server. The engine turns the character by at most
+	// RotationRate x DeltaTime, whatever the goal is.
+	const float Rate = GetCurrentTurnRateDegS();
+	RotationRate = FRotator(0.f, Rate, 0.f);
+
+	if (bHasFacingGoal && UpdatedComponent && HasValidData() && (CharacterOwner->Controller || bRunPhysicsWithNoController))
+	{
+		// Aim assist: a fixed facing goal instead of movement or camera direction.
+		FRotator Rotation = UpdatedComponent->GetComponentRotation();
+		Rotation.Yaw = HydraCombatMath::StepYawTowards(Rotation.Yaw, FacingGoalYaw, Rate * DeltaTime);
+		Rotation.Pitch = 0.f;
+		Rotation.Roll = 0.f;
+		MoveUpdatedComponent(FVector::ZeroVector, Rotation, /*bSweep*/ false);
+		return;
+	}
+
 	bOrientRotationToMovement = !bWantsStrafe;
 	bUseControllerDesiredRotation = bWantsStrafe;
 	Super::PhysicsRotation(DeltaTime);

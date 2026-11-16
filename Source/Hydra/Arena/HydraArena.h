@@ -30,7 +30,7 @@ public:
 	/** Player spawn points (world space): two spots facing each other near the centre. */
 	TArray<FTransform> GetSpawnTransforms() const;
 
-	/** Where the training dummy stands. */
+	/** Where the AI opponent starts. */
 	FTransform GetDummySpawnTransform() const;
 
 private:

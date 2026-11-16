@@ -59,6 +59,22 @@ namespace
 				}
 			}
 		}
+		else if (const FMapProperty* MapProp = CastField<FMapProperty>(Prop))
+		{
+			// A map keyed by ID (values.json: forms, weapons, shields): check every entry.
+			const FStructProperty* Inner = CastField<FStructProperty>(MapProp->ValueProp);
+			if (Inner && Value->TryGetObject(Child))
+			{
+				for (const auto& Entry : (*Child)->Values)
+				{
+					const TSharedPtr<FJsonObject>* EntryObject = nullptr;
+					if (Entry.Value->TryGetObject(EntryObject))
+					{
+						Visit(*EntryObject, Inner->Struct, Path + TEXT(".") + FString(Entry.Key) + TEXT("."));
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -153,6 +169,74 @@ bool HydraDataLoader::LoadDefinitions(const FString& Dir, FHydraDefinitions& Out
 		ValidateDefinitions(Out, OutProblems);
 	}
 	return bOk;
+}
+
+void HydraDataLoader::ValidateValues(const FHydraValues& V, const FHydraDefinitions& Defs, TArray<FString>& OutProblems)
+{
+	// Every form, weapon and shield needs its numbers; numbers without an ID are a typo.
+	for (const FHydraFormDef& F : Defs.forms.forms)
+	{
+		const FHydraFormValues* N = V.forms.Find(F.id);
+		if (!N)
+		{
+			OutProblems.Add(FString::Printf(TEXT("values.json: no numbers for form '%s' (section forms)"), *F.id.ToString()));
+		}
+		else if (N->body_weight <= 0.f || N->strength <= 0.f || N->hp_max <= 0.f || N->stamina_max <= 0.f || N->stamina_regen_per_s < 0.f)
+		{
+			OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has implausible numbers (weight, strength, hp, stamina > 0)"), *F.id.ToString()));
+		}
+	}
+	for (const FHydraWeaponDef& W : Defs.weapons.weapons)
+	{
+		if (W.blocks)
+		{
+			const FHydraShieldValues* N = V.shields.Find(W.id);
+			if (!N)
+			{
+				OutProblems.Add(FString::Printf(TEXT("values.json: no numbers for shield '%s' (section shields)"), *W.id.ToString()));
+			}
+			else if (N->weight <= 0.f || N->block_half_arc_deg <= 0.f || N->block_half_arc_deg > 180.f || N->block_damage_reduction < 0.f || N->block_damage_reduction > 1.f)
+			{
+				OutProblems.Add(FString::Printf(TEXT("values.json: shields.%s has implausible numbers"), *W.id.ToString()));
+			}
+		}
+		else
+		{
+			const FHydraWeaponValues* N = V.weapons.Find(W.id);
+			if (!N)
+			{
+				OutProblems.Add(FString::Printf(TEXT("values.json: no numbers for weapon '%s' (section weapons)"), *W.id.ToString()));
+			}
+			else if (N->weight <= 0.f || N->light.damage <= 0.f || N->heavy.damage <= 0.f || N->light.reach_m <= 0.f || N->heavy.reach_m <= 0.f
+				|| N->heavy.max_charge_ms < N->heavy.min_windup_ms || N->heavy.min_windup_ms < N->light.windup_ms)
+			{
+				OutProblems.Add(FString::Printf(TEXT("values.json: weapons.%s has implausible numbers (weight, damage, reach > 0; light windup <= heavy min_windup <= max_charge)"), *W.id.ToString()));
+			}
+		}
+	}
+	for (const TPair<FName, FHydraFormValues>& Pair : V.forms)
+	{
+		if (!Defs.FindForm(Pair.Key))
+		{
+			OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s is not a form in forms.json"), *Pair.Key.ToString()));
+		}
+	}
+	for (const TPair<FName, FHydraWeaponValues>& Pair : V.weapons)
+	{
+		const FHydraWeaponDef* W = Defs.FindWeapon(Pair.Key);
+		if (!W || W->blocks)
+		{
+			OutProblems.Add(FString::Printf(TEXT("values.json: weapons.%s is not a weapon in weapons.json"), *Pair.Key.ToString()));
+		}
+	}
+	for (const TPair<FName, FHydraShieldValues>& Pair : V.shields)
+	{
+		const FHydraWeaponDef* W = Defs.FindWeapon(Pair.Key);
+		if (!W || !W->blocks)
+		{
+			OutProblems.Add(FString::Printf(TEXT("values.json: shields.%s is not a shield in weapons.json"), *Pair.Key.ToString()));
+		}
+	}
 }
 
 bool HydraDataLoader::IsValidId(FName Id)
