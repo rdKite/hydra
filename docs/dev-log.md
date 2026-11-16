@@ -64,7 +64,8 @@ no stack, field 135 cm in front of the blocker); a cast aimed 90° to the side l
 about 65° because the slime turns at its turn rate.
 
 **Verification.** `Scripts/run_all.sh`: 17 automation tests, combat live run 146 checks,
-slime live run 76 checks. Fresh clone: see end of entry.
+slime live run 76 checks. A fresh clone of `main` (with the generated assets from LFS, no
+Blender run needed) gives the same: 17 / 146 / 76, all green. Session end: 17:35.
 
 **Assumptions (to confirm).**
 - All new numbers are guesses (`data/CHANGELOG.md` v3, v4). Formulas: `phase-1.md` §24.
