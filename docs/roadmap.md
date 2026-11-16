@@ -75,6 +75,8 @@ up or evolve once on the way, and the metrics deliver first numbers.
 
 ## Later phases (overview)
 
+Full checklists: [`design/later-phases.md`](design/later-phases.md).
+
 - **Phase 1b – arena complete:** online over real servers (source-built engine), PvP
   humanoid vs. monster, server settings for private servers, spear and short bow, free
   choice of hands, ice as opposing element, more spell forms, hand and magic wheels,

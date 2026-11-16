@@ -17,7 +17,7 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
       after the fight.
 - [ ] **Dungeon mode:** a few rooms, waves, one boss with telegraphed area attacks.
 - [ ] Fixed equipment sets; matchmaking "normal" (threat rating) and "ranked" (rank).
-- [ ] First balancing numbers from the measurements (stamina, mana, time windows, chains,
+- [ ] First balancing numbers from the measurements (stamina, mana, block arcs, turn rate, chains,
       augments, debuffs).
 - [ ] Alpha with all species open.
 

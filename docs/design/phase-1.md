@@ -2,8 +2,8 @@
 
 This document holds the game rules that Phase 1 needs. It is written for the people and
 agents who implement them. It covers only what Phase 1 builds. The full design (later
-phases, other lines, world, strategy layer) lives in the German design notes outside this
-repo.
+phases, other lines, world, strategy layer) is in the other files of `docs/design/` (start
+at `overview.md`).
 
 Terms follow `GLOSSARY.md`. **Parry and perfect dodge are dropped** from the design. The
 most important combat terms:
@@ -489,8 +489,7 @@ skills (by use), attributes (fixed in Phase 1, §6). Phase 1 needs the following
 - No lasting progress and **no respawn penalty** in the arena.
 
 *Not in Phase 1:* hXP and threat rating, hardship rating, skill titles and traits, veteran
-levels, respawn penalty, multiple imprints, physical imprint, rarity-gated forms. Full design:
-German design notes.
+levels, respawn penalty, multiple imprints, physical imprint, rarity-gated forms. Full design: [progression.md](progression.md).
 
 ---
 

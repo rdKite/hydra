@@ -10,13 +10,14 @@ by AI agents; a human decides design questions and does the playtests.
 1. `README.md` – what is where.
 2. `docs/roadmap.md` – the current phase and milestone. **Build only what the current
    milestone asks for.**
-3. `docs/design/phase-1.md` – the rules to implement.
+3. `docs/design/phase-1.md` – the rules to implement. The full design (all phases) is in
+   `docs/design/` – start at `overview.md`; read the topic files when a task touches them.
 4. `GLOSSARY.md` – the one English name for every game term. Use it in code, data and docs.
 5. `docs/tech/tech-test-findings.md` – what worked and what didn't in the Unreal tech test.
 
-The full design notes are in German and live outside this repo. If something is missing or
-unclear in `docs/design/`, make a reasonable assumption, write it in `docs/dev-log.md` and
-carry on; the human moves settled answers into the design doc.
+This repo is the single source of the design. If something is missing or unclear in
+`docs/design/`, make a reasonable assumption, write it in `docs/dev-log.md` and carry on;
+the human decides, and settled answers go into the design docs and `docs/decisions.md`.
 
 ## Engine and setup
 

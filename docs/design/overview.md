@@ -10,14 +10,15 @@ games. The details live in the topic files below. Terms follow `GLOSSARY.md`.
 |---|---|
 | [overview.md](overview.md) | This file: the game in one sentence, why, the two sides, guiding principles, competition |
 | [progression.md](progression.md) | Levels, skills, attributes, nXP and hXP, affinity and imprint, group fights |
-| [combat.md](combat.md) | Positional combat: attacks, directional block, dodge, weapons, armor, stealth and perception |
-| [magic.md](magic.md) | Mana, spells, augments, elements and debuffs |
+| [combat.md](combat.md) | Positional combat: attacks, directional block, dodge, turn rate, weapons, stealth and sight cover |
+| [magic.md](magic.md) | Stamina, mana and reserve; spells, augments, elements, element fields and debuffs |
 | [monsters.md](monsters.md) | Monster lines and forms, evolution, body skills, humanoid form for monsters |
-| [items.md](items.md) | Weapons, armor, crafting, schematics and rarity |
+| [items.md](items.md) | Armor, crafting (components, materials, schematics) and rarity |
 | [world.md](world.md) | Friendly fire, reputation, cities and zones, dungeons, mods, monetization, look |
 | [strategy.md](strategy.md) | The strategy layer of Phase 3 (MMO): territories, rule, control, war |
 | [open-questions.md](open-questions.md) | Questions that are still open |
 | [phase-1.md](phase-1.md) | The rules for the current prototype (Phase 1 arena) |
+| [later-phases.md](later-phases.md) | Checklists for Phases 1b, 2 and 3; the finished tech test |
 
 Related: [tech stack](../tech/tech-stack.md), [roadmap](../roadmap.md),
 [decisions](../decisions.md).

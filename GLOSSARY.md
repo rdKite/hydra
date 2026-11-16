@@ -123,7 +123,7 @@ crafting plans, because that is Unreal's visual scripting).
 | German | English | Note |
 |---|---|---|
 | Seltenheit | **rarity** | raw, common, uncommon, rare, epic, legendary, mythic, unique |
-| Roh / gewöhnlich / ungewöhnlich / selten / episch / legendär / mythisch / einzigartig | **raw** / **common** / **uncommon** / **rare** / **epic** / **legendary** / **mythic** / **unique** | also used for form rarity (normal forms = common) |
+| Roh / gewöhnlich / ungewöhnlich / selten / episch / legendär / mythisch / einzigartig | **raw** / **common** / **uncommon** / **rare** / **epic** / **legendary** / **mythic** / **unique** | also used for form rarity; the design docs sometimes say "normal" for common forms |
 | Waffenfamilie | **weapon family** | |
 | Eigenheit (einer Waffenfamilie) | **weapon property** | not "trait" – that is a skill trait |
 | Komponente | **component** | |
@@ -166,3 +166,4 @@ crafting plans, because that is Unreal's visual scripting).
 | Eingriff | **intervention** – a manual editor step by a human |
 | Protokoll | **dev log** |
 | Meilenstein (Fahrplan) | **roadmap milestone** (M1–M5) – not the level milestone |
+| Stufe 1 / 2 / 3 (Ausbau: Arena, feste Maps, MMO) | **stage 1 / 2 / 3** – not "tier" (building sites) and not "level" |

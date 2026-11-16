@@ -20,7 +20,10 @@ Details: [`docs/roadmap.md`](docs/roadmap.md).
 ## Where things are
 
 - [`CLAUDE.md`](CLAUDE.md) – rules for the agents that build the game.
+- [`docs/design/overview.md`](docs/design/overview.md) – entry point to the full design (all
+  topic files).
 - [`docs/design/phase-1.md`](docs/design/phase-1.md) – game rules for Phase 1.
+- [`docs/decisions.md`](docs/decisions.md) – history of design decisions.
 - [`GLOSSARY.md`](GLOSSARY.md) – English names for all game terms.
 - [`data/values.json`](data/values.json) – all gameplay numbers.
 - [`docs/tech/`](docs/tech) – tech-test findings, Blender pipeline.

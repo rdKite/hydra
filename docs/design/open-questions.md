@@ -17,7 +17,7 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
       (see [monsters.md](monsters.md#wolf)).
 - [x] Milestones for imprints – every 10 levels, five levels per imprint (legendary more),
       a choice at every milestone; for monsters also at every evolution.
-- [x] Evolution: timing and process – at every milestone, level budget, afterwards level 0;
+- [x] Evolution: timing and process – at every milestone (the level budget was dropped), afterwards level 0;
       skills and imprints are reset and remain as instinct or affinity.
 - [ ] Level caps and requirements for each evolution – guide values exist (common ≤ 60,
       rare 100, epic 120, legendary 150; see the table under progression in
@@ -26,8 +26,9 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
 - [x] Slime tree rebuilt (element and physical branch).
 - [ ] Instinct: size of the permanent bonus and the learning bonus, decrease over several
       evolutions.
-- [x] Epic forms for slime and saurian – chimera, plague, king slime; rockhorn, fire
-      mountain, thunderplates, earth giant.
+- [x] Epic forms for slime and saurian – current trees: prism and king slime; titan (see
+      [monsters.md](monsters.md)). An older list (chimera, plague slime, rockhorn, fire
+      mountain, thunderplates, earth giant) is outdated.
 - [ ] Legendary humanoids – not planned for now, decide later.
 - [ ] Threat rating: formula and factors – in balancing.
 - [x] Humanoids: imprint through titles? – No; imprint is the same mechanic as for monsters

@@ -129,7 +129,7 @@ slime can evolve at least once.
 | Form | Rarity | Unlocked by | Body skills | Property |
 |---|---|---|---|---|
 | **Giant slime** | common | physical imprint level 1 and minimum strength – or (slime only) level cap without element imprint | base: projectile, **stomp**; accessible: **charge** (it rolls over others) | big, a lot of HP, hard to interrupt |
-| **King slime** | epic | **highest level** of the physical imprint, high strength and vitality, level budget | stomp, charge | colossus; **gel burst:** a physical wave that slows you while you are in its field |
+| **King slime** | epic | **highest level** of the physical imprint, high strength and vitality (the level budget was dropped on 2026-11-13) | stomp, charge | colossus; **gel burst:** a physical wave that slows you while you are in its field |
 
 - No legendary form in the physical branch for now.
 

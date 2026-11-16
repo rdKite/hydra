@@ -1,0 +1,304 @@
+# Decision log
+
+This is the history of the design decisions for hydra, in the order they were made (oldest
+first). It records what was decided and why. It is a record, not the rulebook: many entries
+were later changed or dropped, marked "(superseded YYYY-MM-DD)". The current rules live in
+[docs/design/](design/) (see [phase-1.md](design/phase-1.md) and the topic files), and the
+plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
+
+## 2026-11-03
+
+- Design notes created.
+
+## 2026-11-04
+
+- Working title **"hydra"**: it grows and gets stronger, and it sounds like combat and arena.
+- Skills that grow by use, alongside the character level. Rewards for playing the hard way.
+  Legendary forms. A humanoid form for monsters. Cities are wary of such monsters.
+- Humanoids: hidden classes and titles chosen. Skill upgrades as an option (superseded
+  2026-11-14). Rejected: species ascension for humanoids. Rules for resistance grinding;
+  skill XP only on a win. Rarity of legendary forms set.
+- Hardship through two kinds of XP: nXP for the level, hidden hXP for skills and rare
+  ascensions. In groups, hXP are split by participation (superseded 2026-11-14).
+- **Hardship rating** as the ratio of hXP to nXP. Rather no hard stuns; slows are
+  conceivable.
+- **Three pillars:** character level, active skills (combat, with hXP), and attributes.
+  Attributes are resistances and body values that grow through exposure or strain; they are
+  level-independent and capped. The race sets base value, cap and growth. Skills can raise
+  or lower attributes. Immunity is possible, with a weakness to the opposite element.
+- Friendly fire and reputation: a server setting, reputation per faction, resistance XP held
+  back until later. Wars between regions as a later idea. Proposals for body values and
+  elements. Incorporeal beings are immune to physical damage and weak to magic damage.
+
+## 2026-11-10
+
+- **Three bars:** stamina and mana (short-term, seconds) and reserve (fatigue over the day).
+  The body value "Ausdauer" is renamed to endurance; endurance, spirit and vitality govern
+  the bars. Reserve limits stamina and mana only below 50 %, and at most down to 20 %.
+  Passives bind a share of a bar; reserve only from level 2.
+- Low reserve also slows stamina and mana regeneration (from 50 % reserve, down to about
+  50 % of the normal rate).
+- **Balancing principle:** stats are noticeable, skill decides; PvP works like PvE.
+  Spells and augments: body augments and elemental augments bind mana. All are always
+  available. Opposite elements not on the same weapon. Each further augment costs more.
+  Augments are per weapon hand. Switching works by rebinding instead of a cooldown, via a
+  wheel with a preview. Augments are visible on the character. No dispelling.
+- Blocking and dodging, each in a normal and a perfect version. A parry and a hit into
+  empty air cost the attacker stamina instead of opening them up. Weight shifts the stamina
+  loss. Feints. Parrying a spell makes it explode in front of the shield (a proposal for
+  magic blocking was still open). (Parry, perfect block and perfect dodge superseded
+  2026-11-16.)
+  Monsters in three branches: agile, armored, colossus. High damage, no meat shields.
+  One-hits only from clearly stronger enemies. A flawless win gives many hXP (superseded
+  2026-11-10, same day). PvE enemies follow the same rules as players. Reviving in groups.
+- No separate bonus for flawless wins: enemies that can kill you with one hit give very many
+  hXP anyway. Reviving: you stay down for a long time, can give up, and can be finished off
+  in PvP. Skills improve stamina costs and dodge distance, up to a short-range teleport.
+- Skill upgrades for humanoids decided: yes, for some skills (superseded 2026-11-14).
+- Species skills: special skills come from the monster species; evolution unlocks them, use
+  makes them grow (superseded 2026-11-13 by body skills). Lines are added one by one,
+  simple ones first (spiders, dragons later). Eating/absorbing is set aside for now.
+- Flying without hard limits, balanced by lower stats, harder dodging in the air and stamina
+  use.
+- First lines (proposal): slime, saurian (based on four-legged dinosaurs), wolf. Trees for
+  slime and saurian with species skills, stages and legendary forms (superseded 2026-11-13).
+  Arena with slime → fire elemental slime.
+
+## 2026-11-11
+
+- **Affinity** (innate, per species and element, physical included) and **imprint**
+  (acquired at milestones, strong bonuses, focusing pays off, opposites exclude each other).
+  Body form and imprint are two axes. Slime and saurian trees adjusted. Humanoids: imprint
+  shown through titles (proposal; superseded 2026-11-14).
+- List for later brainstorming: weapons, upgrading skills and imprints, unlocking species,
+  MMO with strategy elements, classes for leaders.
+- Physical weapons: families in sizes instead of one- and two-handed. Hands are chosen
+  freely; the limit comes from stamina and strength. Bows with draw weight and arrowheads.
+  Rejected: fist weapons and crossbows. Slash, pierce and blunt are sub-types of physical.
+  Weak points with a fixed multiplier instead of random crits; light weapons scale more
+  strongly. One skill and one animation set per family.
+- Daggers and swords are separate families (daggers in reverse grip, size limits). Skills
+  dagger fighting and sword fighting.
+- Magic without items: casting needs a free hand; spells are chosen like weapons. Two axes,
+  form × element. Forms: stream, bolt, impact, burst. Element fields with debuffs that build
+  up per element. Opposite elements cancel each other out.
+- Earth debuff heaviness temporarily raises weight. Movement costs stamina by weight
+  relative to strength (also the basis for armor).
+- Selection and switching: one hand wheel per hand (weapons worn on the body and spell
+  forms, also two-handed), and a magic wheel for the element(s) and augments. The element is
+  global; weapons get it only through an augment. Several non-opposite elements at once,
+  each weaker. Weapons on the body count toward weight. Inventory in a weightless magic
+  bag, locked in combat.
+- Attacks: one button per hand; two-handed use unlocks special functions (aiming). Light and
+  heavy attacks; two damage types spread across light and heavy. Chains instead of rhythm,
+  limited by stamina and mana; mixing pays off. Interrupt with enough damage; the threshold
+  depends on weight. Skills improve values and properties instead of unlocking moves.
+- Chain end and counter-breaking weapon types confirmed. Bows are always two-handed.
+- Armor from material and amount instead of classes. Material profiles with density;
+  monster material inherits the affinity and comes only from NPC monsters. Schematics set
+  the shape. Slots: head, torso, hands, legs, boots, back. Diminishing protection with an
+  upper limit, visible, no wear, no skill for wearing it. Monsters in humanoid form can wear
+  armor.
+
+## 2026-11-12
+
+- Crafting from components (standard two: blade and hilt, or base layer and lining). Fixed
+  materials and alloy recipes; the hilt gives bonuses. Quality grades from common to
+  legendary come from material quality; a minimum skill acts as a gate; components must
+  share the same quality to be combined. Raw material quality comes from the find location
+  or a catalyst. Armor: thickness set by the schematic, not free.
+- **Rarity:** raw; common to rare (normal schematics); rare to legendary (masterworks);
+  mythic (only through events); unique (one of a kind worldwide, MMO only, e.g. rule over a
+  territory; changes owner only under special conditions). One term "rarity" for raw
+  materials and items.
+- Progression: the level sets the pace and base values; max level e.g. 100 (superseded
+  2026-11-12, same day). At most one skill level per level-up. Each imprint has five levels, with
+  a choice at each milestone. **Respawn penalty:** losing a share of the collected skill
+  XP – whoever reaches max level without dying is rewarded. Arena with fixed levels.
+- Respawn penalty formula: share of lost skill XP = 2 × the relative nXP still missing to the
+  next level, at most 100 %.
+- Max level per species: humanoids 50 (all races; legendary classes raise it), monsters with
+  their own cap per evolution stage (superseded 2026-11-13 and 2026-11-15). Evolution only
+  at the cap, then level 0; skills and imprints stay (superseded 2026-11-13: evolution
+  resets them). Normal path ≈ 50 levels, higher evolutions more. Milestones every 5 levels
+  (superseded 2026-11-15: every 10). Imprint up to 5, legendary more. Threat rating instead
+  of level comparison for hXP.
+- Sneaking and perception: never invisible. The sneak skill works against **perception**, a
+  new body value (level-independent; also grows by spotting telegraphed attacks and by
+  exploring; at higher levels it spots area attacks earlier). An attack from hiding counts
+  like a weak-point hit and is never lethal from full health.
+- Five evolution stages: 1–3 normal (≈ 50 levels), 4 epic (+20), 5 legendary (+30)
+  (superseded 2026-11-12, same day). **Wind** as a new element (a loner, debuff headwind).
+  Wolf line as endurance hunters (wearing prey down); epic forms windrunner, pack leader,
+  winter wolf; legendary Fenrir (unstoppable) (wolf tree superseded 2026-11-13). Cats with
+  sneaking as an idea for later.
+- Evolution without fixed stages: hard caps for the total level (humanoids 50, with hidden or
+  epic classes 70; monsters 60, epic 70, legendary 80) (superseded 2026-11-13). Each form has
+  a rarity, a level cap and predecessors. Evolution at every milestone; a level budget
+  decides about rare forms (superseded 2026-11-13); no evolving backwards. Slime, saurian and
+  wolf trees as form lists; epic forms for slime and saurian; gust slime and chimera slime
+  new.
+
+## 2026-11-13
+
+- Evolution resets skills and imprints. Skills stay as **instinct** (a small permanent bonus
+  plus faster relearning); imprints stay as raised affinity of the new form. Some forms
+  (elemental slime) carry one imprint over at level 1. Slime tree restarted as a draft
+  (element branch and physical branch).
+- Slime, element branch: carries over the highest imprints at each evolution (one, two to
+  three, all). Prism slime from 4 imprints; primal slime from 2 opposite pairs – it starts
+  without imprints but with high affinity for all elements, without the milestone limit and
+  without a penalty for several elements.
+- Slime: physical branch via a physical imprint or (slime only) reaching the level cap
+  without an element imprint. Projectile as a divisible species skill that takes on the
+  element of the imprint (switchable). Rejected: rubber jump.
+- Species skills replaced by **body skills**: a shared catalogue, bound to body features.
+  Base skills come with the form; further ones are accessible. Rule breaks of legendary
+  forms stay unique. Humanoids have no access. Saurian and wolf converted to this.
+- Spell forms depend on the element skill (for everyone). Slime: properties of the forms
+  (element body, fast element switching); physical branch with conditions (king slime needs
+  the highest physical imprint level); no legendary form for now.
+- Rejected: level budget and caps on the total level (no longer needed since skills are
+  reset). Guide values: humanoids 50, with a hidden class 60; monsters normal ≤ 30, rare 50
+  (new label for the typical final form), epic 60, legendary 75 (values superseded
+  2026-11-15). Slime caps set. Wolf and saurian to be reworked.
+- Wolf reworked: wolf pup → wolf → grey wolf or pack wolf → pack leader (physical and
+  buffs); wolf pup → frost wolf or windrunner → polar wolf → Fenrir (elements). Starting
+  forms always open the physical form at the level cap.
+- Saurian reworked: young saurian (cap 40; doubled 2026-11-15) → horned saurian (fire),
+  armored saurian (earth), longneck (physical) – all rare; longneck → titan (epic). Plate
+  saurian dropped for now. Starting forms before rare forms may lie above 30.
+- Titan: earth level 5 plus a second element from level 3; when stomping, both work at full
+  strength.
+- Unlocking species: humans and slime are open; further races and monster starts through an
+  earned in-game currency (achievements, dailies, weeklies). First thoughts on monetization
+  modelled on Guild Wars 2.
+- Forms, classes and titles are per character only; everything is open only in the alpha and
+  for test accounts.
+- Roadmap with tasks per phase (Phase 0 to 3), focused on the arena prototype. Dungeons as a
+  new topic, partly already in the arena.
+- Status set to 🔍 Review: worth pursuing; open questions and roadmap are in place.
+- Dungeons: floors going down, mostly random from rooms and corridors, boss rooms made by
+  hand. A loot chest at the end of each floor. Dungeon monsters drop only cores. A floor
+  boss on each floor unlocks the chest and the next floor. Every 5 or 10 floors, a
+  particularly strong champion boss as the only enemy on the floor. A checkpoint on every
+  floor.
+- Engine choice: Godot ruled out; Unreal and Unity remain. Built mainly by agentic
+  engineers.
+- Tech test in Unreal and Unity added to the roadmap as the basis for the engine choice.
+- Tech test and first arena prototype run locally (PvE against AI), but in host mode with
+  client and server separated. Online play and PvP in Phase 1b.
+- **Combat feel:** Souls-like at the core, with more pace. Circling and trading blows.
+  Third person, gentle aim assist with optional lock-on, committing attacks, medium pace,
+  hit stop.
+- Scope: solo project; further developers rather in the medium to long term, maybe never.
+- Competition researched: no game found that combines action combat, branching monster
+  evolution, a humanoid side and a multiplayer sandbox. Lessons from licensed games, Path of
+  Titans, The Isle and Evolve.
+- Dev setup added to Phase 0; MCP connection of the editors as a criterion in the tech test.
+- Mods for private dedicated servers (PC) in Phase 1 and 2: build data-driven, content and
+  server mods, a scripting language with a sandbox; a criterion in the tech test. Official
+  servers, the MMO and consoles without mods.
+- Tech test specification: goal, frame (local in host mode, timebox of five days per
+  engine), must-have scope, out of scope, evaluation sheet, completion. The test also
+  measures token usage and the number of interventions. Five days is the maximum per
+  engine. A separate helper repository; hydra is set to ready only after the engine choice.
+
+## 2026-11-14
+
+- Template for the tech test helper repository, with instructions per engine (for parallel
+  work), added to the notes. The evolution system applies to Phase 2. In the MMO, epic and
+  legendary forms and legendary gear are unlocked through achievements and large amounts of
+  resources (like the 2nd-generation legendary weapons in Guild Wars 2).
+- Helper repository `rdKite/hydra-tech-test` created and filled with the template
+  (branches `engine/unreal`, `engine/unity`); the template removed from the notes.
+- Open questions cleaned up (monster lines, engine, effort, slows).
+- **Fairness for all play styles** as a core promise. At max level, skills keep growing
+  through items from repeatable, character-bound achievements (only up to the level; rising
+  requirements as a soft limit; also skill upgrades) (superseded 2026-11-15 by veteran
+  levels). Matchmaking split by threat rating (normal) and rank (ranked).
+- Skill upgrades replaced by **skill titles**: skills keep levelling; certain levels unlock
+  titles (properties, multipliers, conditions for evolutions). The masterwork example
+  changed so it does not overlap with titles.
+- Roles sharpened: element skill = skill at casting, imprint = alignment of the being.
+  Imprint grows through contact with the element instead of skill XP. No more titles from
+  imprints – two kinds of titles (skill titles, hidden titles).
+- All titles always apply at the same time.
+- Participation by impact: all contributions (including buffs, debuffs, prevented damage,
+  stamina drain, interrupts, distraction) converted into impact points; no minimum
+  participation for nXP; an overview after the fight (impact-based hXP split superseded
+  2026-11-15).
+- Cities, relations and zones: three relations (friendly, neutral, hostile); hard reasons
+  come before reputation levels. **Shifters** as a race of transformed monsters (slimes from
+  epic can deceive). **Demons** as a playable race, with trading posts as safe zones.
+  Defense towers as a deliberate exception to the balancing principle, with a warning.
+  Consequences of attacking neutrals depend on the target.
+- Strategy layer (MMO): territories; rule through unique items with a guild as the base;
+  a hierarchy in tiers depending on world size; decisions and satisfaction; control drives
+  patrols (a danger for monsters); overextension; war with lead time and time windows;
+  following for leaders. Monsters rule only as Shifters or through Demons and are otherwise
+  a force from outside.
+- Mythic items only in Phase 3, and not at its launch; not planned until then.
+- Repositories in English; the design notes stay German. Tech test translated accordingly.
+- English terms: Atem = stamina, Kondition = endurance; glossary created in the helper repo.
+
+## 2026-11-15
+
+- Changing world in the strategy layer: fixed building sites with states and tiers; changes
+  through population, control, war and time. The landscape itself stays. Free building only
+  at your own camp. A criterion in the tech test.
+- **Light = life** (healing magic as the buff blessing, which raises the healing rate),
+  **dark = death** (decay: healing and sight drop, no instant death). Blinding and
+  enfeeblement are dropped or merge into decay. Debuffs rise in stacks at fixed thresholds
+  per element and wear off step by step.
+- Coat of arms and colors: design only (friend and foe are shown by indicators), set by the
+  ruling guild, visible on armor, shields, banners, buildings, boundary stones and the
+  strategy map.
+- **All level caps doubled:** humanoids 100, or 120 (hidden class); monsters normal ≤ 60,
+  rare 100, epic 120, legendary 150. Milestones every 10 levels. Skills hard-capped at 150.
+  Skill titles every 30 skill levels (percent on damage or core effect); in between,
+  traits as in Guild Wars 2 (every 10 levels a choice of three). **Veteran levels** after
+  max level (nXP, rising linearly, one skill level each) replace the route through items.
+- hXP shared evenly within a group; with several groups, first split by damage per group.
+  Threat rating for the whole group. Rejected: split by impact points. The overview after
+  the fight stays, for information.
+- **Awakening:** the first imprint level (much easier than the following ones) awakens an
+  element, together with its element skill and the bolt. **Starting alignment** at
+  character creation or in the tutorial (an element, or elementless as the default) with a
+  matching environment or starting region. Travelling merchants: random, neutral, a small
+  no-attack zone.
+- Size at character creation works through body weight (large: harder to interrupt, more
+  reach, more expensive movement, larger hitbox; small the other way round), with a limited
+  range per race.
+- Tech test extended with a small scaling test (10 to 200 AI dummies). Target size for a
+  dedicated server in Phase 2: about 100 players, 200 optimal.
+
+## 2026-11-16
+
+- 3D pipeline with Blender: models, rigs and animations made by agents with Blender Python
+  scripts, FBX export by script with fixed settings, one rig per line.
+- Toon look still open (depends on the tech test) (superseded 2026-11-16, same day: look
+  moved to Phase 1). Small test "models by script" (slime, wolf pup) in Phase 1.
+- **Combat switched to positional combat** (modelled on Path of Titans): parry and
+  perfect/close dodge dropped. Directional block with an arc per shield; dodge as pure
+  movement without invulnerability; rebound on the attacker; long telegraphs; cooldowns
+  visible only for large body skills. Reason: fairness under ping and less effort. In the
+  tech test the parry stays only as a measuring point.
+- **Turn rate** from weight ÷ strength: heavily armed and gigantic forms turn more slowly,
+  light ones faster; additionally slowed while blocking and attacking; lower and upper
+  limits; lock-on turns only the camera.
+- **Sight cover** from bushes, tall grass and crops (purely visual, as in Path of Titans),
+  clearly separate from perception (icons from a value comparison). Terrain works only
+  through the objects, not on values. Size matters, movement rustles, always shown the same
+  way. NPCs check by raycast. Protection against wallhacks from Phase 2.
+- Tech test evaluated; **engine: Unreal Engine 5**. Status set to 🧭 Ready. Look still open
+  (until after playing).
+- Look moved to Phase 1 (easier to judge with our own assets). Unreal license checked (free
+  up to USD 1 million revenue).
+- Phase 1 scope fixed: five roadmap milestones (foundation; humanoid combat core with lag
+  compensation; slime and magic; progression and waves; look and playtest), roughly 4–6
+  weeks. Humanoid and slime both included; bushes only in Phase 2. Phase 0 done.
+- Game repo `rdKite/hydra` created (English): rules for agents, roadmap, glossary, starting
+  values, Phase 1 design, findings from the tech test.
+- Phase 1: only the slime casts spells. Fire enemies in the waves as the path to the fire
+  imprint. Level caps slime 30 and elemental slime 50 confirmed.
