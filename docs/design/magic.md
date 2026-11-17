@@ -16,17 +16,30 @@ several things at once (it is now only the name of the attribute).
 |---|---|---|---|---|
 | **Stamina** | short-term, physical | weapon strikes, dodging, blocking, sprinting, climbing | within seconds | endurance |
 | **Mana** | short-term, magical | spells, bound passives | within seconds | spirit |
-| **Reserve** | long-term, fatigue over the day | slowly by everything that costs stamina and mana; passives | resting (see below) | vitality |
+| **Reserve** | long-term, fatigue over the day | slowly by everything that costs stamina and mana; passives | resting (see below), at a speed fixed per species | vitality (its size) |
 
 ### Stamina and mana
 
-- A sword strike costs 10–90 % of the bar, depending on weapon weight, strength and skill. A
-  spell costs mana in the same way. Both bars refill within seconds. So you cannot chain
-  strikes or spells endlessly; you must keep pausing briefly to catch your breath.
-- Higher values allow heavier weapons, more attacks in a row and more active passives.
-- **Cost**, roughly: weapon weight ÷ strength × skill factor. A higher skill lowers the cost
-  noticeably (sword fighting per strike, dodge per roll). This fits the rule "skills must have
-  a noticeable effect".
+- **Bar size:** endurance sets the stamina maximum, spirit the mana maximum (10 stamina or
+  mana per point, see [progression.md](progression.md#attributes-resistances-and-body-attributes)).
+  That is all these two attributes do.
+- **Regeneration** is a share of the maximum per second, **fixed per species** (a light
+  sprinter type can have a small bar that refills fast).
+- **No regeneration during an action:** stamina regenerates only while you do nothing that
+  costs it – not while attacking (wind-up, strike, recovery), dodging, sprinting, drawing a
+  bow or holding a block. Mana likewise not while casting or charging. Walking and running
+  do not count as an action, so circling the opponent lets you catch your breath. This
+  replaces a fixed regeneration delay.
+- **Cost** of a weapon attack: weapon weight ÷ **body weight** × the weapon's **demand**
+  (see [items.md](items.md#what-makes-a-weapon-better)). Neither strength nor skill lowers
+  it – one quantity, one source (see [progression.md](progression.md#one-quantity-one-source)).
+  A spell costs mana by its spell form and charge.
+- So you cannot chain strikes or spells endlessly; you must keep pausing briefly to catch
+  your breath. **Balancing target:** a human at level 0 manages just under two light strikes
+  in a row with a longsword of the lowest rarity.
+- **Growth goes into damage, not into more strikes:** a bigger bar lets you use heavier and
+  better weapons (more damage, more cost) and stronger spell forms. Whoever stays with the
+  old weapon gets more strikes in a row instead – a real choice.
 - **Passives bind instead of consume:** an active aura binds a fixed share of the bar (e.g.
   20 % mana, shown greyed out) and also slowly drains the reserve. Many passives therefore
   cost little in a fight but cost endurance over the day. The most important case is
@@ -62,8 +75,9 @@ several things at once (it is now only the name of the attribute).
 
 ### Species
 
-- Race or species sets the base value, cap and growth here as well. A slime or spirit has
-  hardly any stamina but a lot of mana. Evolutions can shift this.
+- Race or species sets the base values of endurance and spirit and the regeneration speed of
+  all three bars. A slime or spirit has hardly any stamina but a lot of mana. Evolutions can
+  shift this.
 
 ### How the bars interact with the rest
 
@@ -104,7 +118,8 @@ real trade-off instead of a dead stat for melee fighters.
 
 ### Three rules
 
-1. **Every augment binds mana.** All augments a character has are always available – no
+1. **Every augment binds a fixed amount of mana** (not a share of the bar) – so more spirit
+   allows more augments at once. All augments a character has are always available – no
    pre-selection. The only limit is that bound mana is missing for spells and switching.
 2. **The element comes from the magic wheel** (see [Selection and switching](#selection-and-switching-weapons-and-spells)):
    an offensive elemental augment gives weapons the damage of the currently selected element
@@ -125,10 +140,13 @@ real trade-off instead of a dead stat for melee fighters.
 
 ### Growth and interactions
 
-- Every augment is its own active skill. It grows with hXP while it is active in won fights.
-  A higher skill gives more effect or less bound mana.
-- Elemental augments shift the attributes like the matching magic does (fire raises fire
-  resistance and lowers ice resistance). The body augment shifts nothing.
+- **Elemental augments grow with the element skill:** fire magic covers the fire bolt and
+  the fire blade. Only the **body augment** is a skill of its own. Augments grow with hXP
+  while they are active in won fights.
+- A higher skill gives **more effect**, not less bound mana (skills give effect, not lower
+  costs).
+- Augments shift no attributes permanently. A **defensive augment** adds resistance points
+  while it is active (see [progression.md](progression.md#resistances)).
 - **Protect or harden:** a defensive augment that absorbs damage slows the growth of the
   matching resistance. Only what actually has an effect counts (like warm armor against
   cold).
@@ -181,7 +199,8 @@ real trade-off instead of a dead stat for melee fighters.
 
 - Each form and each element is designed once; an ice bolt is bolt plus ice. New forms or
   elements cost work only once.
-- **One skill per element** (fire magic, ice magic …) – the ability to cast. The imprint (the
+- **One skill per element** (fire magic, ice magic …) – the ability to cast, including the
+  elemental augments of that element. The imprint (the
   being's alignment) strengthens the element on top of that (see "Affinity and imprint" in
   [progression.md](progression.md)).
 - **Spell forms depend on the element skill** – the same for humanoids and monsters: a certain
@@ -241,7 +260,7 @@ real trade-off instead of a dead stat for melee fighters.
     also makes hiding easier.
   - Instant death at most as a rule-break of a legendary form.
 - **Weight as the basis for movement** (prompted by heaviness): movement costs stamina by
-  weight (body plus load) relative to strength – the same logic as for weapons. Heaviness only
+  weight (body plus load) relative to strength (running, sprinting). Heaviness only
   raises this weight temporarily. Later usable for armor (heavy armor costs more stamina when
   moving, see [items.md](items.md)) and species (saurian heavy, slime light). Heaviness is
   especially hard on flyers – earth brings them down.
@@ -283,11 +302,13 @@ There are three wheels:
 ### Weight on the body and the bag
 
 - **Weapons carried on the body count towards weight**, even when not equipped – just like
-  armor. More weight means running and dodging cost more stamina and are slower (movement by
-  weight relative to strength).
+  armor. More weight means dodging costs more stamina (weight relative to body weight), and
+  running and sprinting become slower once weight is too high for your strength; sprinting
+  then also costs more stamina.
 - Many weapons on you = flexible but heavy; only one sword = agile; pure mages without
   weapons are the lightest.
-- Stamina per weapon attack still depends on strength and the weapon's weight.
+- Stamina per weapon attack depends on the weapon's weight relative to your body weight and
+  on its demand.
 - Open: **how many weapons can be carried on the body.** Besides weight as a soft limit,
   possibly slots: back for one or two large weapons, hip for two, quiver, shield mount. More
   slots later through equipment (e.g. a belt).

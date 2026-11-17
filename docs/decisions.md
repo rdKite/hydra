@@ -358,3 +358,54 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   **look**. No strengths or weaknesses against attack types (too complex for the use case).
   A building tier needs a minimum material tier (tier 3 needs T3), so regions without T3
   material need trade.
+
+## 2026-11-17
+
+- **Attributes made concrete.** Body attribute = base value of the species or form × (1 + 2 %
+  × level) + training through strain (capped). Attributes are no longer level-independent.
+  Scale: 10 HP per vitality, 10 stamina per endurance, 10 mana per spirit; human base 100
+  (vitality, endurance), spirit 60; strength stays in weight units. After an evolution a
+  monster is deliberately weaker at first.
+- **One quantity, one source.** Reason: levers on the same quantity multiply (bar × strength
+  × skill would have given nine times as many strikes at level 100). Hard limits were
+  rejected. Costs come only from weight ÷ body weight (× demand); neither strength, dexterity
+  nor skills lower them. Skills give effect, not lower costs; traits give no numbers; skills
+  and titles raise no attributes, but titles may raise maximum HP or reserve.
+- **Strength** = damage of heavy weapons and handling (turning, running, sprint cost, drawing
+  a bow). **Dexterity** = damage of light weapons, weak-point multiplier, dodge distance and
+  speed, jump height, fall damage, steady aim as visible bow sway (no random spread, no aim
+  assist for bows). Dropped for dexterity: attack speed, precision, climbing, balancing.
+  **Endurance** and **spirit** only set their bar; **vitality** sets HP, healing rate (always
+  active) and the size of the reserve. Regeneration of all bars is a share per second, fixed
+  per species; the regeneration delay is replaced by "no regeneration during an action".
+- **Capabilities** (new term): fixed, non-levelling abilities per form or race that unlock
+  an action – dodge, jump, crouch, plus pursuit, front shield, glide/fly and wall-walking from
+  the body-skill catalogue. Gigantic forms have no dodge or jump; HP and resistances are
+  their counter. Alternatives (roll, teleport) replace the standard later.
+- **Perception against perception** instead of a stealth skill; a detection radius (about
+  15 m at equal values, shifted by the ratio, movement incl. crouching, weight incl.
+  equipment, light and dark fields); telegraphs are not affected. Perceived enemies are shown
+  roughly, blurred by the server.
+- **Block, rebound, interrupt, weak point:** a raised block costs stamina per second (shield
+  weight); block cost and rebound are shares of the damage actually blocked; interrupts
+  depend only on a share of maximum HP (weight, weapon type and size no longer matter); the
+  weak-point multiplier scales with dexterity, independent of weapon weight.
+- **Resistances as points** with one flattening curve instead of shares; no level growth;
+  immunity only as a property of a form; skills no longer shift resistances.
+- **Damage:** progress bonuses (skill, titles, strength/dexterity, imprint, hilt) are added
+  up, situational factors (charge, chain, weak point) multiplied; no direct damage or HP
+  bonus per level; strength or dexterity by a smooth share "heavy" from weapon weight ÷ body
+  weight.
+- **Better weapons:** rarity gives +12 % damage and +6 % **demand** per level (a new factor on
+  stamina cost), the same +12 % on armor points. Compared with Guild Wars 2 (about 8 % per
+  level, flattening at the top); flattening was not taken. Requirements stay soft.
+  Balancing target: a human at level 0 manages just under two light strikes in a row with a
+  longsword of the lowest rarity.
+- **Skill list:** seven weapon skills with uniform IDs, eight element skills (they also cover
+  the elemental augments), one body-augment skill, six crafting skills (weapon and armor
+  smithing, weapon and armor carving, leatherworking, tailoring) with a processing type per
+  material; each component is made by its own craft, shields belong to the armor side.
+  Monsters: bite as the wolf's basic attack, wear down becomes its trait. Dropped as skills:
+  dodge, stealth.
+- Phase 1 (`phase-1.md`, `values.json`, code) is not changed by this entry; the build session
+  adapts it.

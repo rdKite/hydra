@@ -15,8 +15,8 @@ Three separate pillars that grow in different ways:
 | | What | Grows through | Level-dependent | hXP |
 |---|---|---|---|---|
 | **Character level** | base level | nXP from defeated enemies | – | – |
-| **Skills** (active) | what you *do* – attack and defence alike (swordsmanship, fire magic, dodge, block) | using them in combat | yes | yes |
-| **Attributes** | what you *are* – resistances and body attributes | exposure or strain | no | no |
+| **Skills** (active) | what you *do* – attack and defence alike (sword fighting, fire magic, shield fighting, weapon smithing) | using them | yes | yes |
+| **Attributes** | what you *are* – resistances and body attributes | body attributes: level (+2 % of the base per level) plus strain; resistances: exposure only | body attributes: partly | no |
 
 ### Skills
 
@@ -26,55 +26,123 @@ Three separate pillars that grow in different ways:
   [Levelling up](#levelling-up-level-skills-imprint)).
 - So letting friends beat you up only pays off if the other person is defeated at the end
   and accepts a respawn penalty.
-- **Skills must have a noticeable effect.** Whoever dodges a lot dodges noticeably better
-  (a longer and faster dodge step, less stamina) and so reaches flank and back more easily.
-  A skill level-up should be felt in the hand, not only in a number.
+- **Skills must have a noticeable effect.** Whoever fights a lot with the sword hits
+  noticeably harder and keeps chains going longer. A skill level-up should be felt in the
+  hand, not only in a number. Skills give **effect, not lower costs** (see
+  [One quantity, one source](#one-quantity-one-source)).
+- **Not every ability is a skill:** dodge, jump and crouch are **capabilities** of the form
+  or race – they do not level (see [monsters.md](monsters.md#capabilities)); how well you
+  dodge comes from dexterity. Sneaking is not a skill either (perception against
+  perception).
+
+#### Skill list
+
+| Group | Skills (IDs) |
+|---|---|
+| **Weapon families** (7) | `dagger_fighting`, `sword_fighting`, `axe_fighting`, `mace_fighting` (blunt weapons), `polearm_fighting`, `archery`, `shield_fighting` |
+| **Elements** (8) | fire, ice, lightning, earth, light, dark, poison and wind magic – the ability to cast; unlocks the spell forms and covers the elemental augments of that element |
+| **Augment** (1) | body augment |
+| **Crafting** (6) | `weapon_smithing`, `armor_smithing`, `weapon_carving`, `armor_carving`, `leatherworking`, `tailoring` (see [items.md](items.md#crafting-skills)) |
+| **Body skills** (monsters only) | active ones from the shared catalogue: slam, projectile, bite, charge, pounce, howl/roar, tail strike, stomp, threads/web (see [monsters.md](monsters.md#body-skills-monsters)) |
+
+- A humanoid has 22 skills; monsters add their body skills and use no weapon skills.
+- Gathering (ore, wood) has no skill – it trains attributes. Building at the camp has none
+  for now.
+- **What skills may improve:** damage (into the pool of progress bonuses), chains, drawing
+  and switching, interrupts, properties of the family (block arc, reach; for magic range,
+  field size, debuff build-up), plus traits and titles. **Not:** stamina or mana costs,
+  turn rate (strength), weak-point multiplier (dexterity).
 
 ### Attributes: resistances and body attributes
 
-- **Resistances** (physical, magical, fire, ice …) grow only through exposure.
+Attributes are what you *are*: six **body attributes** and one **resistance** per damage
+type. Body attributes grow with the level and through strain; resistances only through
+exposure.
+
+#### Value of a body attribute
+
+**Attribute = base value of the species or form × (1 + 2 % × level) + training**
+
+- **Base value:** comes from the body – the form for monsters, the race for humanoids. An
+  evolution changes it. Reference: an untrained human at level 0 has 100 in vitality and
+  endurance and 60 in spirit; strength stays in weight units (human 80).
+- **Level:** +2 % of the base value per level, linear. A human has 100 vitality at level 0
+  and 300 at level 100.
+- **Training** comes on top: strain close to your own limit, counted per action (a sword
+  strike trains strength, separately from the skill XP). Growth depends on intensity –
+  only strain that really challenges you relative to your own value counts. Training is
+  capped; cap and speed depend on the species (affinity) and are set in balancing.
+- **After an evolution** a monster is deliberately weaker at first (new form, level 0) and
+  overtakes its old values over time.
+- **Neither skills nor traits raise attributes.** Skill titles may passively raise maximum
+  HP or the maximum reserve (see [Skills](#skills)).
+- **hXP do not flow into attributes.** The hardship system rewards skills and rare
+  evolutions.
+
+#### What each attribute does
+
+| Attribute | Gives | Grows through (training) |
+|---|---|---|
+| **Vitality** | **10 HP per point**; healing rate (always active, also in combat); size of the reserve | surviving heavy damage, healing injuries, holding out long on low reserve |
+| **Endurance** | **10 stamina per point** – the bar only | running, sprinting, swimming, flying, fighting until stamina is really empty, carrying heavy armor |
+| **Spirit** | **10 mana per point** – the bar only (spell damage comes from element skill, imprint and damage bonuses) | using mana until exhausted |
+| **Strength** | damage of **heavy** weapons; handling: turn rate, running and sprinting speed and sprint cost when the weight ratio (weight ÷ strength) is high, how fast a bow can be drawn; whether a heavy weapon can be handled at all | swinging heavy weapons, carrying heavy loads, mining ore, chopping wood |
+| **Dexterity** | damage of **light** weapons; the weak-point multiplier; dodge distance and speed; jump height (small range); fall damage; steady aim with a bow (less sway) | dodging, jumping, surviving falls, hits with a bow, precise crafting work |
+| **Perception** | detection radius against other characters – perception against perception (see stealth and perception in [combat.md](combat.md#3-stealth-and-perception)) | detecting hidden characters, staying unnoticed near enemies, exploring |
+
+- Endurance, spirit and vitality form a triangle with the three bars stamina, mana and
+  reserve (see Stamina, mana and reserve in [magic.md](magic.md)). The **regeneration** of
+  all three bars is a share of the maximum per second, **fixed per species**.
+- **Dexterity does not shorten wind-ups** (that would break "you can react to everything")
+  and gives no "precision" – there are no random crits to make precise.
+- **Climbing and balancing** are not part of the design for now.
+
+#### One quantity, one source
+
+When several levers act on the same quantity, they multiply and run away (e.g. a bigger
+stamina bar × more strength × skill cost reduction gave nine times as many strikes per bar
+at level 100). So each quantity has **exactly one source**, and no hard caps are needed:
+
+| Quantity | Only source |
+|---|---|
+| Size of a bar (HP, stamina, mana, reserve) | vitality, endurance, spirit (level + training; titles may add HP and reserve) |
+| Regeneration | a share per second, fixed per species |
+| Cost of an action | what you use and how heavy it is relative to your **body weight**; for weapons also their **demand**; for spells the spell form and charge |
+| Damage | see [Damage](#damage) |
+| Handling (turning, running and sprinting speed, drawing a bow) | strength (weight ÷ strength) |
+| Movement (dodge distance and speed, jump, fall damage) | dexterity |
+
+- **Growth goes into damage, not into more strikes:** a bigger bar lets you use heavier and
+  better weapons (more damage, more cost) and stronger spell forms. Strength decides
+  *what* you can wield, endurance *how long*.
+- **Skills give effect, not lower costs** – also for augments (more effect, not less bound
+  mana).
+
+#### Resistances
+
+- **Points, not shares:** a resistance is a point value per damage type. All sources add
+  points: base value of the species (from its **affinity**), training through exposure,
+  **imprint**, **armor**, an active **defensive augment**.
+- **One flattening curve** turns the sum into damage reduction at the very end, e.g.
+  `reduction = points ÷ (points + 100)`: 100 points = −50 %, 300 = −75 %, 900 = −90 %. No hard
+  cap – every point helps, but less and less; 100 % is never reached.
+- **Negative points** are a weakness (more damage), e.g. slimes against blunt.
+- **Training only through exposure**, no growth with the level – that is the identity of
+  resistances (ice bathing, glaciers):
   - Hits in combat count as external influence and give resistance XP directly on every
     hit – much faster than through the environment. This applies to hits from monsters
     (NPCs); for hits from players see Friendly fire and reputation in [world.md](world.md).
   - The environment also works (staying near fire for a long time, ice bathing), but only
     with a massive time investment. Whoever deliberately spends many hours on it may be
     rewarded – but has to take care not to die doing it.
-- **Body attributes** work the same way, but through strain close to your own limit instead
-  of through exposure. This also counts directly per action in combat – a sword strike
-  trains strength, separately from the skill XP for swordsmanship. Proposal:
-
-  | Attribute | Grows through | Affects |
-  |---|---|---|
-  | **Strength** | swinging heavy weapons, carrying heavy loads, mining ore, chopping wood | damage of heavy weapons, carrying capacity |
-  | **Endurance** | running, swimming, climbing, flying, fighting until stamina is really empty | stamina: maximum and regeneration |
-  | **Dexterity** | climbing, balancing, ranged hits, precise crafting work | attack speed, precision, fall damage |
-  | **Vitality** | surviving heavy damage, healing injuries, holding out long on low reserve | maximum HP, healing rate, reserve |
-  | **Spirit** | using mana until exhausted | mana: maximum and regeneration |
-  | **Perception** | recognising telegraphed attacks and dodging them, discovering hidden enemies, exploring | detecting hidden enemies; at higher levels, recognising telegraphed area attacks earlier and better |
-
-  Endurance, spirit and vitality form a triangle with the three bars stamina, mana and
-  reserve (see Stamina, mana and reserve in [magic.md](magic.md)).
-- **Independent of level and capped.** Most players reach roughly their cap when they reach
-  max level. Whoever grinds early (e.g. lots of ice bathing at level 1) has a head start
-  later in the game – but no permanent advantage.
-- **Growth depends on intensity:** only exposure that really hits you relative to your own
-  value counts. As cold resistance grows, a cold lake gives less and less; then you need
-  glaciers in the high mountains. So early grinding is limited by the world instead of by
-  the level, and whoever wants more has to explore. Conditions count only if they actually
-  take effect (warm armor → no cold).
-- **hXP do not flow into attributes.** The hardship system rewards skills and rare
-  evolutions.
-
-### Species/race and skills shape the attributes
-
-- **Base value, cap and growth** depend on the race or species – through its
-  **affinities** (see [Affinity and imprint](#affinity-and-imprint)). A fire salamander
-  starts with high fire resistance and can push it far; monster evolutions can shift these
-  values.
-- **Skills raise or lower attributes by a percentage.** Fire magic raises fire resistance
-  but lowers ice resistance; ice magic the other way round.
-- **Opposing elements** create trade-offs. Three pairs and three loners (poison, wind,
-  physical).
+  - **Growth depends on intensity:** as cold resistance grows, a cold lake gives less and
+    less; then you need glaciers in the high mountains. So early grinding is limited by the
+    world instead of by the level, and whoever wants more has to explore. Conditions count
+    only if they actually take effect (warm armor → no cold).
+- **Skills do not shift resistances** (the imprint does that: it describes the being).
+  Elemental augments shift nothing permanently.
+- **Opposing elements** create trade-offs: many points in one element lower the points in its
+  opposite. Three pairs and three loners (poison, wind, physical).
 
   | Element | Opposite | Raise through environment |
   |---|---|---|
@@ -89,14 +157,44 @@ Three separate pillars that grow in different ways:
   | **Physical** | – | every hit with weapons or claws; split into **slash, pierce, blunt** (see Weapons in [combat.md](combat.md)) |
 
   All elements except physical count as magical damage types.
-- **Incorporeal beings** (e.g. ghosts) are naturally immune to physical damage, but weak
-  against all magical damage types.
-- **Immunity is possible, but it costs:** whoever becomes immune to a damage type has a
-  much lower resistance to the opposite element. This allows highly specialised characters
-  – with consequences for group building and play styles (groups complement each other,
-  enemies adapt to weaknesses).
+- **Immunity** exists only as an explicit property of a form, not by stacking points:
+  **incorporeal beings** (e.g. ghosts) are immune to physical damage but weak against all
+  magical damage types; legendary forms may break rules.
+- Highly specialised characters remain possible – with consequences for group building and
+  play styles (groups complement each other, enemies adapt to weaknesses).
 - Legendary forms and classes can raise individual caps – also the cap of an imprint and
   the max level (see [Levelling up](#levelling-up-level-skills-imprint)).
+
+### Damage
+
+```
+damage = base damage (weapon or spell form: material, rarity, weight)
+       × (1 + sum of progress bonuses)           ← added up
+       × situational factors (charge, chain, weak point)   ← multiplied
+       → split by damage type (physical part, element part)
+       → each part reduced by the target's resistance curve
+```
+
+- **Progress bonuses are added up** into one pool: skill level, skill titles, strength or
+  dexterity, imprint (element part only), bonuses of the hilt. Multiplied, they would grow
+  far faster than HP (about ×28 against ×3 at level 100).
+- **Balancing target:** at level 100 with normal play the pool is about +200 %, so damage
+  grows roughly like HP and the length of a fight between equals stays stable. Whoever
+  plays hard has higher skills and lies above it.
+- **No direct damage bonus per level** – the level acts through strength and dexterity.
+- **Situational factors are multiplied:** charge, chain and weak point reward position and
+  play in the moment; each is capped on its own and does not grow with the level. Dexterity
+  raises only the weak-point factor.
+- **Base damage comes from equipment** (material, rarity, weight) – the lever for reinvesting
+  a bigger bar (see [items.md](items.md#what-makes-a-weapon-better)).
+- **Strength or dexterity, with a smooth transition:** weapon weight ÷ the wielder's body
+  weight gives a share "heavy" between 0 and 1. Bonus = share × strength bonus +
+  (1 − share) × dexterity bonus. Both bonuses count only what level and training added on
+  top of the species' base value – so a colossus' huge strength does not give absurd damage
+  by itself; its large body weapons do that through their base damage. For a giant, a
+  greatsword is a light weapon.
+- Guard rail stays: against roughly equal opponents, no death from full health in one hit
+  (see [combat.md](combat.md#high-damage-no-meat-shields)).
 
 ---
 
@@ -221,9 +319,10 @@ Two terms for two things – for monsters and humanoids alike:
 ### Character level
 
 - **Pacemaker and base values:** the level sets *when* skills can level up and when
-  milestones come (imprint, evolution, hidden classes and titles). On top of that a little
-  more HP and base damage per level – but most of the strength comes from skills,
-  attributes and equipment.
+  milestones come (imprint, evolution, hidden classes and titles). On top of that each
+  level raises the body attributes by 2 % of their base value – so more HP, a bigger bar and
+  more damage through strength and dexterity. There is **no direct HP or damage bonus per
+  level**. Most of the strength still comes from skills, attributes and equipment.
 - **Max level (guideline values, valid until further notice):** because skills and imprints
   are reset on evolution, an upper limit for the total level is no longer needed; each form
   has its own cap.
@@ -243,7 +342,7 @@ Two terms for two things – for monsters and humanoids alike:
   - Humanoid races differ through affinities, base values, and caps and growth of
     attributes – not through more levels.
   - Legendary humanoids are not planned for now.
-- Most attributes reach roughly their cap at max level.
+- Most players reach roughly their training cap of the attributes at max level.
 
 ### Evolution (monsters)
 
@@ -304,9 +403,10 @@ Two terms for two things – for monsters and humanoids alike:
 - **No decay** of unused skills (frustrating, leads to mandatory grinding).
 - **No skill upgrades:** skills simply keep levelling as long as possible.
 - **Skill titles every 30 levels** (30, 60, 90, 120, 150 – five per skill): they raise the
-  **damage** of the matching weapon or element by a percentage; for skills without damage
-  (dodge, block, stealth, crafting …) the **core effect** of the skill (e.g. dodge
-  distance, damage reduction, efficiency). Titles can also be **requirements for
+  **damage** of the matching weapon or element by a percentage (added to the pool of
+  progress bonuses); for skills without damage (shield fighting, crafting …) the **core
+  effect** of the skill (e.g. block arc, efficiency). Titles may also passively raise
+  **maximum HP or the maximum reserve**. Titles can also be **requirements for
   evolutions** – especially for elemental magic and **in addition** to the imprint, where
   casting is concerned (e.g. prism slime: imprints and a magic title). The imprint stays the
   main requirement because it describes the being.
@@ -315,9 +415,9 @@ Two terms for two things – for monsters and humanoids alike:
   skill. Rhythm: choice, choice, title. Traits give **properties**, titles give the
   percentages. Freely changeable outside combat; for monsters reset together with the
   skills on evolution. Example traits:
-  - Swordsmanship – the chain no longer ends from a single enemy hit.
-  - Dodge (high level) – the dodge step becomes a short-range teleport, for example behind
-    the enemy.
+  - Sword fighting – the chain no longer ends from a single enemy hit.
+  - Traits give no numbers: they raise no attributes. (A short-range teleport instead of the
+    dodge step is no longer a trait but an alternative dodge capability.)
 - Skill titles and traits need no hardship rating – only the skill level. Hidden classes and
   titles such as *Dragonslayer* still depend on special achievements or on the hardship
   rating.

@@ -21,7 +21,9 @@ crafting plans, because that is Unreal's visual scripting).
 | Geschick | **dexterity** | |
 | Vitalität | **vitality** | governs HP and reserve |
 | Geist | **spirit** | governs mana |
-| Wahrnehmung | **perception** | detects hidden enemies (icons), reads telegraphed area attacks earlier |
+| Wahrnehmung | **perception** | sets the detection radius – perception against perception; there is no stealth skill |
+| Entdeckungsradius | **detection radius** | distance at which a character notices another; default at equal perception, shifted by the ratio of the values, movement, weight and light/dark fields |
+| Training (eines Attributs) | **training** | growth of a body attribute through strain, on top of the level growth; capped |
 | Widerstand | **resistance** | per element |
 | Gewicht | **weight** | body plus load; costs stamina when moving |
 
@@ -66,7 +68,8 @@ crafting plans, because that is Unreal's visual scripting).
 | Positionskampf | **positional combat** | position, facing and resources decide – no timing windows |
 | Richtungsblock / Blockbogen | **directional block** / **block arc** | protects only an arc in front |
 | Rückprall | **rebound** | extra stamina an attacker loses when hitting a block |
-| Ausweichen | **dodge** | pure movement, no invulnerability |
+| Ausweichen | **dodge** | pure movement, no invulnerability; a capability, not a skill |
+| Springen / Ducken | **jump** / **crouch** | capabilities; crouching lowers the detection radius and the character's height |
 | Drehgeschwindigkeit | **turn rate** | from weight ÷ strength, slower while blocking and attacking |
 | Ansage / Ausholen | **telegraph** / **wind-up** | |
 | Trefferfläche | **hit area** | |
@@ -89,6 +92,9 @@ crafting plans, because that is Unreal's visual scripting).
 | German | English | Note |
 |---|---|---|
 | aktiver Skill | **skill** | grows by use |
+| Art-Fähigkeit | **capability** | fixed ability of a form or race (dodge, jump, crouch, glide …); passive, does not level |
+| Fortschritts-Bonus | **progress bonus** | skill, title, strength/dexterity, imprint, hilt – added up into one pool for damage |
+| Lage-Faktor | **situational factor** | charge, chain, weak point – multiplied, each capped |
 | Element-Skill (z. B. Feuermagie) | **element skill** (e.g. fire magic) | |
 | Körper-Skill | **body skill** | shared catalogue, bound to body features |
 | Skill-Titel / verborgener Titel | **skill title** / **hidden title** | skill titles every 30 skill levels (percent bonus) |
@@ -128,12 +134,17 @@ crafting plans, because that is Unreal's visual scripting).
 |---|---|---|
 | Seltenheit | **rarity** | raw, common, uncommon, rare, epic, legendary, mythic, unique |
 | Roh / gewöhnlich / ungewöhnlich / selten / episch / legendär / mythisch / einzigartig | **raw** / **common** / **uncommon** / **rare** / **epic** / **legendary** / **mythic** / **unique** | also used for form rarity; the design docs sometimes say "normal" for common forms |
-| Waffenfamilie | **weapon family** | |
+| Waffenfamilie | **weapon family** | skills: `dagger_fighting`, `sword_fighting`, `axe_fighting`, `mace_fighting` (blunt), `polearm_fighting`, `archery`, `shield_fighting` |
 | Eigenheit (einer Waffenfamilie) | **weapon property** | not "trait" – that is a skill trait |
 | Komponente | **component** | |
 | Klinge / Griff | **blade** / **hilt** | |
 | Grundschicht / Futter | **base layer** / **lining** | |
 | Bauplan | **schematic** | not "blueprint" (Unreal term) |
+| Anspruch (einer Waffe) | **demand** | factor on a weapon's stamina cost on top of weight ÷ body weight; +6 % per rarity level |
+| Verarbeitungsart | **processing type** | metal, hard, soft or cloth – decides which craft works a material |
+| Waffenschmieden / Rüstungsschmieden | **weapon smithing** / **armor smithing** | crafting skills for metal |
+| Waffenschnitzen / Rüstungsschnitzen | **weapon carving** / **armor carving** | crafting skills for wood and hard monster materials |
+| Lederer / Schneider | **leatherworking** / **tailoring** | crafting skills for soft materials / cloth |
 | Legierung | **alloy** | |
 | Katalysator / Kern | **catalyst** / **core** | |
 | Meisterstück | **masterwork** | |
@@ -181,6 +192,7 @@ crafting plans, because that is Unreal's visual scripting).
 | – | **an attack binds** – from the press to the end of the strike it cannot be dodged out of or blocked from (German: "Angriffe binden") |
 | Blockbruch | **block break** – a block that fails because the stamina is empty |
 | Schlag (Schleim) | **slam** – the slime's melee body attack |
+| Biss | **bite** – the wolf's basic attack (body skill); *wear down* is a property or trait of it |
 | Geschoss (Körper-Skill) | **projectile** – the slime's body skill; it casts the spell form **bolt** |
 | Feuerfeld | **fire field** – the element field of fire |
 | – | **off hand** / **weapon hand** – the two hand buttons; each does what the hand holds |

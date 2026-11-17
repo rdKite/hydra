@@ -20,15 +20,19 @@ designed once and applies to every form with a matching body.
 | Ranged attack from the body | **projectile** | slimes, saurians with plates, spiders |
 | Horns, heavy head | **charge** (ramming attack out of a sprint) | saurians, later other horned creatures |
 | Jumping legs | **pounce** (leap out of a run) | wolves, cats |
-| Endurance runners | **pursuit** (while chasing, movement costs less stamina) | wolves |
-| Jaws, bite | **wear down** (a bite costs the target stamina) | wolves, other pursuit hunters |
+| Endurance runners | **pursuit** (while chasing, movement costs less stamina) – a capability | wolves |
+| Jaws, bite | **bite** (the basic attack, like the slime's slam); **wear down** (a bite costs the target stamina) is a property or trait of bite | wolves, other pursuit hunters |
 | Voice | **howl** or **roar** (strengthens allies) | wolves, maybe dragons |
 | Tail | **tail strike** (variants: club to the rear, stinger, whip with long reach) | saurians, lizards |
 | Heavy body | **stomp** (area attack) | colossi |
-| Neck frill, armor plate at the front | **front shield** (blocks only to the front, very strong there) | horned saurians |
-| Wings | **glide**, **fly** | flying lizards, dragons |
-| Spinnerets | **threads**, **web**, **wall-walking** | spiders |
+| Neck frill, armor plate at the front | **front shield** (blocks only to the front, very strong there) – a capability | horned saurians |
+| Wings | **glide**, **fly** – capabilities | flying lizards, dragons |
+| Spinnerets | **threads**, **web**; **wall-walking** – a capability | spiders |
 
+- **Active and levelling:** slam, projectile, bite, charge, pounce, howl/roar, tail strike,
+  stomp, threads/web. **Passive ones are capabilities** (pursuit, front shield, glide/fly,
+  wall-walking): they do not level and sit in the form's list (see
+  [Capabilities](#capabilities)).
 - **How a form gets its body skills:** some **base skills come with the form** – it feels
   different at once. Other skills are only **accessible**. They are learned by use or under
   a condition (e.g. a minimum value in an attribute). So there is still something to
@@ -176,7 +180,7 @@ Endurance hunters.
 
 - **Role:** the wolf wins because it lasts longer and wears its prey down – not through
   short sprints or stealth. In return it is not especially tough and is easy to interrupt
-  (little weight).
+  (small HP pool).
 - **Affinity:** high for ice and wind; low for fire. **Perception:** high (tracker). All
   forms share their own slim quadruped rig.
 - **Two directions:** physical (with a branch for buffs) and through the elements ice and
@@ -264,14 +268,35 @@ saurian.
 - This way, evolution conditions that demand full imprint efficiency early can actually be
   reached.
 
+## Capabilities
+
+**Capabilities** are fixed abilities of a form or race – passive, they **do not level**.
+Each form and race has its **own list** (separate from the catalogue of body skills, which
+is for monsters only; humanoids have capabilities too).
+
+- A capability **unlocks an action**. Without it, the action does not exist for that form.
+- **First capabilities:** **dodge**, **jump**, **crouch**; from the body-skill catalogue
+  **pursuit**, **front shield**, **glide/fly** and **wall-walking**.
+- **Most species have dodge, jump and crouch.** Gigantic forms have none of them – they are
+  such a large target that dodging would hardly help; their counter is a large HP pool and
+  high resistances. Slimes need no crouch (they are small anyway).
+- **How well** an action works comes from attributes, not from the capability: dexterity
+  sets dodge distance and speed and jump height (see [progression.md](progression.md)).
+- **Alternatives replace the standard** (later): e.g. a dodge roll or a short-range teleport
+  instead of the normal dodge step. A form has at most one variant per action; evolutions
+  can swap it.
+
 ## Size at character creation (humanoids)
 
 - Size can be adjusted and works through **body weight** – not through values such as
   strength or dexterity (those are earned in play):
-  - **Tall = heavier:** harder to interrupt, a little more reach. In return, movement costs
-    more stamina, you turn a little more slowly, and the hitbox is bigger.
-  - **Small = lighter:** movement costs less stamina, you turn a little faster, harder to
-    hit. In return, easier to interrupt and a little less reach.
+  - **Tall = heavier:** a little more reach; a weapon weighs a little less relative to the
+    body, so strikes cost slightly less stamina. In return, dodging costs more, you turn a
+    little more slowly, you are noticed from a little further away, and the hitbox is
+    bigger.
+  - **Small = lighter:** dodging costs less, you turn a little faster, you are noticed later,
+    harder to hit. In return, a little less reach and slightly costlier strikes.
+  - Size no longer affects interrupts (they depend on a share of maximum HP).
 - **Limited range per race** (e.g. ±10 %), so that the hitbox difference stays small and
   does not become a must-have advantage.
 - **Races have different base sizes** (e.g. dwarves smaller). This is balanced through

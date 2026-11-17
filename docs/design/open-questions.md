@@ -24,6 +24,19 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
       [progression.md](progression.md)); slime, wolf and saurian are set. Exact values for
       "high strength", "high vitality" etc. in balancing.
 - [x] Slime tree rebuilt (element and physical branch).
+- [x] Attributes, costs and damage – concrete model (2026-11-17): base × (1 + 2 % × level)
+      + training; one quantity, one source; damage with added-up progress bonuses;
+      resistances as points with a curve (see
+      [progression.md](progression.md#attributes-resistances-and-body-attributes)).
+- [ ] Attribute training: cap and speed per species (affinity) – in balancing.
+- [ ] Strikes in a row grow with the bar (a human at level 100 has about 3.5× the stamina):
+      check in playtests whether this is too much, especially with light weapons. If so:
+      absolute regeneration per species, or less level growth for endurance and spirit.
+- [ ] Exact formulas: dodge cost (weight, form), strength/dexterity share "heavy" and its
+      limits, size of each progress bonus, caps of the situational factors, resistance curve
+      constant, detection radius factors – in balancing.
+- [ ] Display of perceived enemies: minimap or compass? Decide with the user interface
+      (Phase 2).
 - [ ] Instinct: size of the permanent bonus and the learning bonus, decrease over several
       evolutions.
 - [x] Epic forms for slime and saurian – current trees: prism and king slime; titan (see
@@ -61,16 +74,18 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
 - [x] How is "participation" measured for roles without damage and healing? – No longer
       needed: hXP are split evenly within a group (see group fights in
       [progression.md](progression.md)).
-- [ ] Stamina, mana, reserve: exact numbers (cost per action, regeneration, use of the
-      reserve, threshold 50 %, floors of 20 % maximum and 50 % regeneration) – set in
-      balancing.
+- [ ] Stamina, mana, reserve: exact numbers (cost per action, regeneration share per
+      species, use of the reserve, threshold 50 %, floors of 20 % maximum and 50 %
+      regeneration) – set in balancing. Target: a human at level 0 manages just under two
+      light strikes in a row with a longsword of the lowest rarity.
 - [x] Slowing as a control effect – yes, through debuffs (chill, heaviness, headwind), but
       never down to a standstill; strength in balancing.
 - [ ] Block and dodge: exact numbers (block arcs, turn rate from weight ÷ strength with a
-      lower and upper limit, slowdown while blocking and attacking, rebound on the
-      attacker, dodge distance, length of telegraphs, weight classes, elemental damage that
-      goes through without a shield augment, time on the ground and when helping up) –
-      comes from balancing.
+      lower and upper limit, slowdown while blocking and attacking, holding cost of a
+      shield, share of blocked damage for blocker and rebound, interrupt threshold as a
+      share of maximum HP, dodge distance from dexterity, length of telegraphs, elemental
+      damage that goes through without a shield augment, time on the ground and when
+      helping up) – comes from balancing.
 - [x] Helping up – long time on the ground (e.g. 60 s), giving up yourself is possible,
       helping up costs unprotected time, in PvP you may finish off opponents on the ground.
 - [x] hXP against opponents who can finish you with one hit – no separate bonus; they are
@@ -115,7 +130,9 @@ In rough order.
 - [ ] Attacks: situational attacks (sprint, fall, counter, throw) later; numbers for chains
       and interrupts in balancing.
 - [ ] How many weapons can you carry on the body (slots, weight)?
-- [ ] Magic bag: size, origin, lockout time in combat.
+- [ ] Magic bag: size, origin, lockout time in combat. It weighs nothing. Raw materials for
+      building and for player items hardly overlap; building materials are rather moved by
+      NPCs without a bag (carts) – a hook for trade routes and raids in Phase 3.
 - [ ] Several elements at the same time: set the exact split of the effect in balancing.
 - [ ] Debuffs of the element fields: strength, build-up, caps – set in balancing.
 - [x] How skills and affinities or imprints are upgraded in detail – together with the level

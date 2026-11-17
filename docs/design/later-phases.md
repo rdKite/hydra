@@ -15,6 +15,13 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
 - [ ] Starting forms of wolf and saurian with first evolutions.
 - [ ] Threat rating and hXP; groups, reviving, hXP split evenly within the group; overview
       after the fight.
+- [ ] Attribute model: body attributes per form or race (base × (1 + 2 % × level) +
+      training), 10 HP / stamina / mana per point, regeneration per species, no
+      regeneration during actions; costs from weight ÷ body weight × demand; damage formula
+      with added-up progress bonuses; resistances as points with a flattening curve
+      (see [progression.md](progression.md#attributes-resistances-and-body-attributes)).
+- [ ] Capabilities per form or race (dodge, jump, crouch); dexterity for dodge, jump and
+      the bow's sway.
 - [ ] **Dungeon mode:** a few rooms, waves, one boss with telegraphed area attacks.
 - [ ] Fixed equipment sets; matchmaking "normal" (threat rating) and "ranked" (rank).
 - [ ] First balancing numbers from the measurements (stamina, mana, block arcs, turn rate, chains,
@@ -24,10 +31,14 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
 ## Phase 2 – fixed maps on dedicated servers
 
 - [ ] World, survival and camp or nest; reserve, resting, inn.
-- [ ] Exploring; sneaking and perception, sight cover from bushes, tall grass and crops (AI
-      sight check by raycast); resistances from the environment.
-- [ ] Crafting from components, materials and recipes, rarity up to legendary, magic bag,
-      weapons worn on the body.
+- [ ] Exploring; perception against perception with a detection radius (movement,
+      crouching, weight, light and dark fields), rough display of perceived enemies blurred
+      by the server; sight cover from bushes, tall grass and crops (AI sight check by
+      raycast); resistances from the environment; attribute training by strain.
+- [ ] Crafting from components, materials and recipes, rarity up to legendary (+12 %
+      damage, +6 % demand per level), magic bag, weapons worn on the body; six crafting
+      skills (weapon and armor smithing, weapon and armor carving, leatherworking,
+      tailoring), processing type per material.
 - [ ] Armor from material and schematic.
 - [ ] Full level system with all forms of the first lines; respawn penalty.
 - [ ] Veteran levels after max level (nXP, rising linearly, one skill level each, up to

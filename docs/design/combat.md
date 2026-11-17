@@ -112,21 +112,39 @@ check that fairly, even with different pings.
 
 | | How it works | What it costs | Weakness |
 |---|---|---|---|
-| **Directional block** | Protects only an **arc to the front** (the **block arc**); hits inside it are strongly reduced. The size of the arc depends on the shield or weapon. | Stamina per hit (depends on the weight of the attack); no regeneration while blocking; you turn more slowly while blocking | Whoever gets to your flank or back goes around the block |
-| **Dodge** | **Pure movement:** a quick step or jump, **without invulnerability**. Only whoever is still inside the hit area according to the server gets hit. | Stamina per step | Short recovery afterwards; whoever jumps too early lands in the next attack |
+| **Directional block** | Protects only an **arc to the front** (the **block arc**); hits inside it are strongly reduced. The size of the arc depends on the shield or weapon. | Stamina per second while raised (shield weight relative to body weight) plus a share of the **damage actually blocked** per hit; you turn more slowly while blocking | Whoever gets to your flank or back goes around the block |
+| **Dodge** | **Pure movement:** a quick step or jump, **without invulnerability**. Only whoever is still inside the hit area according to the server gets hit. A **capability** of the form (see below). | Stamina per step | Short recovery afterwards; whoever jumps too early lands in the next attack |
+
+### Dodge and jump are capabilities
+
+- **Dodge** and **jump** are **capabilities** of the form or race (see
+  [monsters.md](monsters.md#capabilities)): passive, they do not level. Whoever has the
+  capability can do the action; whoever does not, cannot. Most species have both;
+  **gigantic forms have neither** – they are such a large target that dodging would hardly
+  help. Their counter is a large HP pool and high resistances.
+- **Dexterity** sets how good the action is: dodge distance and speed, jump height (small
+  range), fall damage. Dodging trains dexterity; there is no dodge skill.
+- **Dodge cost** rises with weight (body plus load) and is set by the form; the exact
+  formula comes with balancing.
+- **Alternatives replace the standard** (later): e.g. a dodge roll or a short-range teleport
+  instead of the dodge step. A form has at most one variant per action.
 
 ### Shields and weapons in the block
 
 - **Buckler:** small arc, quick to turn, light – weak block.
 - **Round shield:** medium arc.
 - **Tower shield:** large arc and very strong block, but very slow to turn while blocking.
+- **Shield weight works both ways:** the heavier the shield, the more stamina it costs per
+  second to **hold** it raised, but the **less** stamina a blocked hit costs. Balancing must
+  keep large shields worthwhile.
 - **Blocking with the weapon** (two-handed or without a shield): small arc, weaker than a
   shield. Swords block well, daggers poorly.
 
 ### Turn rate
 
 - How fast a character can turn depends on the **ratio weight ÷ strength** (weight = body
-  plus load). This is the same logic as for stamina costs and interrupts.
+  plus load). Strength sets the handling (turning, running speed, drawing a bow); stamina
+  costs and interrupts do not depend on it.
 - Heavily armed characters and above all gigantic forms turn more slowly. Light and small
   ones react faster.
 - This is what makes flanking possible in the first place: whoever runs around a heavy
@@ -147,20 +165,26 @@ check that fairly, even with different pings.
 
 ### What stats and skills give
 
-- Lower stamina costs (strength and shield weight when blocking, dexterity when dodging).
-- More damage reduction.
-- Faster turning (through more strength or less load; skills mainly while blocking).
-- A slightly wider arc.
-- Longer and faster dodge steps – at high levels up to a short-range teleport, for example
-  behind the opponent (as a trait).
+Each quantity has **one source** (see [progression.md](progression.md#one-quantity-one-source)):
+
+- **Strength:** faster turning (weight ÷ strength), also while blocking.
+- **Dexterity:** longer and faster dodge steps, higher jumps.
+- **Shield skill:** a slightly wider arc (and traits).
+- **Stamina costs** depend only on what you carry relative to your body weight – neither
+  stats nor skills lower them.
+- A short-range teleport behind the opponent is no longer a trait; it becomes an
+  alternative dodge capability.
 
 ### Stamina, not openings
 
-- **Rebound:** an attack that hits a block costs the attacker extra stamina – without
-  timing, depending on weight.
-  - Equal weight: the attacker loses a noticeable amount; the defender pays for the block.
-  - Dagger against giant club: the defender pays a lot of stamina, the attacker hardly
-    anything.
+- **Block cost and rebound** both come from the **damage actually blocked** – one base, no
+  separate weight formula:
+  - the blocker pays a share of the blocked damage as stamina (smaller with a heavier
+    shield);
+  - the attacker loses a share of the blocked damage as stamina (**rebound**) – without
+    timing;
+  - heavy weapons deal more damage and so press blockers harder by themselves; axes
+    (shield breaker) and blunt weapons (concussion) add their property on top.
   - So against heavy opponents, dodging is often the better choice.
 - **Whiff:** a missed attack commits the attacker (attacks play through). That is the
   opening for flank and back. No stun.
@@ -177,7 +201,8 @@ check that fairly, even with different pings.
 
 ### Against constant blocking and spam
 
-- Stamina does not regenerate while you block.
+- A raised block costs stamina every second and stamina does not regenerate while you
+  block (no regeneration during any action, see [magic.md](magic.md#stamina-and-mana)).
 - When stamina is empty, the block breaks: you take the hit, but are not stunned.
 - **Feints:** cancelling an attack (with the block key) costs stamina. But it can bait the
   opponent into a block (no regeneration) or a dodge step (costs stamina).
@@ -204,8 +229,8 @@ check that fairly, even with different pings.
 - **Agile** (spider, lizard): long dodges or jumps, hardly any blocking.
 - **Armored** (beetle, turtle): strong directional block with a wide arc (armour at the
   front), hardly any dodging. Flank and back are the weakness.
-- **Colossus** (e.g. Queen Spider): no blocking or dodging (at most magical). In return: a
-  large HP pool, area attacks, slow. This is the one exception to "no meat shields". The
+- **Colossus** (e.g. Queen Spider): no blocking or dodging (at most magical; no dodge and
+  jump capability). In return: a large HP pool, high resistances, area attacks, slow. This is the one exception to "no meat shields". The
   skill here lies in placing area attacks and controlling space.
 - Slimes and similar creatures get no defence type of their own, but a high physical
   resistance.
@@ -218,8 +243,8 @@ check that fairly, even with different pings.
 - **Resistances:** dodged = no hit, no resistance XP. Block = reduced hit, some resistance
   XP ("dodge or harden").
 - **Skill XP:** only actions against real attacks count. Blocking counts on a hit inside
-  the arc. Dodging counts only if the attack would otherwise have hit you (the server
-  checks this via the hit area).
+  the arc. Dodging trains **dexterity** (not a skill) and counts only if the attack would
+  otherwise have hit you (the server checks this via the hit area).
 - **Reserve:** with low reserve, constant blocking becomes even more expensive, and
   positioning matters all the more.
 
@@ -262,20 +287,32 @@ check that fairly, even with different pings.
 
 - **Hard to notice, never invisible** (guiding principle: you must be able to react).
   Close up you can always be seen, in PvP for example as a slight shimmer.
-- **Deliberately simple:** detection works by comparing two values, not through sight,
-  sound and smell channels.
-  - **Stealth** (active skill, grows by use): raises the chance of not being detected.
-  - **Perception** (attribute, see [progression.md](progression.md)): how well you detect
-    hidden enemies.
-- **Perception grows independently of level**, and not only through sneaking enemies –
-  also by recognising telegraphed attacks and by exploring. So whoever plays in an area
-  without sneaking enemies has no lasting disadvantage.
-- **Higher perception** lets you recognise telegraphed area attacks earlier and better. The
-  telegraph itself stays visible to everyone; perception only gives a head start.
-- Race or species sets the base value, cap and growth of perception, as with other
-  attributes (wolves, for example, high).
-- **Light and dark** (proposal): a dark field makes hiding easier, a light field reveals.
-  This follows from the opposition of the two elements.
+- **Deliberately simple:** detection works by comparing **perception against perception**,
+  not through sight, sound and smell channels, and **without chance**. There is no stealth
+  skill: whoever perceives well also knows how to stay unnoticed.
+- **Detection radius:** two characters with **equal perception** notice each other at a
+  default radius (guide value about 15 m, between 10 and 20 m). The **ratio** of the two
+  values shifts it – the ratio, not the difference, so the radius between equals stays the
+  same at every level. Lower limit (e.g. 3 m: close up you are always noticed), upper limit
+  (e.g. 40 m).
+- **What shifts the radius** (few, all visible and predictable):
+  - **Movement:** standing still < crouching < walking < running/sprinting. **Crouching** is
+    a capability (most humanoids and wolves; slimes don't need it, giants can't); it also
+    makes the character lower, which works together with sight cover.
+  - **Weight including equipment** (noise, tremor): heavy armor and a colossus are noticed
+    from further away, a slime from close by. The effect is dampened (e.g. square root or
+    logarithm), so a colossus is not noticed from a kilometre away. Light armor makes a
+    scout. The magic bag weighs nothing.
+  - **Light and dark fields:** a dark field makes hiding easier, a light field reveals.
+- **Telegraphs are not affected:** telegraphed area attacks are purely visual and the same
+  for everyone; perception only concerns noticing hidden characters.
+- **Perception grows** by detecting hidden characters, by staying unnoticed near enemies and
+  by exploring – so whoever plays in an area without hidden enemies has no lasting
+  disadvantage. Race or species sets its base value (wolves and saurians, for example,
+  high).
+- **Display:** perceived characters you cannot see are shown **roughly** – direction and
+  approximate area – on a minimap or compass (which one is open). The **server** blurs the
+  position before sending it, so a cheat tool cannot read the exact one.
 - **Attack from hiding:** ends the hidden state. The first hit counts like a weak-point hit
   (even from the front), but is never lethal from full health against roughly equal
   opponents.
@@ -290,7 +327,7 @@ check that fairly, even with different pings.
 
 | | Sight cover (purely visual) | Perception (value comparison) |
 |---|---|---|
-| **What** | Bushes, tall grass, crops and similar block the view; you can walk through them | Icons show enemies nearby when their stealth loses against your own perception |
+| **What** | Bushes, tall grass, crops and similar block the view; you can walk through them | Icons show enemies inside your detection radius (perception against perception) |
 | **How** | Real geometry – what you cannot see, you cannot see | Comparison of two values (see above) |
 | **Accuracy** | Exact as soon as you have a clear view | Rough: direction and approximate position, no silhouette |
 
@@ -300,7 +337,7 @@ bushes – each layer has its own counter.
 - **Terrain acts only visually, not on values:** a forest offers more cover by itself than
   a meadow, because more objects break the line of sight there (bushes, trunks,
   undergrowth). A crop field covers well, but rustles when you move. No terrain bonuses on
-  the stealth value.
+  the detection radius.
 - **Always shown the same way:** covering plants are game objects, regardless of graphics
   settings and distance. Otherwise whoever hides grass and bushes would see hidden
   characters.
@@ -336,8 +373,8 @@ weapons.
 
 | Property | Affects | Related to |
 |---|---|---|
-| **Weight** (for bows: draw weight) | Stamina per strike, rebound on the block, weak-point scaling | Strength, stamina, rebound by weight |
-| **Speed** | Attacks per second | Dexterity |
+| **Weight** (for bows: draw weight) | Stamina per strike (weight ÷ body weight); base damage; whether strength or dexterity scales the damage; handling | Strength (handling), stamina |
+| **Demand** | Factor on the stamina per strike on top of the weight – how much force and control the weapon asks for; rises with rarity | Rarity (see [items.md](items.md#what-makes-a-weapon-better)) |
 | **Reach** | Distance to the opponent | – |
 | **Damage type** | Slash, pierce, blunt | Subtypes of physical |
 | **Weapon property** | One special ability per family | Counterpart to the body skills of monsters |
@@ -363,6 +400,14 @@ weapons.
   - Short bow – low draw weight, fast, also while running, little stamina, short range.
   - Longbow – high draw weight (needs strength), long range and high damage, drawing costs
     a lot of stamina, rather while standing.
+  - **Strength sets how fast you can draw** a bow, or whether you can draw it at all. A
+    bow drawn only briefly deals less damage, flies less far and sways more.
+  - **Steady aim as sway, not spread:** the crosshair visibly sways; the arrow flies exactly
+    where it points on release. The sway shrinks the longer you draw and the higher your
+    **dexterity**; with almost empty stamina it grows. No random spread. The sway must be
+    computable from time and a seed, so the server can check the shot.
+  - **No aim assist** and no automatic aiming through lock-on for bows – otherwise the sway
+    would be pointless.
 - **Arrowheads** set the damage type: broad for slash, narrow and armour-piercing for
   pierce, blunt for blunt.
 
@@ -373,9 +418,13 @@ weapons.
     hand is occupied.
   - **One-handed:** more stamina per strike, slower – but the off hand is free for a
     shield, focus or a second weapon.
-- **The limit follows by itself** from stamina cost ≈ weight ÷ strength × skill factor: if
-  a strike costs more stamina than someone has in total, it does not work. With enormous
-  strength even two greatswords are possible – expensive, but a nice goal.
+- **The limit follows by itself** from stamina cost ≈ weapon weight ÷ body weight × demand:
+  if a strike costs more stamina than someone has in total, it does not work. Strength sets
+  how well a heavy weapon can be handled (turning, drawing); with enormous strength and
+  endurance even two greatswords are possible – expensive, but a nice goal.
+- **Speed** is not a stat of its own: light weapons are fast because their wind-up is
+  short, and that wind-up stays fixed per weapon (telegraphs). Dexterity does not make
+  attacks faster.
 - Exceptions to this logic: bows always need two hands, shields always one. With light
   weapons the two-handed grip brings hardly anything.
 - A weapon held two-handed counts as **one** weapon and binds one set of augments.
@@ -395,11 +444,12 @@ weapons.
 - Instead, **weak points** with a fixed damage multiplier: for most monsters and humanoids
   the back; depending on the species also others (e.g. the flank of the horned saurian,
   whose neck frill protects to the front).
-- **Light weapons scale more strongly** with the weak-point multiplier – the lighter the
-  weapon relative to your own strength (weight ÷ strength), the more. So the dagger needs
-  no special rule; with light weapons it pays off especially to get to the back.
-- This gives a clear spectrum: **light = speed and weak points, heavy = force and stamina
-  pressure on blockers** (shield breaker, concussion).
+- **Dexterity scales the weak-point multiplier**, independent of the weapon's weight. Light
+  weapons scale their damage with dexterity too, so a dexterous fighter seeks the back. The
+  dagger's property "strong against weak points" therefore needs a **bonus of its own** on
+  the multiplier (set with the weapon numbers).
+- This gives a clear spectrum: **light = dexterity, speed and weak points, heavy = strength,
+  force and stamina pressure on blockers** (shield breaker, concussion).
 - **Dodging opens the way to the weak point:** a step to the side or behind the opponent –
   especially while they are committed to a missed attack – brings you to flank or back.
   The bonus comes from position, not from a timing window.
@@ -408,10 +458,10 @@ weapons.
 
 ### Skills and animations
 
-- **One skill per family** (dagger fighting, swordsmanship, axe fighting, blunt weapons,
-  polearms, archery, shield fighting) instead of one per individual weapon. Size is
-  handled by strength and weight. Skill titles and traits accordingly (e.g. *Sword
-  Master*).
+- **One skill per family** (`dagger_fighting`, `sword_fighting`, `axe_fighting`,
+  `mace_fighting` for blunt weapons, `polearm_fighting`, `archery`, `shield_fighting`)
+  instead of one per individual weapon. Size is handled by strength and weight. Skill
+  titles and traits accordingly (e.g. *Sword Master*).
 - **Animations** per family, weight class and grip instead of per individual weapon –
   every combination of weapon and grip would otherwise be too expensive.
 
@@ -464,26 +514,26 @@ Each hand has a key (e.g. left and right shoulder button). It does what the hand
 - A hit cancels the opponent's attack in progress if its **damage is high enough** – not
   tied to heavy attacks. No stun: the opponent can dodge or block at once; only their
   attack is gone.
-- The threshold depends on the **weight** of the target (body plus load): heavy characters
-  and colossi are hard to interrupt, light ones easy.
-- **Certain weapon types** have properties that shift interrupts in their favour: blunt weapons interrupt
-  more easily; heavy weapons are themselves harder to interrupt during their attack.
+- The threshold is a **share of the target's maximum HP**: a single hit must deal at least
+  that share. Characters with a large HP pool (colossi) are hard to interrupt by
+  themselves; weight, weapon type and size at character creation play no role.
 
 ### What skills improve
 
 No unlocked moves – skills improve values and properties that you can feel:
 
-- more damage;
-- less stamina or mana per attack;
+- more damage (added to the pool of progress bonuses, see
+  [progression.md](progression.md#damage));
 - stronger damage increase in chains and a higher cap, a longer window before the chain
   ends;
 - faster drawing and switching;
 - interrupts: interrupt more easily, or be harder to interrupt yourself;
-- depending on the family: wider block arc and faster turning while blocking (sword,
-  shield), higher weak-point multiplier (dagger), more reach (spear, bow);
+- depending on the family: wider block arc (sword, shield), more reach (spear, bow);
 - magic: range, size of element fields, faster build-up of debuffs.
+- **Not:** lower stamina or mana costs (costs come only from what you use), faster turning
+  (strength) or a higher weak-point multiplier (dexterity) – one quantity, one source.
 - **Traits** bring a new property at certain levels instead of new moves. Example in
-  swordsmanship: the chain no longer ends from a single hit taken. Skill titles give a
+  sword fighting: the chain no longer ends from a single hit taken. Skill titles give a
   percentage on damage every 30 levels.
 
 ### Later

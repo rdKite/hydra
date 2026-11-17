@@ -15,7 +15,8 @@ components, like weapons (see [Crafting](#crafting-weapons-and-armor)).
 ### Material and thickness
 
 - **Every material has a profile** (fixed values) per thickness:
-  - protection against slash, pierce and blunt;
+  - protection against slash, pierce and blunt, as **resistance points** (they add to the
+    wearer's points, see resistances in [progression.md](progression.md#resistances));
   - element properties (metal conducts lightning and heats up in heat or cools down in cold;
     fur and cloth insulate against cold …);
   - a **density** (weight per thickness).
@@ -52,11 +53,14 @@ components, like weapons (see [Crafting](#crafting-weapons-and-armor)).
 - **Diminishing protection, linear weight:** each thicker step of a schematic gives a little
   less extra protection, but adds the full extra weight. This gives a natural optimum instead
   of endless stacking.
-- **Cap** on protection: armor reduces damage by at most a fixed share. No meat shields.
+- **No hard cap** on protection: armor adds resistance points, and the flattening curve of
+  the resistances makes every further point worth less. No meat shields.
 - **Visible:** material and rough thickness can be recognised, so the opponent can adapt
   weapon and element (guiding principle, see [overview.md](overview.md)).
-- **Weight works both ways:** armor costs stamina when moving, but makes you harder to
-  interrupt (see [combat.md](combat.md)).
+- **Weight has a price:** heavy armor makes dodging costlier, turning and running slower,
+  and you are noticed from further away (see stealth and perception in
+  [combat.md](combat.md#3-stealth-and-perception)). It does not make you harder to
+  interrupt (interrupts depend on a share of maximum HP). Light armor makes a scout.
 - **Armor does not wear out.**
 - **No separate skill for wearing armor:** strength and endurance grow anyway by carrying heavy
   loads and moving with them – a second skill would duplicate that.
@@ -99,14 +103,60 @@ can be made in different ways.
 
 - For example a percentage boost to one element ("of Fire"): this strengthens the **fire
   augment** by X %. It is not separate element damage – the rule "element on weapons only
-  through an augment" still holds (see [magic.md](magic.md)). Other bonuses: e.g. speed,
-  block strength, lower stamina costs.
+  through an augment" still holds (see [magic.md](magic.md)). Other bonuses: e.g. damage,
+  chain, block arc. Hilt bonuses add to the pool of progress bonuses (see damage in
+  [progression.md](progression.md#damage)); they do not lower stamina costs.
 - Hilts also have fixed recipes in different rarities.
+
+### What makes a weapon better
+
+| Lever | Better through | Price |
+|---|---|---|
+| **Size** (schematic) | more damage, more reach | more weight: stamina, turning, being noticed |
+| **Material** | more base damage; affinity (monster material) | density sets the weight; rare deposits |
+| **Rarity** | **+12 % damage per level** | **+6 % demand per level**; effort in crafting |
+| **Hilt** | bonuses into the pool of progress bonuses (added up) | – |
+| **Masterwork** | one special property | from rare on only, high effort |
+
+- **Demand:** a factor on a weapon's stamina cost, on top of weapon weight ÷ body weight –
+  how much force and control the weapon asks for. It slows the number of strikes in a row
+  that grows with the bar (see [magic.md](magic.md#stamina-and-mana)). A better weapon is
+  still always a gain, because damage rises faster than demand.
+- **Rarity works the same way on armor:** each level gives armor +12 % resistance points,
+  so better weapons do not shorten fights on their own.
+- **Requirements are soft:** no locks by level or stats. A weapon too heavy for your
+  strength is simply harder to handle (turning, drawing, drawing a bow). Light weapons can
+  be used by anyone; dexterity only makes them better.
+- Compared: Guild Wars 2 raises weapon strength by about 8 % per rarity level (fine to
+  ascended) and keeps legendary equal to ascended. hydra keeps a steady +12 % instead.
+
+### Crafting skills
+
+Six crafting skills, by material and use:
+
+| Skill | Makes |
+|---|---|
+| **Weapon smithing** (`weapon_smithing`) | weapons of metal, including metalworking |
+| **Armor smithing** (`armor_smithing`) | armor and shields of metal, including metalworking |
+| **Weapon carving** (`weapon_carving`) | bows, shafts, clubs, bone blades, hilts – wood and hard monster materials |
+| **Armor carving** (`armor_carving`) | wooden shields; bone, horn, chitin and scale armor |
+| **Leatherworking** (`leatherworking`) | leather armor; soft monster materials (hide, gel) |
+| **Tailoring** (`tailoring`) | cloth armor, robes, linings |
+
+- **Every material has a processing type** in the material data: metal, hard (wood, bone,
+  horn, chitin, scales), soft (leather, hide, gel) or cloth. It decides which craft works
+  it – also for monster material.
+- **Every component is made by its own craft:** a steel blade by the weapon smith, a wooden
+  hilt by the weapon carver, a leather lining by the leatherworker. **Assembling** is done by
+  whoever has the craft of the main component (blade or base layer). This makes trade
+  between players worthwhile; solo players buy hilts and linings from merchants.
+- **Shields belong to the armor side** (armor smithing or armor carving).
+- Gathering (ore, wood) has no skill; it trains attributes.
 
 ### Rarity in crafting
 
 - One term for raw materials and items: **rarity** (levels see [Rarity](#rarity)). Each level
-  raises the fixed values by a factor.
+  raises the fixed values (see [What makes a weapon better](#what-makes-a-weapon-better)).
 - **The rarity of a component** follows from the rarity or purity grade of its materials.
 - **Skill as a gate:** a minimum skill is needed to be able to make materials (e.g. alloys) and
   components of a given rarity at all. No randomness – every result is predictable.
@@ -143,8 +193,9 @@ can be made in different ways.
   only under **very special conditions per item** – not simply by defeating the bearer
   (otherwise individuals get hunted).
 - **Noticeable but beatable** (guiding principle, see [overview.md](overview.md)): the
-  difference per level gives a clear advantage, but no doubling (guide value rather +10–15 %
-  per level). Even the rarest items stay visible and counterable.
+  difference per level gives a clear advantage, but no doubling (+12 % damage or armor
+  points per level, see [What makes a weapon better](#what-makes-a-weapon-better)). Even the
+  rarest items stay visible and counterable.
 - **By stage** (proposal): the arena with fixed equipment sets, without crafting or rarity;
   fixed maps with crafting and masterworks; unique items in the MMO, mythic ones there only
   after launch.
