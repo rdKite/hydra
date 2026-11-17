@@ -15,13 +15,13 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
 - [ ] Starting forms of wolf and saurian with first evolutions.
 - [ ] Threat rating and hXP; groups, reviving, hXP split evenly within the group; overview
       after the fight.
-- [ ] Attribute model: body attributes per form or race (base × (1 + 2 % × level) +
-      training), 10 HP / stamina / mana per point, regeneration per species, no
-      regeneration during actions; costs from weight ÷ body weight × demand; damage formula
-      with added-up progress bonuses; resistances as points with a flattening curve
-      (see [progression.md](progression.md#attributes-resistances-and-body-attributes)).
-- [ ] Capabilities per form or race (dodge, jump, crouch); dexterity for dodge, jump and
-      the bow's sway.
+- [ ] Attribute model for the new forms, weapons and spell forms (the core – base ×
+      (1 + 2 % × level), 10 HP / stamina / mana per point, regeneration per species, costs
+      from weight ÷ body weight × demand, damage with added-up progress bonuses, resistances
+      as points – is built in Phase 1, M4b; see
+      [progression.md](progression.md#attributes-resistances-and-body-attributes)).
+- [ ] Capabilities of the new forms (crouch, pursuit, front shield …; dodge and jump are in
+      Phase 1); dexterity for jump height and the bow's sway.
 - [ ] **Dungeon mode:** a few rooms, waves, one boss with telegraphed area attacks.
 - [ ] Fixed equipment sets; matchmaking "normal" (threat rating) and "ranked" (rank).
 - [ ] First balancing numbers from the measurements (stamina, mana, block arcs, turn rate, chains,

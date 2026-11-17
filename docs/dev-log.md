@@ -11,6 +11,19 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-17 – attribute model comes to Phase 1 (human, recorded in the design session)
+
+To do at the start of the next agent session:
+1. First the five items of the entry below (2026-11-16) – they still apply. Item 1 (skill
+   XP per enemy) stays; the dodge skill it mentions goes away in M4b.
+2. Then **M4b** in `docs/roadmap.md`: align Phase 1 with the attribute model of
+   2026-11-17. Rules and starting formulas: `docs/design/phase-1.md` §26 (and §4–§17 as
+   changed). Numbers in `data/values.json` (new version, guesses marked in
+   `data/CHANGELOG.md`). Keep all live runs green; adjust their expectations where the
+   rules changed on purpose and say so in the log. Update §23–§25 to what was built.
+3. Where §26 leaves something open or a formula does not work in a live run: assume, log
+   it, carry on.
+
 ### 2026-11-16 – answers to the M5 questions (human, recorded in the design session)
 
 To do at the start of the next agent session, before M5 work:

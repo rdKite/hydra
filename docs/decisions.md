@@ -409,3 +409,9 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   dodge, stealth.
 - Phase 1 (`phase-1.md`, `values.json`, code) is not changed by this entry; the build session
   adapts it.
+- **Phase 1 takes over the attribute model before the M5 playtest** (new milestone M4b), so
+  the playtest tests the rules that stay instead of discarded ones (dodge skill, cost
+  reduction by skill, level bonuses on HP and damage, weight-based block and interrupt).
+  Not in Phase 1: training, perception, crouch, rarity and demand above 1, healing rate.
+  Rules and starting formulas: `phase-1.md` §26. This supersedes the 2026-11-16 answer
+  "1 % per level and per skill level stays".
