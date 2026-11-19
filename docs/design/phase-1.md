@@ -46,7 +46,8 @@ These rules shape implementation decisions everywhere.
   visible and telegraphed. Short form: *you can react to everything.*
 - **Playing hard pays off.** Harder fights give more skill growth relative to character XP.
   Two characters at the same level can be very different in strength. (In Phase 1 this
-  shows up only as "skills grow by use"; hXP is out of scope.)
+  shows up as automatic skill points distributed by use, with a stand-in for the threat
+  rating per enemy type – §17.)
 - **Positional combat, not timing.** Distance, facing, terrain and managing stamina and
   mana decide fights – not windows of a few milliseconds. Reference for the positional feel:
   Path of Titans. Weight of hits: Souls-like. Reasons:
@@ -480,21 +481,28 @@ following.
 - The level sets **when** skills can rise and when milestones come.
 - XP curve and nXP per enemy: TBD (tune in playtests).
 
-### Skill XP by use
+### Skill growth: hXP and automatic skill points
 
-- Skills level by use, not by skill points. Each skill collects its own skill XP.
-- Skill XP is credited **at the end of a fight, only on victory.** In waves the fight is
-  each **single enemy** (decision 2026-11-16): skill XP earned is credited when an enemy is
-  defeated; a player who is defeated loses only what is still pending since the last enemy
-  defeat – not the whole wave.
-- Only actions against real attacks count: blocking counts on a hit inside the arc.
-  (Dodging gives no skill XP: dodge is a capability. In the full design it trains
-  dexterity; training is not in Phase 1.)
-- On each **character level-up**, every skill with enough skill XP rises – **at most one
-  level per level-up and skill**.
-- Until the form's level cap, skills never exceed the current form level.
-- Surplus skill XP does not expire; it waits for the next level-up.
-- Skill XP needed per skill level: TBD (tune in playtests).
+Decision 2026-11-19 (full design: [progression.md](progression.md#skill-points-automatic-and-free)).
+
+- A defeated enemy gives **nXP** (character level) and **hXP**. In Phase 1 there is no
+  threat rating yet; a **stand-in factor per enemy type** sets hXP = nXP ×
+  `enemies.<id>.hxp_factor` (at least 1).
+- **hXP are distributed by use:** each skill gets a share in proportion to the stamina and
+  mana its actions spent in the fight (weapon attacks → weapon skill; holding a block and
+  blocked hits → shield fighting; slam → slam; bolt → projectile, a fire bolt also fire
+  magic). Movement and dodging belong to no skill.
+- **Only on victory, per enemy** (decision 2026-11-16): hXP are credited when an enemy is
+  defeated; a player who is defeated loses only what is pending since the last enemy
+  defeat.
+- **At each character level-up** the character gets **automatic skill points**: number =
+  1 + 2 × log₂(hardship rating), hardship rating = hXP ÷ nXP since the last level-up (at
+  least 1). They are split in proportion to the hXP each skill got, **with fractions**: each
+  skill has a progress bar (0–1); whole points become skill levels, the rest stays.
+- **Limit:** a skill's level is at most the character level (form level). A share above it
+  goes to the other used skills, or waits for the next level-up.
+- Not in Phase 1: free skill points, renown and rXP, teachers, the learning phase (it only
+  touches weapon families at level 0, which Phase 1 does not have), respawn penalty.
 
 ### Imprint (one)
 
@@ -523,7 +531,7 @@ following.
   - **skills and imprints reset**; the fire elemental slime keeps its fire imprint at
     level 1 (form-specific bonus);
   - **instinct:** for every skill developed before, the new form gets a **small permanent
-    bonus** on that skill and **relearns it faster** (more skill XP). Strength depends on how
+    bonus** on that skill and **relearns it faster** (its share of the hXP counts more). Strength depends on how
     high the skill was relative to the old form's cap. If the new form lacks the skill, the
     instinct is kept for later.
 - Instinct bonus size: TBD (tune in playtests).
@@ -534,8 +542,8 @@ following.
   once. Start levels per form: `forms.<id>.start_level` (see §25).
 - No lasting progress and **no respawn penalty** in the arena.
 
-*Not in Phase 1:* hXP and threat rating, hardship rating, skill titles and traits, veteran
-levels, respawn penalty, multiple imprints, physical imprint, rarity-gated forms. Full design: [progression.md](progression.md).
+*Not in Phase 1:* threat rating (a stand-in factor per enemy type instead), free skill
+points, renown and rXP, teachers, the learning phase, skill titles and traits, respawn penalty, multiple imprints, physical imprint, rarity-gated forms. Full design: [progression.md](progression.md).
 
 ---
 
@@ -582,7 +590,8 @@ evolve once** on the way, and the metrics deliver first numbers.
 - Other slime forms and the physical branch.
 - Bushes, sight cover, stealth and perception (Phase 2).
 - Armour and crafting; rarity of items.
-- hXP, threat rating, matchmaking, groups, reviving, contribution overview.
+- Threat rating (stand-in factor per enemy type), free skill points, renown, rXP, teachers,
+  Adventurers' Guild; matchmaking, groups, reviving, contribution overview.
 - Attribute training by strain; resistance growth by exposure; healing rate.
 - Perception and the detection radius; crouch; jump height and fall damage from dexterity.
 - Rarity and demand above 1.
@@ -615,7 +624,8 @@ Needed by Phase 1, not set in the notes – all TBD (tune in playtests):
 
 > **M4b replaces parts of §23–§25** with the attribute model of §26: attack and dodge cost,
 > regeneration delay, interrupt, block cost, rebound, weak point, resistance, the level
-> bonuses, what a skill level does, the dodge skill. The build session updates these tables
+> bonuses, what a skill level does, the dodge skill, skill XP and skill levels
+> (now hXP and automatic skill points). The build session updates these tables
 > once M4b is built.
 
 The sections above leave several formulas open ("TBD"). M2 needed them, so these are the
@@ -734,5 +744,17 @@ training) is the one number that strength and dexterity bonuses scale with.
 | Removed | `progression.hp_bonus_per_level`, `progression.damage_bonus_per_level`, `skills.cost_reduction_per_level`, `skills.min_cost_factor`, `skills.xp_per_dodge`, `skills.dodge_distance_bonus_per_level`, the dodge skill in `skills.json` and `forms.json`, the weight-based interrupt and block keys, `weak_point.reference_weapon_weight_ratio`. "Dodges that avoided a hit" stays as a metric |
 | Scale | HP, stamina and mana grow about tenfold: scale weapon, slam, bolt, burning and element-body damage and the mana costs so that a fight lasts about as long as in M4, except where the stamina target above changes it on purpose |
 
-Unchanged: turn rate (weight ÷ strength, now with the grown strength), skill XP rules,
-imprint progress and milestones, evolution and instinct, waves, metrics, lag compensation.
+**Skill growth (decision 2026-11-19, §17).**
+
+| Rule | Phase 1 |
+|---|---|
+| hXP | a defeated enemy gives hXP = its nXP × `enemies.<id>.hxp_factor` (≥ 1; stand-in for the threat rating). Guesses: grunt 1.0, veteran 1.5, ember slime 1.5. Every player in the arena gets the full nXP and hXP |
+| Use per skill | the server sums per player and skill the stamina and mana spent since the last enemy defeat: weapon attack cost → weapon skill; block holding cost and blocker's stamina for blocked hits → shield fighting; slam → slam; bolt mana → projectile, and for a fire bolt the same amount also to fire magic. Dodge costs count for no skill |
+| Credit | when an enemy is defeated, its hXP are split over the skills in proportion to that use and added to each skill's pending hXP for the current level, together with its nXP. A defeated player loses only the use counted since the last enemy defeat. No use at all: the hXP go to no skill but still count for the hardship rating |
+| Automatic skill points | at each level-up: points = `skill_points.base` + `skill_points.factor` × log₂(max(1, hXP ÷ nXP of this level)) (1 and 2). Split in proportion to each skill's hXP of this level, times (1 + `instinct.xp_bonus_max` × instinct ratio); fractions go into a progress bar per skill (0–1), whole points raise the level. A skill at the character level takes no more; its share goes to the other skills used this level, else waits as progress. Then the counters of the level start again |
+| Removed | `skills.xp_base`, `xp_per_level`, `xp_per_hit`, `xp_per_block`, `xp_per_bolt_hit` (and `xp_per_dodge`, see above); the rule "at most one level per level-up and skill" |
+| HUD | per skill its level and progress bar; the hardship rating of the current level |
+
+Unchanged: turn rate (weight ÷ strength, now with the grown strength), imprint progress and
+milestones, evolution and instinct (except its XP bonus, see above), waves, metrics, lag
+compensation.

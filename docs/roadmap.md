@@ -62,10 +62,10 @@ pure logic).
       Some deal fire damage – the slime's path to its fire imprint.
 - [x] Metrics (hits, blocked hits, dodges, stamina use) as CSV for later tuning.
 
-### M4b – Align with the attribute model (2–4 days)
+### M4b – Align with the current design (3–5 days)
 
-Decision 2026-11-17: Phase 1 takes over the concrete attribute model before the playtest,
-so the playtest tests the rules that stay. Rules and formulas: `docs/design/phase-1.md` §26.
+Decisions 2026-11-17 and 2026-11-19: Phase 1 takes over the attribute model and the new
+skill growth before the playtest, so the playtest tests the rules that stay. Rules and formulas: `docs/design/phase-1.md` §26.
 
 - [ ] Body attributes per form, growing 2 % of the base per level; HP, stamina and mana
       10 per point; no direct HP or damage bonus per level.
@@ -77,11 +77,19 @@ so the playtest tests the rules that stay. Rules and formulas: `docs/design/phas
 - [ ] Block: holding cost per second, block cost and rebound as shares of the blocked damage;
       interrupt by a share of maximum HP.
 - [ ] Dodge and jump as capabilities: no dodge skill; dodge distance and speed by dexterity.
+- [ ] Skill growth (decision 2026-11-19): hXP per defeated enemy (stand-in factor per enemy
+      type), distributed by the stamina and mana each skill spent; automatic skill points at
+      each level-up (1 + 2 × log₂ of the hardship rating) with progress bars per skill.
 - [ ] Numbers rescaled (values.json), all live runs green; tables in `phase-1.md` §23–§25
       updated to what was built.
 
 ### M5 – Look and playtest (a few days)
 
+- [ ] Prepare the decisions (agent, nothing decided): 2–3 look variants of slime, humanoid
+      and arena built by script, same shots side by side, switchable by dev command; a
+      proposal which placeholder animations to replace first, ranked by the telegraphs they
+      carry; a playtest kit (start script per form, a script that summarises the metrics
+      CSV of a session).
 - [ ] **Decide the look** based on our own models (toon or not – still open), and with it how
       much texture work is needed (procedural only, or hand-painted detail as well).
 - [ ] Decide which placeholder animations are replaced first by the human's own animations

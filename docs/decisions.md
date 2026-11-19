@@ -464,4 +464,11 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   mandatory for every new weapon and lock monsters out of elements).
 - For later: every character gets at least one free skill point in the tutorial and spends it
   there.
+- **Phase 1 takes over the new skill growth in M4b** (with the attribute model): hXP
+  distributed by stamina and mana spent, automatic skill points with progress bars. Until
+  the threat rating exists (Phase 1b) a stand-in factor per enemy type sets hXP = nXP ×
+  factor, so the formula can be tested. Not in Phase 1: free points, renown, rXP, teachers,
+  learning phase. Rules: `phase-1.md` §17 and §26.
+- **M5 is prepared by the agent** (look variants, an animation proposal, a playtest kit), so
+  the human only decides and plays.
 

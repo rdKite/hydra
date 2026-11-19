@@ -11,6 +11,20 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-19 – skill growth comes to Phase 1; plan for an unattended session (design session)
+
+**Next agent session – work through in this order without waiting for the human.** Commit
+and push after each verified step (`Scripts/run_all.sh` green); assume and log where
+something is open; after two serious failed attempts log it and go on.
+1. The five items of "answers to the M5 questions" (2026-11-16) below. In item 1 "skill
+   XP" becomes hXP in M4b; credit per enemy stays.
+2. **M4b** (`docs/roadmap.md`), all items: the attribute model (entry 2026-11-17 below) and
+   the new skill growth – rules in `docs/design/phase-1.md` §17 and §26. Update §23–§25 to
+   what was built.
+3. **M5 preparation** (first roadmap item of M5): look variants, animation proposal,
+   playtest kit. Decide nothing; put the questions for the human at the end of the log
+   entry.
+
 ### 2026-11-17 – attribute model comes to Phase 1 (human, recorded in the design session)
 
 To do at the start of the next agent session:
