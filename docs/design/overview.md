@@ -49,8 +49,10 @@ different ways to play in the same world.
 ## Playing hard pays off
 
 - Whoever makes the game harder for themselves is rewarded in the long run. Fights against
-  stronger enemies or under harsh (environmental) conditions – cold, darkness, poison, no
-  healing potions – give much more skill XP relative to character XP.
+  stronger enemies give more hXP relative to nXP, and so **more automatic skill points** at
+  every level-up (see [progression.md](progression.md#skill-points-automatic-and-free)).
+  Harsh conditions (cold, darkness) make a fight harder for both sides and give no extra
+  hXP – hardship comes from the threat rating alone.
 - Result: two characters at the same level can be very different in strength. Whoever
   often seeks hard fights instead of easy ones has much stronger skills at the same level.
 
@@ -69,15 +71,17 @@ different ways to play in the same world.
 - These explicitly stay rewards for playing hard: epic, legendary and mythic things, and
   hidden classes (hardship rating, or in Phase 3 its own system).
 
-### Raising skills further at max level
+### Catching up through renown
 
-- Through **veteran levels** (see [progression.md](progression.md)): after max level, each
-  level, earned through nXP, gives one skill level, up to 150. Whoever plays easy catches
-  up this way over time. Whoever plays hard has their skills at the top earlier – a lead in
-  time, not a permanent one.
+- Through the **renown level** (see [progression.md](progression.md#renown-and-the-adventurers-guild)):
+  rXP from deeds (quests, events, discoveries) give one **free skill point** per renown
+  level – **from the start**, not only after max level; at max level nXP flow into rXP.
+  Whoever plays easy catches up this way. Whoever plays hard has more automatic points – a
+  lead, not a lock.
 - The XP needed rises linearly – a soft cap: nobody brings all skills to the maximum with
   reasonable effort.
-- This replaces the earlier route via items from repeatable achievements.
+- This replaces the earlier veteran levels (only after max level) and the even earlier route
+  via items from repeatable achievements.
 
 ### Opponents that match your strength
 
@@ -91,7 +95,8 @@ different ways to play in the same world.
 
 - Crafting grows by use, perception through exploring and detecting – neither through hXP. Whoever prefers making
   things can become a sought-after smith.
-- In groups, everyone gets the full nXP and the same share of the hXP.
+- In groups, everyone gets the full nXP and the full hXP (measured against the group's
+  threat rating).
 - Players choose harsh conditions themselves. The world hints at what playing hard leads
   to – a deliberate choice, not a must.
 
@@ -125,7 +130,7 @@ humanoid side and a multiplayer sandbox. The gap is there.
   shallow progression. That is exactly where hydra comes in, with forms, imprints and
   instincts.
 - **Accessible, not hardcore:** Path of Titans is seen as more beginner-friendly than The
-  Isle and succeeds with that. hydra's mild respawn penalty (loss of collected skill XP, no
+  Isle and succeeds with that. hydra's mild respawn penalty (loss of collected hXP, no
   permanent death) is on this side.
 - **Keep the scope under control:** The Isle shows how long a survival project that is too
   large can stay in early access – one more reason for the small arena prototype first.

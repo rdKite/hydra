@@ -1,8 +1,9 @@
 # Progression
 
 This document holds the full progression design: character level, skills, attributes,
-affinity and imprint, the two kinds of XP, levelling up, evolution, skill titles and traits,
-veteran levels, milestones, the respawn penalty, and how XP is shared in group fights.
+affinity and imprint, the three kinds of XP (nXP, hXP, rXP), levelling up, evolution, skill
+titles and traits, renown and the Adventurers' Guild, milestones, the respawn penalty, and how
+XP is shared in group fights.
 Terms follow `GLOSSARY.md`. Numbers are guideline values unless stated otherwise; all
 gameplay numbers live in `data/values.json`.
 
@@ -15,17 +16,19 @@ Three separate pillars that grow in different ways:
 | | What | Grows through | Level-dependent | hXP |
 |---|---|---|---|---|
 | **Character level** | base level | nXP from defeated enemies | – | – |
-| **Skills** (active) | what you *do* – attack and defence alike (sword fighting, fire magic, shield fighting, weapon smithing) | using them | yes | yes |
+| **Skills** (active) | what you *do* – attack and defence alike (sword fighting, fire magic, shield fighting, weapon smithing) | automatic skill points at a level-up (distributed by hXP) plus free skill points from renown | the automatic part up to your level | yes |
+| **Renown level** | experience as an adventurer | rXP from deeds (quests, events, discoveries …) | no | no |
 | **Attributes** | what you *are* – resistances and body attributes | body attributes: level (+2 % of the base per level) plus strain; resistances: exposure only | body attributes: partly | no |
 
 ### Skills
 
-- Skills level up by use, not through skill points. Each skill collects its own skill XP.
-  Skill XP is credited at the end of a fight – only on a win. At every character level-up
-  the game checks which skills have enough skill XP to level up as well (details in
-  [Levelling up](#levelling-up-level-skills-imprint)).
-- So letting friends beat you up only pays off if the other person is defeated at the end
-  and accepts a respawn penalty.
+- A skill level is the sum of two kinds of **skill points** (details in
+  [Skill points](#skill-points-automatic-and-free)):
+  - **automatic skill points** at every level-up – their number depends on how hard you
+    fought, and they go to the skills you used, in proportion to the hXP each one got;
+  - **free skill points** from the renown level – you assign them yourself.
+- hXP are credited only when an enemy is defeated. So letting friends beat you up only pays
+  off if the other person is defeated at the end and accepts a respawn penalty.
 - **Skills must have a noticeable effect.** Whoever fights a lot with the sword hits
   noticeably harder and keeps chains going longer. A skill level-up should be felt in the
   hand, not only in a number. Skills give **effect, not lower costs** (see
@@ -69,7 +72,7 @@ exposure.
 - **Level:** +2 % of the base value per level, linear. A human has 100 vitality at level 0
   and 300 at level 100.
 - **Training** comes on top: strain close to your own limit, counted per action (a sword
-  strike trains strength, separately from the skill XP). Growth depends on intensity –
+  strike trains strength, separately from the hXP of the skill). Growth depends on intensity –
   only strain that really challenges you relative to your own value counts. Training is
   capped; cap and speed depend on the species (affinity) and are set in balancing.
 - **After an evolution** a monster is deliberately weaker at first (new form, level 0) and
@@ -230,7 +233,7 @@ Two terms for two things – for monsters and humanoids alike:
 
 ### Imprint
 
-- **Progress through contact with the element** – not through skill XP: dealing element
+- **Progress through contact with the element** – not through hXP: dealing element
   damage (whether by spell, augment or body skill), taking element damage, and exposing
   yourself to the environment. This way casting does not count twice. The affinity sets how
   fast.
@@ -285,29 +288,39 @@ Two terms for two things – for monsters and humanoids alike:
 
 ---
 
-## Two kinds of XP: nXP and hXP
+## Three kinds of XP: nXP, hXP and rXP
 
-- Every defeated enemy gives two kinds of XP:
-  - **nXP (normal XP)** for the character level. Always the same per monster type and
-    level, independent of your own level.
-  - **hXP (hardship XP)**, hidden. They come from **comparing the threat ratings** of the
-    enemy and your own side (see below) – the more dangerous the enemy is in relation, the
-    more hXP.
+| | Source | What for |
+|---|---|---|
+| **nXP** (normal XP) | defeated enemies – always the same per monster type and level, independent of your own level | the **character level** → attributes (+2 % of the base per level), milestones, automatic skill points |
+| **hXP** (hardship XP), hidden | defeated enemies – **always at least as many as nXP**, more the more dangerous the enemy is in relation (threat ratings) | the **hardship rating** (hXP ÷ nXP) and the **key** that distributes the automatic skill points |
+| **rXP** (renown XP) | **deeds**: quests, dynamic events in the open world, discoveries, dungeon floors, champion bosses and more; at max level nXP flow into rXP | the **renown level** → one **free skill point** each; the adventurer rank (see [Renown](#renown-and-the-adventurers-guild)) |
+
+### hXP
+
 - Example: a normal slime and an elemental slime, both level 10, give the same nXP. But the
   elemental slime is more dangerous and gives more hXP – and even more if you yourself are
-  clearly less dangerous.
+  clearly less dangerous. Against an equal or weaker enemy hXP = nXP.
 - **Threat rating instead of level comparison:** a formula calculates a value for the
   danger of a character from several factors (species or race, base values, skills,
   imprints …). Comparing the threat ratings gives the hXP yield.
   - The formula is easy to readjust in tests and during live operation.
-  - It can take **groups** into account directly (threat of the group against that of the
-    enemy).
+  - It takes **groups** into account directly (threat of the group against that of the
+    enemy, see [Group fights](#group-fights)).
   - It solves the problem that monsters start again at level 0 after an evolution: the
     actual danger is compared, not the level.
-- The **ratio of hXP to nXP** of a fight sets how much the skills grow from that fight. So
-  hard fights always give relatively more skill growth.
-- Aggravating conditions raise hXP only if they **actually take effect**: whoever walks
-  through the cold in warm armor is not exposed to the cold and gets no bonus.
+- **Credited only on a win:** hXP are credited when an enemy is defeated; being defeated
+  loses only what is pending since the last enemy defeat.
+- **Distributed by use:** at the end of a fight the hXP are assigned to the skills whose
+  actions you used (sword strike, fire bolt …), **in proportion to the stamina and mana each
+  skill spent**. Mana bound by an augment counts as amount × time. Movement (sprinting,
+  dodging) belongs to no skill and only trains attributes. Crafting grows outside fights by
+  use.
+- This cannot be gamed: spending stamina only shifts *which* skill grows, not *how much* –
+  the amount depends on the enemy alone.
+- **Harsh conditions give no extra hXP** (cold, darkness, low reserve, no potions): they make
+  the fight harder for both sides. Hardship comes only from the threat rating – nothing to
+  trick.
 - Over the character's lifetime the hXP give a **hardship rating** that counts for rare
   evolutions (see below). It is the **ratio of hXP to nXP**, not the sum: this way many easy
   fights do not give the same as a few hard ones, and the value scales with the character.
@@ -364,11 +377,13 @@ Two terms for two things – for monsters and humanoids alike:
 - **No going back:** after an epic form you cannot go back to a normal one.
 - **Back to level 0 after evolution:** base values reset to the level, but are higher
   thanks to the new form.
-- **Skills and imprints are reset** – you first have to get to know the new body. What you
+- **Skills and imprints are reset** – you first have to get to know the new body. The
+  **renown level stays**, and the free skill points are refunded once for free (see
+  [Skill points](#skill-points-automatic-and-free)). What you
   built up before is kept as **instinct** or **affinity**:
   - **Instinct (for skills):** for every skill you had developed before the evolution you
     get, in the new form, a **small permanent bonus** on exactly that skill **and relearn
-    it faster** (more skill XP). Its strength depends on how high the skill was relative to
+    it faster** (a larger share of the automatic points). Its strength depends on how high the skill was relative to
     the cap of the old form. Instincts add up over several evolutions, with diminishing
     gains. If the new form also has the skill (e.g. the same body skill), the instinct takes
     effect directly; otherwise it is kept and takes effect as soon as a later form has the
@@ -393,13 +408,7 @@ Two terms for two things – for monsters and humanoids alike:
 
 ### Skills
 
-- **Every skill is capped at a fixed 150.**
-- **At most one level per level-up and skill.** Whoever plays hard levels up their skills at
-  almost every level-up; whoever takes it easy falls behind – "same level, very different
-  strength".
-- **Up to max level** skills are never above the level of the current form; **after that**
-  they grow through **veteran levels** up to 150 (see below).
-- **Surplus skill XP** does not expire; it waits for the next level-up.
+- **Every skill is capped at a fixed 150** (automatic plus free points).
 - **No decay** of unused skills (frustrating, leads to mandatory grinding).
 - **No skill upgrades:** skills simply keep levelling as long as possible.
 - **Skill titles every 30 levels** (30, 60, 90, 120, 150 – five per skill): they raise the
@@ -423,15 +432,61 @@ Two terms for two things – for monsters and humanoids alike:
   rating.
 - Properties of traits and of items (e.g. masterworks) must not overlap.
 
-### Veteran levels (after max level)
+### Skill points: automatic and free
 
-- After max level you keep collecting **nXP** and gain **veteran levels**. The XP needed
-  keeps rising linearly.
-- **Each veteran level raises one skill by one level** – freely chosen, up to the limit of
-  150. Much slower than before max level (where several skills can rise per level) and
-  harder with every level – a soft limit instead of a hard cap.
-- Because it runs on nXP, everyone progresses evenly (see Fairness for all play styles in
-  [overview.md](overview.md)).
+**Automatic skill points** come with every nXP level-up:
+
+- **Number = 1 + 2 × log₂(hardship rating)** since the last level-up (hardship rating =
+  hXP ÷ nXP, at least 1). Every doubling of hardship gives two more points; no hard cap,
+  the gain just flattens. Factor and base are tuning screws.
+
+  | Hardship rating | 100 % | 150 % | 200 % | 300 % | 400 % | 800 % | 1,600 % |
+  |---|---|---|---|---|---|---|---|
+  | Points | 1.0 | 2.2 | 3.0 | 4.2 | 5.0 | 7.0 | 9.0 |
+
+- **Distribution** in proportion to the hXP each skill got since the last level-up,
+  **with fractions:** every skill has a progress bar (0–1); the whole part becomes a skill
+  level, the rest stays. No hXP are lost and there are no thresholds to miss narrowly.
+- **Limit:** the automatic part of a skill is at most your own level (for monsters the level
+  of the form). A share above it goes to the other used skills, or waits for the next
+  level-up if there are none.
+- **A budget, not breadth:** with normal play a character has about 100 automatic points at
+  level 100, playing very hard up to about 300. Eight elements at 100 would need 800 – an
+  all-rounder is not possible; you build your character deliberately. "Same level, very
+  different strength" stays: whoever plays hard has more points.
+
+**Free skill points** come from the renown level (one per renown level):
+
+- Assigned to **any skill available** to the character – also above your own level.
+- They can be **reassigned for a cost** (set with the economy). Automatic points cannot.
+- **At 150 an automatic point pushes out a free one**, and that free point becomes available
+  again at no cost.
+- **On evolution (monsters)** the renown level stays; the free points are refunded **once for
+  free** and can only go to skills the new form has. This softens the weak phase after an
+  evolution on purpose – long play is rewarded.
+- Monsters deliberately have less access to rXP at first (few quests outside cities) and get
+  it fully only late, with the humanoid form.
+- **Fairness:** the automatic points follow the hXP ("playing hard pays off"); the free points
+  are how casual players catch up – from the start instead of only after max level.
+
+### Renown and the Adventurers' Guild
+
+- **Renown level:** rises through rXP; the XP needed rises linearly – a soft limit. It replaces
+  the earlier veteran levels, which only started after max level.
+- **Adventurers' Guild** (a proper name; "guild" alone means a player guild): a neutral NPC
+  institution with guild halls in the cities. Humanoids and **Shifters** can register;
+  untransformed monsters cannot.
+- **Adventurer rank** follows from the renown level, in metal tiers: **copper, iron, bronze,
+  silver, gold, mithril, adamant** (thresholds in balancing, e.g. one rank every 10 renown
+  levels). ("Rank" alone stays the ranked matchmaking value.)
+- rXP are collected without the guild too; on registering, the guild ranks you by the renown
+  you already have.
+- **What the rank gives – no stats:**
+  - **jobs by rank** on the guild's job board (harder and more rewarding quests, so more rXP);
+  - a **better starting reputation** in cities that trust the guild – valuable above all for
+    Shifters (see cities and relations in [world.md](world.md));
+  - a **visible badge**. It shows experience, not strength.
+- Later: **rank exams** from a middle rank on (a special quest or fight).
 
 ### Milestones
 
@@ -442,21 +497,18 @@ Two terms for two things – for monsters and humanoids alike:
 
 ### Respawn penalty
 
-- **Whoever dies loses a share of their collected skill XP** that is still waiting for the
-  next level-up. A skill level-up at the next level-up becomes much less likely; skill
-  levels already reached stay.
-- **Share = 2 × the relative remainder of nXP needed for the next level**, at most 100 %
-  (skill XP drops at most to 0). The share refers to the skill XP **already collected**, not
-  to the amount needed for a level. Examples: if 30 % of the nXP are still missing, 60 % of
-  the collected skill XP are lost; if 5 % are missing, only 10 %; from 50 % missing nXP
-  upwards, everything is lost.
-- **This also applies to carried-over skill XP**, for example when at the last level-up you
-  could theoretically have gained two skill levels. You can thus lose more than a whole
-  skill level's worth of collected skill XP.
+- **Whoever dies loses a share of the hXP collected since the last level-up.** That lowers
+  the hardship rating of this level and so the number of automatic skill points at the next
+  level-up (at least one point always remains, because the rating never drops below 1).
+  Skill levels and progress bars already reached stay.
+- **Share = 2 × the relative remainder of nXP needed for the next level**, at most 100 %.
+  The share refers to the hXP **already collected** in this level. Examples: if 30 % of the
+  nXP are still missing, 60 % of the collected hXP are lost; if 5 % are missing, only 10 %;
+  from 50 % missing nXP upwards, everything is lost.
 - Consequence: the first half of a level is the dangerous phase; towards the end of the
   level a death becomes cheaper and cheaper.
-- Reaching max level **without dying** is rewarded this way: these characters have the
-  strongest skills.
+- Reaching max level **without dying** is rewarded this way: these characters have the most
+  automatic skill points.
 - Lying on the ground and being helped up does not count as death; giving up yourself does.
 - This also covers the friendly-fire rules: someone always pays the respawn penalty.
 
@@ -470,15 +522,15 @@ Two terms for two things – for monsters and humanoids alike:
 ## Group fights
 
 - Everyone involved gets the full nXP – **with no minimum participation**.
-- **hXP simply split:** within a group, the hXP are divided evenly by the number of group
-  members. Deliberately simple instead of a formula based on participation.
-- **Several groups** in one fight: the hXP are first distributed to the groups by the
-  **damage of each group**, then evenly within each group. Whoever fights alone counts as a
-  group of their own.
 - **The threat rating is calculated for the whole group**, because a fight as a group is
-  much easier than alone. So an enemy gives a strong group few hXP in total – this also
+  much easier than alone. Every member then gets the **full hXP** that come from comparing
+  the group's threat rating with the enemy's – there is no splitting within the group. Each
+  member distributes them to their own skills by their own use.
+- **Several groups** at the same enemy (e.g. a world boss) count as **one large group** with
+  a common threat rating.
+- So an enemy gives a strong group few hXP – this also
   limits power-levelling: whoever lets a much stronger group carry them gets full nXP but
-  hardly any hXP, levels along and ends up with a weak character. Groups have to look for
+  hardly any hXP beyond nXP, levels along and ends up with few skill points. Groups have to look for
   stronger enemies to grow well together.
 - **Overview after the fight (contribution):** who contributed how much damage, healing,
   blocked hits and so on – for information only (does not decide hXP). An incentive for

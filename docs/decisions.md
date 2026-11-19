@@ -415,3 +415,41 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   Not in Phase 1: training, perception, crouch, rarity and demand above 1, healing rate.
   Rules and starting formulas: `phase-1.md` §26. This supersedes the 2026-11-16 answer
   "1 % per level and per skill level stays".
+
+## 2026-11-19
+
+- **Three kinds of XP:** nXP (defeated enemies → character level), hXP (defeated enemies,
+  always at least as many as nXP, more against enemies with a higher threat rating) and
+  **rXP** (deeds: quests, dynamic events, discoveries, dungeon floors …; at max level nXP flow
+  into rXP).
+- **Skill growth reworked.** Automatic skill points at every level-up: number =
+  1 + 2 × log₂(hardship rating) since the last level-up (no hard cap), distributed in
+  proportion to the hXP each skill got, with fractions (a progress bar per skill, nothing
+  lost). The automatic part of a skill is at most the own level. Reason: a budget limits
+  breadth – no all-rounder with many elements near the maximum; the earlier "one level per
+  level-up and skill" did not prevent that and punished taking up a new weapon late.
+  Rejected: skills rising freely from hXP without a limit (too high skill levels).
+- **hXP distributed by use:** at the end of a fight in proportion to the stamina and mana each
+  skill's actions spent (bound mana as amount × time); movement does not count. Fixed skill
+  XP per hit, block or bolt are dropped. hXP still credited only on a win.
+- **Harsh conditions give no extra hXP** (they are harder for both sides); hardship comes only
+  from the threat rating. **Groups:** the whole group's threat rating counts and every member
+  gets the full hXP; several groups at one enemy count as one group. The even split within a
+  group and the split by damage between groups are dropped.
+- **Free skill points from renown:** one per renown level, from the start; any available
+  skill, also above the own level; reassignable for a cost; at 150 an automatic point pushes
+  out a free one, which becomes free again. On evolution the renown level stays and the free
+  points are refunded once for free. Monsters deliberately get rXP fully only late (humanoid
+  form). The **renown level replaces the veteran levels** (which only began after max level).
+- **Adventurers' Guild:** a neutral NPC institution; humanoids and Shifters can register.
+  Adventurer rank from the renown level in metal tiers (copper, iron, bronze, silver, gold,
+  mithril, adamant). It gives jobs by rank, a better starting reputation in trusting cities
+  and a visible badge – no stats. Rank exams later.
+- **Respawn penalty** now takes a share of the hXP collected since the last level-up (fewer
+  automatic points; at least one remains).
+- **Secret character data** (later, low priority): cosmetic data such as level and adventurer
+  rank can be set to secret; clearly higher perception sees through it. Nothing
+  combat-relevant is hidden.
+- For later: quest design with dynamic events in the open world as in Guild Wars 2, where
+  monsters can take part too, maybe on different sides.
+

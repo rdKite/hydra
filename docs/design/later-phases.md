@@ -13,7 +13,7 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
 - [ ] Ice as the opposite element; opposites cancel each other out; more spell forms.
 - [ ] Hand wheel per hand and magic wheel; augments with bound mana.
 - [ ] Starting forms of wolf and saurian with first evolutions.
-- [ ] Threat rating and hXP; groups, reviving, hXP split evenly within the group; overview
+- [ ] Threat rating and hXP; groups, reviving, every member gets the full hXP against the group's threat rating; overview
       after the fight.
 - [ ] Attribute model for the new forms, weapons and spell forms (the core – base ×
       (1 + 2 % × level), 10 HP / stamina / mana per point, regeneration per species, costs
@@ -41,8 +41,13 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
       tailoring), processing type per material.
 - [ ] Armor from material and schematic.
 - [ ] Full level system with all forms of the first lines; respawn penalty.
-- [ ] Veteran levels after max level (nXP, rising linearly, one skill level each, up to
-      150); skill titles every 30 levels, traits in between.
+- [ ] Skill points: automatic ones at every level-up (1 + 2 × log₂ of the hardship
+      rating, distributed by hXP, automatic part at most the own level); free ones from the
+      renown level (rXP from deeds, from the start), reassignable for a cost; skill titles
+      every 30 levels, traits in between.
+- [ ] Adventurers' Guild with adventurer ranks (copper to adamant) from the renown level:
+      jobs by rank, better starting reputation in trusting cities, visible badge; open to
+      humanoids and Shifters.
 - [ ] Travelling merchants with a no-attack zone; starting alignment (an element or
       elementless) with a matching environment in the tutorial or a matching starting point
       for monsters; awakening of an element through the first imprint level.
@@ -75,6 +80,9 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
       amounts of resources (like the 2nd-generation legendary weapons in Guild Wars 2) –
       based on what Phase 2 teaches.
 - [ ] Large dungeons for groups.
+- [ ] Later, low priority: hide cosmetic character data (level, adventurer rank, renown,
+      titles, guild) as "secret"; seen through by clearly higher perception (see
+      [world.md](world.md#secret-character-data-later-low-priority)).
 - [ ] Account data and GDPR.
 
 ## Tech test (done)

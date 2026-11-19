@@ -242,9 +242,10 @@ Each quantity has **one source** (see [progression.md](progression.md#one-quanti
 - Defensive augments act on the block.
 - **Resistances:** dodged = no hit, no resistance XP. Block = reduced hit, some resistance
   XP ("dodge or harden").
-- **Skill XP:** only actions against real attacks count. Blocking counts on a hit inside
-  the arc. Dodging trains **dexterity** (not a skill) and counts only if the attack would
-  otherwise have hit you (the server checks this via the hit area).
+- **hXP:** a skill's share of the hXP follows the stamina and mana its actions spent in the
+  fight (see [progression.md](progression.md#hxp)) – holding a block and blocked hits count
+  for shield fighting. Dodging trains **dexterity** (not a skill) and counts only if the
+  attack would otherwise have hit you (the server checks this via the hit area).
 - **Reserve:** with low reserve, constant blocking becomes even more expensive, and
   positioning matters all the more.
 

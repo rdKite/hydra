@@ -43,7 +43,17 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
       [monsters.md](monsters.md)). An older list (chimera, plague slime, rockhorn, fire
       mountain, thunderplates, earth giant) is outdated.
 - [ ] Legendary humanoids – not planned for now, decide later.
-- [ ] Threat rating: formula and factors – in balancing.
+- [ ] Threat rating: formula and factors – in balancing. It must count skills (including
+      free points from renown), not only the level.
+- [x] Skill growth reworked (2026-11-19) – automatic skill points per level-up
+      (1 + 2 × log₂ of the hardship rating, distributed by hXP) plus free skill points from
+      the renown level (rXP); see [progression.md](progression.md#skill-points-automatic-and-free).
+- [ ] Skill points: factor and base of the formula, cost of reassigning free points, rXP
+      per deed and per renown level, thresholds of the adventurer ranks – in balancing.
+- [ ] Quest design: kinds of quests; dynamic events in the open world as in Guild Wars 2,
+      where monsters can take part too, maybe on different sides.
+- [ ] Secret character data (later, low priority): which data can be hidden, from which
+      perception ratio others see through it (guide value 1.25).
 - [x] Humanoids: imprint through titles? – No; imprint is the same mechanic as for monsters
       and is visible in the appearance. Titles come from skills or special achievements.
 - [x] Titles: do several apply at the same time? – Yes, all of them, always; multipliers
@@ -54,13 +64,13 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
       balance it.
 - [ ] Balance humanoid vs. monster, especially in PvP – above all if monsters are weaker at
       first and stronger later.
-- [x] Abuse of skill XP (standing in fire, letting friends hit you) – solved through slow
-      environment grind and skill XP only on victory (see
+- [x] Abuse of skill growth (standing in fire, letting friends hit you) – solved through
+      slow environment grind and hXP only on victory (see
       [progression.md](progression.md)).
-- [x] Securing hardship against tricks – through nXP/hXP, only conditions that actually
-      apply, and hXP split by participation (see [progression.md](progression.md)).
-      Keeping the level artificially low also slows the skills, because they only rise on a
-      level-up.
+- [x] Securing hardship against tricks – hardship comes only from the threat rating (no
+      bonus for conditions), the group counts as a whole, and the automatic part of a skill is
+      at most the own level, so keeping the level artificially low also limits the skills (see
+      [progression.md](progression.md)).
 - [x] Hardship rating – ratio of hXP to nXP, not the sum.
 - [x] Do environment grind and fights count the same for the hardship rating? – Done:
       attributes get no hXP; environment grind does not count for the hardship rating.
@@ -72,7 +82,7 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
       damage types you cannot become immune to everything. Balancing can be adjusted per
       stage (e.g. in the arena).
 - [x] How is "participation" measured for roles without damage and healing? – No longer
-      needed: hXP are split evenly within a group (see group fights in
+      needed: every group member gets the full hXP (see group fights in
       [progression.md](progression.md)).
 - [ ] Stamina, mana, reserve: exact numbers (cost per action, regeneration share per
       species, use of the reserve, threshold 50 %, floors of 20 % maximum and 50 %
@@ -100,8 +110,8 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
 - [x] Skill upgrades for humanoids – replaced by skill titles (every 30 levels) and traits
       in between (see skills under progression in [progression.md](progression.md)).
 - [x] How does the game stay fair and fun for players who do not seek hard fights? – Basic
-      promise, veteran levels after max level, separate matchmaking (see fairness for all
-      play styles in [progression.md](progression.md)).
+      promise, free skill points from renown (from the start), separate matchmaking (see
+      fairness for all play styles in [overview.md](overview.md)).
 - [x] How suspicious are cities exactly, and can a transformed monster form be recognized? –
       Three relations, reputation levels, Shifters as their own race (see cities, relations
       and zones in [world.md](world.md)).

@@ -32,7 +32,7 @@ no longer apply, or are even reversed. This needs many players.
 |---|---|---|
 | **friendly** | not possible at all (group, guild, alliance, friendly NPCs) | – |
 | **neutral** | only after a deliberate decision (a switch or explicit targeting) | attack only when provoked |
-| **hostile** | always possible | attack as soon as they **perceive** you – stealth against perception decides whether you get through unnoticed |
+| **hostile** | always possible | attack as soon as they **perceive** you – perception against perception (the detection radius) decides whether you get through unnoticed |
 
 ### How the relation is set (in this order)
 
@@ -54,7 +54,10 @@ no longer apply, or are even reversed. This needs many players.
    | friendly | friendly | quests, special merchants |
    | allied | friendly | discounts, own buildings or citizenship (bridge to the [strategy layer](strategy.md)) |
 
-   Reputation is gained through quests, trade, fending off threats and so on.
+   Reputation is gained through quests, trade, fending off threats and so on. An
+   **adventurer rank** raises the starting reputation in cities that trust the
+   Adventurers' Guild – valuable above all for Shifters (see
+   [progression.md](progression.md#renown-and-the-adventurers-guild)).
 
 ### Attacking neutrals – consequences depend on the target
 
@@ -86,6 +89,19 @@ no longer apply, or are even reversed. This needs many players.
 - **Against abuse** (luring enemies to the merchant and escaping into the zone): whoever
   enters the zone loses the attention of NPC enemies (they retreat). Whoever is in the
   middle of a fight cannot trade for a short time. The zone stays small.
+
+### Secret character data (later, low priority)
+
+- Players can set **cosmetic and social data** of their character to "secret": e.g. level,
+  adventurer rank (including the badge), renown level, titles, guild.
+- Whoever has a **clearly higher perception** sees it anyway – the same comparison as for the
+  detection radius (guide value: from a ratio of 1.25). Group members and friends always see
+  everything (proposal).
+- **Nothing combat-relevant** is hidden: equipment, imprint, augments, telegraphs and the
+  friend-or-foe indicators stay visible to everyone ("you can react to everything").
+- Gives perception a small social use outside combat: a gold adventurer can travel unknown,
+  and a perceptive character sees through it. Recognising a Shifter in humanoid form
+  (disguise) is a separate question; the same rule could be reused for it later.
 
 ### Zones and towers
 

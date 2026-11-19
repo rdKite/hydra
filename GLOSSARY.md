@@ -85,7 +85,7 @@ crafting plans, because that is Unreal's visual scripting).
 | Zauber | **spell** | |
 | Zauberform: Schwall / Geschoss / Einschlag / Ausbruch | **stream** / **bolt** / **impact** / **burst** | |
 | Hand-Rad / Magie-Rad | **hand wheel** / **magic wheel** | |
-| Beitrag (Übersicht nach dem Kampf) | **contribution** | shown after a fight for information only; hXP are split evenly within a group |
+| Beitrag (Übersicht nach dem Kampf) | **contribution** | shown after a fight for information only; it does not decide hXP |
 
 ## Progression
 
@@ -99,16 +99,21 @@ crafting plans, because that is Unreal's visual scripting).
 | Körper-Skill | **body skill** | shared catalogue, bound to body features |
 | Skill-Titel / verborgener Titel | **skill title** / **hidden title** | skill titles every 30 skill levels (percent bonus) |
 | Trait | **trait** | choice of 1 of 3 at skill levels 10, 20, 40, 50 …; grants a property |
-| Veteranenstufe | **veteran level** | after max level; each raises one skill by one level, up to 150 |
+| ~~Veteranenstufe~~ | ~~veteran level~~ | replaced by the renown level (2026-11-19) |
+| Ruhm / Ruhmesstufe | **renown** / **renown level** | rises through rXP; each renown level gives one free skill point |
+| automatischer / freier Skill-Punkt | **automatic skill point** / **free skill point** | automatic: at every level-up, 1 + 2 × log₂(hardship rating), distributed by hXP; free: from the renown level, assigned by the player |
+| Tat | **deed** | anything that gives rXP: quests, dynamic events, discoveries, dungeon floors … |
 | Instinkt | **instinct** | kept from skills after an evolution |
 | Meilenstein | **milestone** | every 10 levels |
 | Elementkörper | **element body** | melee hits against it deal some of its element's damage back (fire elemental slime) |
 | Welle | **wave** | a group of AI enemies in the arena; the next one comes when it is cleared |
 | Gegnertyp | **enemy type** | `enemies.json`: a form played by the AI with its own level, reaction time and error rate |
-| nXP / hXP | **nXP** (normal XP) / **hXP** (hardship XP) | |
-| Härte-Wert | **hardship rating** | |
+| nXP / hXP / rXP | **nXP** (normal XP) / **hXP** (hardship XP) / **rXP** (renown XP) | nXP: character level; hXP ≥ nXP, distribute the automatic skill points; rXP: renown level |
+| Härte-Wert | **hardship rating** | hXP ÷ nXP |
 | Gefahrenwert | **threat rating** | used for hXP and matchmaking |
 | Rang | **rank** | ranked matchmaking |
+| Abenteurergilde | **Adventurers' Guild** | proper name of the neutral NPC institution; "guild" alone means a player guild |
+| Abenteurer-Rang | **adventurer rank** | copper, iron, bronze, silver, gold, mithril, adamant – from the renown level; always written out (not "rank") |
 | Respawn-Strafe | **respawn penalty** | |
 
 ## Species and evolution

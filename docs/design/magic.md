@@ -86,9 +86,8 @@ several things at once (it is now only the name of the attribute).
   close to the limit" (see [progression.md](progression.md)).
 - **The reserve slows the grind:** swinging at the air until stamina is empty only works for
   a while each day.
-- **Low reserve is a hardship condition** and gives more hXP – but only when it actually has
-  an effect, i.e. when it is currently limiting the maximum or regeneration of stamina and
-  mana (below 50 %).
+- **Low reserve makes fights harder**, but gives no extra hXP: hardship comes only from the
+  threat rating (see [progression.md](progression.md#hxp)).
 - **Stages:** in the arena (Stage 1) there is no reserve, only stamina and mana. From
   Stage 2 (survival, world) the reserve counts as well.
 
