@@ -28,6 +28,17 @@ Three variants, switchable while playing with the console command
 - **Questions:** Toon or not? If toon: with a banded world (2) or only the outlines (3)?
   How much texture detail should models get then – colour areas only, or painted detail?
 
+### The humanoid base model
+
+One mesh and one skeleton for all humanoids (`docs/tech/blender-pipeline.md`), shown in the
+game with placeholder animations made by script; the telegraph colours on the blade stay.
+`Scripts/shots_humanoid.sh` shows the three body presets and the body with legs at 80 %
+(idle, block, heavy attack charging) on one page: `Saved/Screenshots/Humanoid/index.html`.
+It is a stand-in: no face, mitten hands, plain colour (tinted per side).
+
+**Questions:** Are the proportions and the three presets a base you want to animate on?
+Is the rig (bone names of the Unreal mannequin, A-pose, no fingers) right for your tools?
+
 ## 2. Which placeholder animations to replace first
 
 Ranked by how much of the fight a player has to **read** from the animation. In this game

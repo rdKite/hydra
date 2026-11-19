@@ -64,13 +64,13 @@ namespace HydraCharacterLook
 	const FRotator ShieldBlockRot(0.f, 0.f, 0.f);
 
 	// The humanoid base model holds the placeholder sword and shield at its socket bones.
-	// Bones from Blender have their length along +Y; the blade and the shield's face look along +X.
+	// The socket bones point along Blender +Y, which is -Y of the bone in Unreal; blade and shield face look along +X of their pivot.
 	const FName WeaponSocket(TEXT("weapon_r"));
 	const FName ShieldSocket(TEXT("shield_l"));
-	const FVector SwordInHand(0.f, -6.f, 0.f);
-	const FRotator SwordInHandRot(0.f, 90.f, 0.f);
-	const FVector ShieldOnArm(0.f, 4.f, 0.f);
-	const FRotator ShieldOnArmRot(0.f, 90.f, 0.f);
+	const FVector SwordInHand(0.f, 0.f, 0.f);
+	const FRotator SwordInHandRot(0.f, -90.f, 0.f);
+	const FVector ShieldOnArm(0.f, 0.f, 0.f);
+	const FRotator ShieldOnArmRot(0.f, -90.f, 0.f);
 	const FName MorphMale(TEXT("male"));
 	const FName MorphFemale(TEXT("female"));
 }

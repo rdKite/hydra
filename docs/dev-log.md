@@ -184,6 +184,42 @@ side of the game:
   the script only needs to be run again then. Not checked in a packaged build.
 - Naming: the command is `HydraLookVariant` because `HydraLook` already points the camera.
 
+**Step 3 – humanoid base model in the game** (after the parallel session pushed the Blender
+part, entry above).
+- Built and imported its model (`Scripts/build_art.sh humanoid`, now in the default list);
+  `Content/Characters/humanoid` committed. The names matched what the Unreal side expected.
+- Sword and shield on the socket bones: Blender's +Y of a bone is −Y in Unreal after the
+  import – found by a screenshot (the blade pointed backwards first).
+- Leg length: changed from moving calf and foot to scaling the thigh along the bone (the
+  cleaner way, as the Blender session found); the foot undoes the inherited scale.
+- `Scripts/shots_humanoid.sh`: neutral, male, female and legs at 80 %, each in idle, block
+  and heavy charge, on one page. Looked at: joints sit right, feet on the floor with short
+  legs, the block raises the shield in front of the body, the charge pulls the sword back
+  with the telegraph colour.
+- Verified: `Scripts/run_all.sh` green with the model – 19 tests, live runs 164 / 83 / 125 /
+  44 (the debug run now also checks that body preset and leg length reach every character
+  on the server and on the client, and that both windows show the humanoid with the base
+  model and its eleven clips).
+- Problem: one of the nine look shots came out from a wrong camera position once, in the
+  first run after the import (the shot was written late, while the camera already moved to
+  the next position); a second run was right. Not fixed – run the script again if a shot
+  looks off.
+- `Art/humanoid/humanoid.blend` changes on every build (Blender writes it anew); the
+  committed file of the Blender session was kept.
+
+**Interventions:** none in this session.
+
+**Roadmap:** M4b done; of M5 the base model and "prepare the decisions" are done. What is
+left in M5 is the human's: decide the look, decide the first animations, playtest
+(`docs/m5-preparation.md` puts the questions).
+
+**To decide (human) – beyond the questions in `docs/m5-preparation.md`:**
+1. The assumptions of M4b listed above (dexterity values, block at empty stamina, no use –
+   no points, imprint thresholds × 10, …).
+2. Should the combat and slime live runs keep measuring at level 0, or at the real start
+   levels?
+3. `UE_ROOT` is still not set on this machine (every script needs it).
+
 ### 2026-11-19 – skill growth comes to Phase 1; plan for an unattended session (design session)
 
 **Next agent session – work through in this order without waiting for the human.** Commit

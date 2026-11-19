@@ -970,10 +970,10 @@ void AHydraPlayerController::HydraStats()
 			const float ToTarget = (Target->GetActorLocation() - C->GetActorLocation()).Rotation().Yaw;
 			LockOff = FMath::Abs(FMath::FindDeltaAngleDegrees(GetControlRotation().Yaw, ToTarget));
 		}
-		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d form=%s hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f mana=%.2f maxmana=%.1f burning=%d fire=%d x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f precise=%d level=%d xp=%.1f hardship=%.3f imprint=%d imprintprogress=%.1f milestones=%d offer=%s skills=%s ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
+		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d form=%s hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f mana=%.2f maxmana=%.1f burning=%d fire=%d x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f precise=%d body=%d legs=%.2f level=%d xp=%.1f hardship=%.3f imprint=%d imprintprogress=%.1f milestones=%d offer=%s skills=%s ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
 			Clock, Who, *C->GetLogId(), bMe ? 1 : 0, *C->GetFormId().ToString(), C->GetHealth(), C->GetMaxHealth(), C->GetStamina(), C->GetMaxStamina(),
 			C->GetMana(), C->GetMaxMana(), C->GetBurningStacks(), C->HasFireImprint() ? 1 : 0,
-			C->GetActorLocation().X, C->GetActorLocation().Y, C->GetActorLocation().Z, C->GetActorRotation().Yaw, bMe ? GetControlRotation().Yaw : 0.f, *Lock, LockOff, C->IsPreciseMovement() ? 1 : 0,
+			C->GetActorLocation().X, C->GetActorLocation().Y, C->GetActorLocation().Z, C->GetActorRotation().Yaw, bMe ? GetControlRotation().Yaw : 0.f, *Lock, LockOff, C->IsPreciseMovement() ? 1 : 0, C->GetBodyPreset(), C->GetLegScale(),
 			Progress->GetLevel(), Progress->GetXp(), Progress->GetHardship(), Progress->GetImprintLevel(), Progress->GetImprintProgress(), Progress->GetOpenMilestones(), *Offer, *Skills,
 			PS ? PS->GetPingInMilliseconds() : 0.f, C->HasStateTag(HydraTags::State_StaminaRegenBlocked) ? 1 : 0, C->GetVelocity().Size2D(),
 			*ActionEnum->GetNameStringByValue(static_cast<int64>(C->GetShownAction().Action)), C->GetChainCount(), C->IsAlive() ? 0 : 1,

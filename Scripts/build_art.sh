@@ -2,7 +2,7 @@
 # Art pipeline, headless: Blender scripts build models, rigs, textures and placeholder
 # animations and export FBX; a Python commandlet imports them into Content/Characters/.
 #
-# Usage: Scripts/build_art.sh              build and import everything (slime, wolf_pup)
+# Usage: Scripts/build_art.sh              build and import everything (slime, wolf_pup, humanoid)
 #        Scripts/build_art.sh slime        only one model
 #        Scripts/build_art.sh import       only the import into Unreal (after exporting
 #                                          animations by hand with export_animations.py)
@@ -18,7 +18,7 @@ if [ "$WHAT" != import ]; then
   BLENDER="${BLENDER:-$(ls -d /c/Program\ Files/Blender\ Foundation/Blender*/blender.exe 2> /dev/null | sort -V | tail -1)}"
   [ -x "$BLENDER" ] || BLENDER="$(command -v blender || true)"
   [ -n "$BLENDER" ] || { echo "Blender not found. Install it or set BLENDER to the path of blender.exe." >&2; exit 2; }
-  MODELS="slime wolf_pup"
+  MODELS="slime wolf_pup humanoid"
   [ "$WHAT" = all ] || MODELS="$WHAT"
   for MODEL in $MODELS; do
     SCRIPT="$ROOT/Art/scripts/build_$MODEL.py"

@@ -35,6 +35,7 @@ Git Bash from the repository root.
 | `Scripts/run_live_waves.sh` | scripted live run, progression and waves |
 | `Scripts/run_live_debug.sh` | scripted live run, test tools (debug panel and its commands) |
 | `Scripts/playtest.sh humanoid` / `slime` | **playtest:** one window against the waves (add `duo` for a second player window), then the metrics summary |
+| `Scripts/shots_humanoid.sh` | the humanoid base model: body presets and short legs in idle, block and attack, one page (`Saved/Screenshots/Humanoid/index.html`) |
 | `Scripts/shots_look.sh` | the three look variants side by side: same shots, one page (`Saved/Screenshots/Look/index.html`) |
 | `Scripts/summarize_metrics.sh` | summary of the newest metrics CSV: hits, blocked hits, dodges, stamina use per player, enemy type and wave |
 | `Scripts/run_all.sh` | tests and the four live runs |

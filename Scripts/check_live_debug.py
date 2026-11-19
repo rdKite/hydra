@@ -107,6 +107,16 @@ def main(root):
             and any("stopped" in line for line in host.lines if "HydraWaves t=" in line))
     c.check("no wave came after it was switched off", not host.events.get("HydraWave"))
 
+    print("--- looks of the humanoid base model: body preset and leg length")
+    b, bc = both(10.7, "grunt1")
+    c.check("before: neutral body, legs as built", (host.stats(10, "grunt1") or {}).get("body") == 0.0 and (host.stats(10, "grunt1") or {}).get("legs") == 1.0)
+    c.check("HydraBody male and HydraLegs 0.8 reach every character on the server", b.get("body") == 1.0 and b.get("legs") == 0.8
+            and (host.stats(10.7, H) or {}).get("body") == 1.0, "%s %s" % (b.get("body"), b.get("legs")))
+    c.check("... and the client sees them (replicated)", bc.get("body") == 1.0 and bc.get("legs") == 0.8, "%s %s" % (bc.get("body"), bc.get("legs")))
+    if os.path.exists(os.path.join(root, "Content", "Characters", "humanoid", "SK_humanoid.uasset")):
+        c.check("the humanoid is shown with the base model and its eleven clips (host and client)",
+                host.count("Form humanoid uses the model humanoid with 11 animations") >= 1 and client.count("Form humanoid uses the model humanoid with 11 animations") >= 1)
+
     print("--- screenshots")
     shots = os.path.join(root, "Saved", "Screenshots", "LiveDebug")
     for name in ("host_7.2.png", "host_10.3.png", "client_6.8.png"):

@@ -85,7 +85,7 @@ skill growth before the playtest, so the playtest tests the rules that stay. Rul
 
 ### M5 – Look and playtest (a few days)
 
-- [ ] **Humanoid base model and rig by script** (first, before the look variants): one
+- [x] **Humanoid base model and rig by script** (first, before the look variants): one
       skeleton for all humanoids with bone names compatible with the Unreal mannequin (for
       the human's animations in Blender or Cascadeur, and retargeting); a plain stylised,
       **gender-neutral** stand-in body (good enough to judge proportions, look and readable
@@ -100,7 +100,7 @@ skill growth before the playtest, so the playtest tests the rules that stay. Rul
       80 %, towards a dwarf), by dev command; screenshots of every variant in idle, attack
       and block to check that joints sit right. Not in Phase 1: the editor, races, add-on
       parts, shape keys on armor, a size slider that affects play.
-- [ ] Prepare the decisions (agent, nothing decided): 2–3 look variants of slime, humanoid
+- [x] Prepare the decisions (agent, nothing decided): 2–3 look variants of slime, humanoid
       and arena built by script, same shots side by side, switchable by dev command; a
       proposal which placeholder animations to replace first, ranked by the telegraphs they
       carry; a playtest kit (start script per form, a script that summarises the metrics

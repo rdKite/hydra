@@ -19,6 +19,7 @@
 #         while it is open is ignored (game input is paused); panel closed again
 #    6    C: HydraSpawn ember_slime 3 passive
 #    9    H: waves on, then off
+#   10.2  H: body preset and leg length of every character (looks of the humanoid base model)
 #   11    quit
 set -u
 source "$(dirname "$0")/env.sh"
@@ -35,9 +36,9 @@ H="1:HydraStats;1.5:HydraSetForm|slime;2:HydraStats;2.3:HydraSetLevel|12;2.6:Hyd
 H+=";3.2:HydraSetImprint|2;3.5:HydraMilestone;4:HydraStats;4.3:HydraClearEnemies;4.6:HydraSpawn|grunt|8|1;5.2:HydraStats"
 H+=";5.5:HydraSpendStamina|300;5.6:HydraReset;5.7:HydraStats"
 H+=";6:HydraPanel|1;6.2:HydraPanelKey|down;6.4:HydraPanelKey|right;6.5:HydraStats;6.6:HydraPanelKey|down;6.8:HydraPanelKey|right;7.5:HydraAttack|0;8.4:HydraPanel|0;8.6:HydraStats"
-H+=";9:HydraWaves|1;9.6:HydraWaves|0;10:HydraStats"
+H+=";9:HydraWaves|1;9.6:HydraWaves|0;10:HydraStats;10.2:HydraBody|male;10.3:HydraLegs|0.8;10.7:HydraStats"
 
-C="1:HydraStats;2:HydraStats;3:HydraSetLevel|20;3.3:HydraSetSkill|projectile|15|0.5;4:HydraStats;5.2:HydraStats;6:HydraSpawn|ember_slime|3|1;6.5:HydraStats;8.6:HydraStats;10:HydraStats"
+C="1:HydraStats;2:HydraStats;3:HydraSetLevel|20;3.3:HydraSetSkill|projectile|15|0.5;4:HydraStats;5.2:HydraStats;6:HydraSpawn|ember_slime|3|1;6.5:HydraStats;8.6:HydraStats;10:HydraStats;10.7:HydraStats"
 
 COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound -HydraWaitPlayers=2 -HydraQuit=11)
 export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'

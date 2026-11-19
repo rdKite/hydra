@@ -134,12 +134,26 @@ at full length, so it is pushed into the next segment: visible folds at the knee
 the ankles at 80 %. Readable from a distance, but the bone scale is the better fit for this
 mesh.
 
-**Open points (for the Unreal integration and the human):**
-- The humanoid is not in the default model list of `build_art.sh` yet.
-- Leg length at runtime: consider scaling thigh and calf along their bone axis (Blender's
-  +Y; which Unreal axis that becomes after the import has to be checked) instead of only
-  moving calf and foot, with the children not inheriting the scale; either way the figure
-  comes down by the lost leg length (about 17 cm at 80 %).
+**In the game (Unreal integration, done).** `Scripts/build_art.sh` builds and imports the
+humanoid with the other models (`Content/Characters/humanoid`: mesh with the morph targets
+`male` and `female`, skeleton, eleven clips). The form `humanoid` is shown with it.
+- **Animation:** `UHydraAnimInstance` (C++, no Animation Blueprint) plays one clip per
+  thing the game shows, stretched to the action's duration, with a short cross-fade.
+- **Sockets:** the placeholder sword and shield of the game hang on `weapon_r` and
+  `shield_l`. After the import Blender's +Y of a bone is **−Y of the bone in Unreal**; the
+  blade therefore points along −Y of `weapon_r` (set in `HydraCharacter.cpp`,
+  `SwordInHandRot` / `ShieldOnArmRot`).
+- **Body presets:** `HydraBody neutral|male|female` sets the morph targets (replicated).
+- **Leg length:** `HydraLegs <factor>` – the anim instance scales `thigh_l/r` along the
+  bone (the local axis the calf's offset points along), the calf follows through the
+  inherited scale, the foot undoes it for itself, and the pelvis comes down by the lost
+  length. This is the cleaner of the two ways compared above; girth and feet keep their size.
+- **Shots:** `Scripts/shots_humanoid.sh` – neutral, male, female and neutral with legs at
+  80 %, each standing, blocking and charging a heavy attack
+  (`Saved/Screenshots/Humanoid/index.html`). Seen there: joints sit right in all variants,
+  the feet stay on the floor with short legs, sword and shield follow the hands.
+
+**Open points (for the human):**
 - The A-pose is the rest pose. Retargeting from the UE mannequin needs an IK retargeter with
   a pose adjustment (the bone axes differ).
 - Hands are mittens; the sword grip is placed by the socket only. Fingers if the human's
