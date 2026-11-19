@@ -93,7 +93,8 @@ different ways to play in the same world.
 
 ### Other ways to be valuable
 
-- Crafting grows by use, perception through exploring and detecting – neither through hXP. Whoever prefers making
+- Crafting and leadership grow by use (practice skills), perception through exploring and
+  detecting – none of them through hXP. Whoever prefers making
   things can become a sought-after smith.
 - In groups, everyone gets the full nXP and the full hXP (measured against the group's
   threat rating).

@@ -97,6 +97,10 @@ designed once and applies to every form with a matching body.
   does not outshine everything.
 - A higher skill level gives **more effect** (maybe a little more radius), not less binding.
   Bound stamina × time counts as use for the hXP, so wearing the aura in a fight trains it.
+- **Leader auras** (from the practice skill leadership, see
+  [progression.md](progression.md#leadership)) follow the same rules but work only while
+  the character leads the group. A howl and a leader aura are different kinds, so both
+  count.
 - **Allies only, for now.** A roar against enemies (intimidation) is a possible later variant,
   e.g. for dragons.
 - The pack wolf's howl: allies nearby regenerate stamina faster; the alpha wolf's howl works
@@ -236,7 +240,7 @@ Endurance hunters.
 | **Wolf** | common | 60 | wolf pup | level cap reached or certain physical values | base: pursuit, pounce, wear down; accessible: **howl** |
 | **Grey wolf** | rare | 100 | wolf | certain physical values | like wolf; stronger wear down, reserve barely drops – the long-distance hunter |
 | **Pack wolf** | rare | 100 | wolf | certain buff skills (e.g. howl) | wear down, **howl** (aura): allies nearby regenerate stamina faster |
-| **Alpha wolf** | epic | 120 | pack wolf | certain buff skills | howl (aura) affects the whole group in a larger radius; allies wear down too (bridge to the classes for leaders) |
+| **Alpha wolf** | epic | 120 | pack wolf | certain buff skills | howl (aura) affects the whole group in a larger radius; allies wear down too; leadership could be a requirement (bridge to the leaders) |
 | **Frost wolf** | common | 60 | wolf pup | ice imprint level 3 | base: pursuit, pounce; accessible: wear down; ice focus |
 | **Windrunner** | common | 60 | wolf pup | wind imprint level 3 | base: pursuit, pounce; accessible: wear down; wind focus |
 | **Polar wolf** | rare | 100 | frost wolf or windrunner | ice and wind imprint, together at least level 3 | pursuit, pounce, wear down; ice and wind focus |

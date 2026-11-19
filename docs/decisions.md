@@ -521,4 +521,15 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   strengthen allies within a radius; no cooldown any more. Only the strongest aura of a kind
   counts (no stacking). A skill level gives more effect, not less binding. Allies only for
   now. Reason: "resource instead of cooldown", and the augment mechanic already exists.
+- **Practice skills** named as a kind of their own: crafting skills and the new **leadership**
+  grow by their own XP when practised, independent of level, nXP, hXP and the skill-point
+  budget (traits, titles and free points still apply). Reason: leadership gives no power on
+  its own; taking hXP from the combat skills would punish whoever leads, and an extra share
+  would clash with the distribution at a level-up. Rejected: leadership as an attribute (no
+  traits or titles, everyone would grow with the level).
+- **Leadership:** grows when a group led by the character wins a fight, by the number of
+  members taking part. Group size 5 for everyone, raised by the skill. Leader auras (rules as
+  for the howl) only while leading; the banner is one of them. The group's threat rating
+  counts them. The **following** stays as its own level in the strategy layer – leadership is
+  practice, following is trust.
 

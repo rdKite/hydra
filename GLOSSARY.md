@@ -95,6 +95,9 @@ crafting plans, because that is Unreal's visual scripting).
 | German | English | Note |
 |---|---|---|
 | aktiver Skill | **skill** | grows by use |
+| Kampf-Skill / Praxis-Skill | **combat skill** / **practice skill** | combat skills grow by automatic skill points (hXP); practice skills (crafting, leadership) by their own XP when practised, independent of level and budget |
+| Führung | **leadership** | practice skill of whoever leads a group; raises the group size (base 5) and unlocks leader auras |
+| Anführer-Aura | **leader aura** | an aura from leadership, active only while leading the group; the banner is one |
 | Art-Fähigkeit | **capability** | fixed ability of a form or race (dodge, jump, crouch, glide …); passive, does not level |
 | Fortschritts-Bonus | **progress bonus** | skill, title, strength/dexterity, imprint, hilt – added up into one pool for damage |
 | Lage-Faktor | **situational factor** | charge, chain, weak point – multiplied, each capped |

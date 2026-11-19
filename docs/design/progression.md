@@ -45,10 +45,23 @@ Three separate pillars that grow in different ways:
 | **Weapon families** (7) | `dagger_fighting`, `sword_fighting`, `axe_fighting`, `mace_fighting` (blunt weapons), `polearm_fighting`, `archery`, `shield_fighting` |
 | **Elements** (8) | fire, ice, lightning, earth, light, dark, poison and wind magic – the ability to cast; unlocks the spell forms and covers the elemental augments of that element |
 | **Augment** (1) | body augment |
-| **Crafting** (6) | `weapon_smithing`, `armor_smithing`, `weapon_carving`, `armor_carving`, `leatherworking`, `tailoring` (see [items.md](items.md#crafting-skills)) |
+| **Crafting** (6) – practice skills | `weapon_smithing`, `armor_smithing`, `weapon_carving`, `armor_carving`, `leatherworking`, `tailoring` (see [items.md](items.md#crafting-skills)) |
+| **Leadership** (1) – practice skill | `leadership` (see [Leadership](#leadership)) |
 | **Body skills** (monsters only) | active ones from the shared catalogue: slam, projectile, bite, charge, pounce, howl/roar, tail strike, stomp, threads/web (see [monsters.md](monsters.md#body-skills-monsters)) |
 
-- A humanoid has 22 skills; monsters add their body skills and use no weapon skills.
+- A humanoid has 23 skills; monsters add their body skills and use no weapon skills.
+- **Two kinds of skills:**
+
+  | | Combat skills | Practice skills |
+  |---|---|---|
+  | Which | weapon families, elements, body augment, body skills | the six crafting skills, leadership |
+  | Growth | automatic skill points at a level-up, distributed by hXP | **their own XP by practising**, once a condition is met – independent of level, nXP, hXP and the skill-point budget |
+  | Limit | automatic part ≤ own level; 150 | 150; the XP needed rises per level (soft limit) |
+  | Traits and titles | yes | yes |
+  | Free skill points (rXP) | yes | yes |
+
+  Practice skills give no power on their own in a fight, so they need no budget; they never
+  compete with the combat skills at a level-up.
 - Gathering (ore, wood) has no skill – it trains attributes. Building at the camp has none
   for now.
 - **What skills may improve:** damage (into the pool of progress bonuses), chains, drawing
@@ -322,8 +335,8 @@ Two terms for two things – for monsters and humanoids alike:
 - **Distributed by use:** at the end of a fight the hXP are assigned to the skills whose
   actions you used (sword strike, fire bolt …), **in proportion to the stamina and mana each
   skill spent**. Mana bound by an augment counts as amount × time. Movement (sprinting,
-  dodging) belongs to no skill and only trains attributes. Crafting grows outside fights by
-  use.
+  dodging) belongs to no skill and only trains attributes. Practice skills (crafting,
+  leadership) grow by their own XP, outside this distribution.
 - This cannot be gamed: spending stamina only shifts *which* skill grows, not *how much* –
   the amount depends on the enemy alone.
 - **Harsh conditions give no extra hXP** (cold, darkness, low reserve, no potions): they make
@@ -563,6 +576,30 @@ Two terms for two things – for monsters and humanoids alike:
   directly; no permanent progress and no respawn penalty. Slow growth begins from stage 2.
 
 ---
+
+### Leadership
+
+- **Leadership** (`leadership`) is a practice skill: whoever **leads a group** gets
+  leadership XP whenever the group **wins a fight** – the more members took part (within the
+  radius, in the won fight), the more. Inactive members do not count. Leading costs nothing
+  and takes nothing from the combat skills; free skill points can speed it up.
+- **Group size:** everyone can lead a group of **5**. Leadership raises the limit (e.g. 10,
+  15, 20 for war bands – numbers in balancing). The base size is part of the basic promise:
+  friends are never locked out.
+- **Leader auras:** higher levels unlock auras like the howl (they bind stamina, work within
+  a radius, do not stack per kind – see [monsters.md](monsters.md#auras-howl-and-roar)), but
+  they are **only active while the character leads the group**; handing over the lead
+  switches them off. Examples: allies regenerate stamina faster, the group's detection radius
+  shrinks while sneaking, members resist interrupts better. The **banner** of the strategy
+  layer is a leader aura of a high level.
+- The **threat rating of the group** counts its leader auras, so a well-led group gets a
+  little less hXP per enemy.
+- Monsters learn leadership the same way (a wolf leading a pack). For the **alpha wolf**,
+  leadership could be one of the evolution requirements.
+- **Two levels, both kept:** leadership is **practice** – how well you lead a group, in
+  everyday PvE and PvP. The **following** of the strategy layer is **trust** – how many
+  players actively follow you; it unlocks orders to NPC units, fiefs and the title "leader"
+  (see [strategy.md](strategy.md#leaders)). A ruler needs both.
 
 ## Group fights
 

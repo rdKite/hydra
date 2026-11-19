@@ -143,9 +143,12 @@ Example (proposal for the assignment):
 - **Following:** players can follow a person or swear loyalty to them. The number of
   **active** followers unlocks abilities for leaders – so leadership is "granted by the
   community", also for streamers, without any link to external platforms.
-- Abilities, e.g.: **banner** (buffs for the group in war – could work like an aura that binds
-  a resource, see [monsters.md](monsters.md#auras-howl-and-roar)), **orders to NPC units**, more
-  fiefs. Leader can be a hidden title.
+- Abilities, e.g.: **orders to NPC units**, more fiefs. Leader can be a hidden title.
+- **Following is trust, leadership is practice:** the practice skill **leadership** (see
+  [progression.md](progression.md#leadership)) grows by leading groups and unlocks group
+  size and leader auras. The **banner** (buffs for the group in war) is a leader aura of a
+  high leadership level. A ruler needs both: practice to strengthen their troop, followers for
+  political power.
 
 ## Coats of arms and colors
 

@@ -51,6 +51,8 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
       some travelling merchants) or by use (learning phase with +100 % demand at skill
       level 0); element skills without imprint. Tutorial: at least one free skill point,
       spent there.
+- [ ] Practice skills (crafting, leadership) with their own XP; leadership: group size 5 for
+      everyone, raised by the skill; leader auras active only while leading.
 - [ ] Adventurers' Guild with adventurer ranks (copper to adamant) from the renown level:
       jobs by rank, better starting reputation in trusting cities, visible badge; open to
       humanoids and Shifters.
