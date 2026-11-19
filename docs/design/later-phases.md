@@ -54,9 +54,13 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
 - [ ] Adventurers' Guild with adventurer ranks (copper to adamant) from the renown level:
       jobs by rank, better starting reputation in trusting cities, visible badge; open to
       humanoids and Shifters.
-- [ ] Travelling merchants with a no-attack zone; starting alignment (an element or
-      elementless) with a matching environment in the tutorial or a matching starting point
-      for monsters; awakening of an element through the first imprint level.
+- [ ] Travelling merchants with a no-attack zone (some with a teacher); awakening of an
+      element through the first imprint level.
+- [ ] Character creation: species → look → name, then the tutorial (weapon rack, teacher,
+      first free skill point); monsters keep their marking across evolutions, imprints unlock
+      colors; humanoids gender-fluid with sliders on one base model per race (three presets,
+      shape keys transferred to armor by script), voice and pronouns separate; the same
+      editor for the Shifter figure on the first humanoid form.
 - [ ] Factions, reputation, friendly fire; three relations, reputation levels, Shifters and
       Demons (trading posts as safe zones), defense towers with a warning.
 - [ ] Dungeons in the world (floors, loot chests, cores).

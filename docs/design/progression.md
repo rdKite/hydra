@@ -505,8 +505,9 @@ Two terms for two things – for monsters and humanoids alike:
   skill catch up faster at first. Spells need the element skill at all (the spell forms hang
   on it), so magic has no malus.
 - **Tutorial (for later):** every character gets at least one free skill point in the
-  tutorial and can spend it there – together with the starting alignment, e.g. on a weapon
-  or an element.
+  tutorial and spends it there at a teacher, e.g. on a weapon from the rack of wooden starter
+  weapons or on an element (see [monsters.md](monsters.md#tutorial)). This replaces the
+  earlier starting alignment.
 
 ### Renown and the Adventurers' Guild
 

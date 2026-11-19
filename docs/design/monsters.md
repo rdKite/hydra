@@ -2,7 +2,7 @@
 
 This document holds the full design for monster lines and their forms, body skills,
 legendary forms, the humanoid counterpart, the humanoid form for monsters, and the choices
-at character creation (starting alignment, size, unlocking species). Terms follow
+at character creation (flow, look, size, unlocking species). Terms follow
 `GLOSSARY.md`. Evolution, level caps and imprints in general are described in
 [progression.md](progression.md); magic in [magic.md](magic.md); cities and relations in
 [world.md](world.md).
@@ -243,7 +243,8 @@ saurian.
 
 ## Humanoid form for monsters
 
-- From a certain, late point on, monsters can take on a humanoid form.
+- From a certain, late point on, monsters can take on a humanoid form. Its look is designed
+  in the character editor the first time (see [Shifters: the editor again](#shifters-the-editor-again)).
 - In this form, stats and skills are weakened as long as you wear it – except for legendary
   forms or similar.
 - Transformed monsters always count among humanoids as their own humanoid race, the
@@ -256,17 +257,6 @@ saurian.
   the form into account.
 
 ---
-
-## Starting alignment
-
-- At **character creation**, or through a decision in the tutorial, you choose an
-  alignment: an element or **elementless**. Elementless is the default and the simplest
-  path.
-- With an element: the tutorial takes place in a matching environment that speeds up the
-  first imprint (and with it the awakening). For **monsters**, the starting point also lies
-  in a region that supports the growth of this element.
-- This way, evolution conditions that demand full imprint efficiency early can actually be
-  reached.
 
 ## Capabilities
 
@@ -286,7 +276,61 @@ is for monsters only; humanoids have capabilities too).
   instead of the normal dodge step. A form has at most one variant per action; evolutions
   can swap it.
 
-## Size at character creation (humanoids)
+## Character creation
+
+- **Short, quickly into the game:** species or race → look → name, then the tutorial. The
+  real choices (weapon, element, skills) are made **by playing in the tutorial**, not in
+  menus.
+- **No stats and no class at creation.** Strength, dexterity and so on are earned in play;
+  the play style grows out of playing.
+- The earlier **starting alignment** (an element or elementless) is dropped: the free skill
+  point in the tutorial can unlock an element skill instead (see
+  [progression.md](progression.md#unlocking-skills-teachers-and-learning-by-use)).
+
+### Tutorial
+
+- A **weapon rack** with wooden starter weapons of every family (rarity raw): you try them,
+  feel the learning phase (+100 % demand at skill level 0), and a **teacher** there unlocks
+  your first skill with the first free skill point – a weapon or an element. This explains
+  learning phase, free points and teachers along the way.
+
+### Look of monsters: marking and colors
+
+- The model changes with every evolution, but the **marking stays**: a base color and a
+  pattern (spots, stripes, eye color) chosen at creation are carried over to every new form.
+  This is how a player recognises "their" slime, wolf or saurian.
+- **Imprints unlock colors** (e.g. ember red after the fire imprint) – a visible sign of the
+  character's history. The imprint's own tint comes on top; the marking stays.
+- Technically cheap: marking and colors are texture or material parameters, not models.
+- Monsters have no gender in the model.
+
+### Look of humanoids: sliders, gender-fluid
+
+- The body is shaped with **sliders**. There are no fixed male and female models: **one
+  base model per race with shape keys** (morph targets). Three **starting presets** –
+  classically male, classically female, neutral – are just slider positions on that one
+  model. One rig and one set of animations per race.
+- **Look is separate from gameplay:** the shape sliders are purely cosmetic and change
+  neither hitbox nor stats. Only the **size slider** (body weight, see below) affects play.
+- **Armor follows every body shape:** the shape keys are transferred from the body to each
+  armor model by script (Blender data transfer or surface deform) – the main extra effort,
+  solved in the pipeline.
+- **Voice** (or pitch) is chosen separately from the body; if NPCs address the character,
+  **pronouns** are chosen too (or NPCs use the name).
+
+### Shifters: the editor again
+
+- When a monster gets the humanoid form for the first time, the **same editor** opens for its
+  humanoid figure – with the base model of the **Shifter** race (slimes from epic forms on,
+  which can pass as other races, get those races' models).
+- **The marking carries over:** base color, pattern and unlocked colors appear on the
+  humanoid figure too (hair, eyes, skin markings), so the monster stays recognisable.
+- **Only in a safe moment:** the first transformation – and with it the editor – works only
+  out of combat with no enemies nearby (like resting at the camp or nest), so nobody stands
+  helpless in the open world while editing. The ability can wait until then.
+- The size slider (body weight) applies to the Shifter figure as for other races.
+
+### Size (humanoids)
 
 - Size can be adjusted and works through **body weight** – not through values such as
   strength or dexterity (those are earned in play):

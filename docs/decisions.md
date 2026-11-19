@@ -480,4 +480,18 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   stand-in body, hand sockets, placeholder animations. A characterful final model is
   decided after the look (more script work per model, or sculpting on top of the
   generated base).
+- **Character creation:** species → look → name, then the tutorial; no stats and no class at
+  creation. The **starting alignment is dropped** – the free skill point in the tutorial can
+  unlock an element skill, so neither a faster awakening in the tutorial nor an
+  element-matched starting region for monsters is needed. Tutorial: a weapon rack with wooden
+  starter weapons and a teacher for the first skill.
+- **Monster look:** the **marking** (base color, pattern, eye color) stays across all
+  evolutions while the model changes; imprints unlock colors.
+- **Humanoid look gender-fluid:** sliders on one base model per race with shape keys; three
+  body presets (classically male, classically female, neutral) as starting points. Shape
+  sliders are cosmetic only; only the size slider affects play. Armor gets the shape keys by
+  script. Voice and pronouns chosen separately. Reason: inclusive, and one model, rig and
+  animation set per race is less work than two.
+- **Shifters:** the same editor opens for the humanoid figure on the first humanoid form, only
+  out of combat with no enemies nearby; the marking carries over.
 
