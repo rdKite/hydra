@@ -90,7 +90,13 @@ def build_material(name, destination, mesh):
     tinted = materials.create_material_expression(material, unreal.MaterialExpressionMultiply, -300, -100)
     materials.connect_material_expressions(sample, "RGB", tinted, "A")
     materials.connect_material_expressions(tint, "", tinted, "B")
-    materials.connect_material_property(tinted, "", unreal.MaterialProperty.MP_BASE_COLOR)
+    # The texture's alpha is a tint mask, not transparency (1 = tinted, 0 = left alone; a texture
+    # without alpha is tinted everywhere).
+    masked = materials.create_material_expression(material, unreal.MaterialExpressionLinearInterpolate, -100, 0)
+    materials.connect_material_expressions(sample, "RGB", masked, "A")
+    materials.connect_material_expressions(tinted, "", masked, "B")
+    materials.connect_material_expressions(sample, "A", masked, "Alpha")
+    materials.connect_material_property(masked, "", unreal.MaterialProperty.MP_BASE_COLOR)
     glow = materials.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -600, 500)
     glow.set_editor_property("parameter_name", "Glow")
     glow.set_editor_property("default_value", unreal.LinearColor(0.0, 0.0, 0.0, 1.0))

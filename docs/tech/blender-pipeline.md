@@ -184,11 +184,11 @@ humanoid with the other models (`Content/Characters/humanoid`: mesh with the mor
 **Open points (for the human):**
 - The A-pose is the rest pose. Retargeting from the UE mannequin needs an IK retargeter with
   a pose adjustment (the bone axes differ).
-- **Tint:** the game currently tints the whole humanoid toward the side colour, which also
-  colours skin and hair. With this texture the material should tint by the alpha mask only
-  (`lerp(colour, colour × tint, alpha)`).
-- The finger bones are new since the first import (30 bones); the skeleton asset has to be
-  re-imported, and the in-game shots should show the hands closed around the sword.
+- **Tint (done 2026-11-19):** `Scripts/import_art.py` builds the material as
+  `lerp(colour, colour × tint, alpha)` – the side colour reaches only the shirt. A texture
+  without an alpha channel (slime, wolf pup) is tinted everywhere, as before.
+- The model with the finger bones (55 bones) is imported; the in-game shots show the hands
+  closed around sword and shield.
 - About 49 000 triangles per humanoid: fine for the arena; LODs come with more characters.
 
 ## Animations by the human: the import path

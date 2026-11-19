@@ -48,6 +48,27 @@ import, sockets, morph targets in game, bone-length test, dev commands.
   stand-in sword and shield live only in the `.blend`, not in the export.
 - No intervention.
 
+### 2026-11-19 – detailed humanoid in the game: re-import and tint mask (agent session, short)
+
+After the Blender session pushed the more detailed base model (entry below).
+- `Scripts/build_art.sh humanoid`: 55 bones, 49 472 triangles, eleven clips;
+  `Content/Characters/humanoid` committed anew. `Art/humanoid/humanoid.blend` kept as
+  committed (the build rewrites it).
+- `Scripts/import_art.py`: the material tints by the texture's alpha mask
+  (`lerp(colour, colour × tint, alpha)`); textures without alpha are tinted everywhere as
+  before. No change in `Source/`.
+- Looked at (`Scripts/shots_humanoid.sh`): face, hair and skin keep their colours, the shirt
+  carries the side colour, the hands close around sword and shield.
+- Verified: 19 automation tests; live runs combat 164, slime 83, waves 125, debug 44.
+- Problem: in the first `run_all.sh` the combat run failed 7 checks (the client's start
+  values and its attack were missing in the log). The Blender session was running the game
+  from its worktree at the same time; run alone, the combat run was green. Probably two
+  hosts on one machine got in each other's way (same port) – not looked into further. Do
+  not run live runs from two checkouts at once.
+- Coordination: both sessions had started the same re-import; the other one dropped its
+  uncommitted result.
+- No intervention.
+
 ### 2026-11-19 – toon and ink variants removed (agent session, short)
 
 At the human's word, after the look decision below.
