@@ -105,7 +105,7 @@ base shape. They are exported as FBX blend shapes (checked by re-importing the F
 Idle (40 frames, loop), Move (16, loop, runs on the spot), Windup (8), Strike (4, a slash
 from the right shoulder across to the left), Recovery (10), Charge (12, loop, sword drawn
 back at the hip), **HeavyStrike** (4, a thrust with a lunge – the heavy attack is a stab; the
-game uses Strike until it looks this name up), Block (4, shield in front of the chest, body
+game falls back to Strike if a model has no HeavyStrike), Block (4, shield in front of the chest, body
 lowered; the last frame is held), Dodge (14), Jump (12, loop while in the air), Death (16,
 falls on its back). Poses with the feet on the ground are lowered by script until the
 lowest sole point touches the floor (for the full leg length; with shorter legs the game
@@ -126,12 +126,20 @@ the deep squat belly and thigh press into each other and the buttocks still form
 point; the top of the shoulder shows a small bump when the arm is raised high; the presets
 differ clearly but moderately.
 
+**Two ways to shorten the legs, compared** (`humanoid_rest_legs80_*` vs.
+`humanoid_rest_legs80_moved_*`): scaling `thigh` and `calf` along the bone shortens the skin
+with them – clean. Only moving `calf` and `foot` closer (bone translations, no scale – what
+`UHydraAnimInstance::ScaleLegs` does at the time of writing) leaves the thigh and calf skin
+at full length, so it is pushed into the next segment: visible folds at the knees and above
+the ankles at 80 %. Readable from a distance, but the bone scale is the better fit for this
+mesh.
+
 **Open points (for the Unreal integration and the human):**
-- `Scripts/import_art.py` imports with `import_morph_targets = False`; the humanoid needs
-  `True`. The humanoid is not in the default model list of `build_art.sh` yet.
-- Bone length at runtime: scale thigh and calf on their bone axis (which Unreal axis
-  Blender's +Y becomes after the import has to be checked), keep the children from
-  inheriting the scale, and lower the mesh by the lost leg length (about 17 cm at 80 %).
+- The humanoid is not in the default model list of `build_art.sh` yet.
+- Leg length at runtime: consider scaling thigh and calf along their bone axis (Blender's
+  +Y; which Unreal axis that becomes after the import has to be checked) instead of only
+  moving calf and foot, with the children not inheriting the scale; either way the figure
+  comes down by the lost leg length (about 17 cm at 80 %).
 - The A-pose is the rest pose. Retargeting from the UE mannequin needs an IK retargeter with
   a pose adjustment (the bone axes differ).
 - Hands are mittens; the sword grip is placed by the socket only. Fingers if the human's

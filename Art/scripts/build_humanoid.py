@@ -791,6 +791,20 @@ def scale_legs(arm, factor):
         bpy.context.view_layer.update()
 
 
+def move_legs(arm, factor):
+    """The other way to shorten the legs: calf and foot moved along their offsets, nothing
+    scaled (what a pose with changed bone translations does). Rest pose only."""
+    for side in ("_l", "_r"):
+        thigh, calf, foot = (arm.data.bones[name + side] for name in ("thigh", "calf", "foot"))
+        knee = thigh.head_local + (calf.head_local - thigh.head_local) * factor
+        ankle = knee + (foot.head_local - calf.head_local) * factor
+        for bone, head in ((calf, knee), (foot, ankle)):
+            arm.pose.bones[bone.name].matrix = Matrix.Translation(head) @ bone.matrix_local.to_3x3().to_4x4()
+            bpy.context.view_layer.update()
+    arm.location.z = -lowest_sole(arm)
+    bpy.context.view_layer.update()
+
+
 def preview(obj, arm, props):
     keys = obj.data.shape_keys.key_blocks
 
@@ -828,6 +842,10 @@ def preview(obj, arm, props):
     scale_legs(arm, 0.8)
     hb.render_preview("%s_rest_legs80" % NAME, (0, 0, 92), 330, size=(600, 800), views=(("front", 0.0), ("side", -90.0)))
     scale_legs(arm, 1.0)
+    move_legs(arm, 0.8)
+    hb.render_preview("%s_rest_legs80_moved" % NAME, (0, 0, 92), 330, size=(600, 800), views=(("front", 0.0), ("front_left", -35.0)))
+    arm.location.z = 0.0
+    apply_pose(arm, {})
 
     # Key poses of the placeholder animations, with sword and shield.
     show_props(True)

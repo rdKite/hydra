@@ -11,6 +11,21 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-19 – humanoid base model, Blender part (parallel session, 19:50–20:30)
+
+Humanoid base model – Blender part done (parallel session); Unreal integration open:
+import, sockets, morph targets in game, bone-length test, dev commands.
+- `Art/scripts/build_humanoid.py`: quad-cage body (2304 quads), 25-bone mannequin-named
+  skeleton with `weapon_r` / `shield_l`, shape keys `male` / `female`, eleven placeholder
+  clips incl. `HeavyStrike`, FBX export checked by re-import. Details, render findings and
+  open points in `docs/tech/blender-pipeline.md` (section "Humanoid base model").
+- Finding for the Unreal side: shortening the legs by moving calf and foot only (as
+  `ScaleLegs` does now) folds the skin at knees and ankles; scaling the bones along their
+  length was clean in Blender (renders `humanoid_rest_legs80*`).
+- Assumptions: A-pose rest (arms 40° down); mitten hands without finger bones; the
+  stand-in sword and shield live only in the `.blend`, not in the export.
+- No intervention.
+
 ### 2026-11-19 – answers to the M5 questions, M4b, M5 preparation (agent session, start 19:10)
 
 Pulled `main` (design sessions of 2026-11-16 to 2026-11-19) and followed the plan of the
