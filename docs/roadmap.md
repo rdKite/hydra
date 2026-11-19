@@ -89,7 +89,7 @@ skill growth before the playtest, so the playtest tests the rules that stay. Rul
       and arena built by script, same shots side by side, switchable by dev command; a
       proposal which placeholder animations to replace first, ranked by the telegraphs they
       carry; a playtest kit (start script per form, a script that summarises the metrics
-      CSV of a session).
+      CSV of a session, a debug panel – see `docs/design/phase-1.md` §27).
 - [ ] **Decide the look** based on our own models (toon or not – still open), and with it how
       much texture work is needed (procedural only, or hand-painted detail as well).
 - [ ] Decide which placeholder animations are replaced first by the human's own animations

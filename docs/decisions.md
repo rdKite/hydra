@@ -471,4 +471,7 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   learning phase. Rules: `phase-1.md` §17 and §26.
 - **M5 is prepared by the agent** (look variants, an animation proposal, a playtest kit), so
   the human only decides and plays.
+- **Debug panel for testing** (part of the playtest kit, after M4b): set the own form, level,
+  skills and imprint, spawn any enemy type with a level; server-authoritative, every action
+  also a console command, development builds only. Spec: `phase-1.md` §27.
 

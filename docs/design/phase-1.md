@@ -758,3 +758,31 @@ training) is the one number that strength and dexterity bonuses scale with.
 Unchanged: turn rate (weight ÷ strength, now with the grown strength), imprint progress and
 milestones, evolution and instinct (except its XP bonus, see above), waves, metrics, lag
 compensation.
+
+## 27. Debug panel (M5 playtest kit, decision 2026-11-19)
+
+A test tool, not a game menu. Built after M4b, so "set skill" works on the new skill
+growth.
+
+- **Toggle:** F1 (gamepad: a free button, e.g. Back/View). Built in C++ (Slate or a HUD
+  menu drawn by the HUD class), no Blueprint logic; usable with mouse, keyboard and gamepad.
+  While open, game input is paused for the own character only (the game keeps running).
+- **Own character:**
+  - **form:** every form in `forms.json` (humanoid, slime, fire elemental slime; new forms
+    appear by themselves);
+  - **level:** set directly; attributes, bars and the skill limit follow at once;
+  - **skills:** set each skill of the form to a level (and its progress bar), at most the
+    level as the rule says; set the fire imprint level; open a milestone;
+  - **reset:** full bars, debuffs removed.
+- **Enemies:** spawn any enemy type from `enemies.json` a few metres in front of the own
+  character, with a chosen level and active or passive; remove all enemies; waves on/off.
+- **Server-authoritative:** the panel only sends requests; the server applies them, also
+  for the client window.
+- **Every action is also a console command** (e.g. `HydraSetForm`, `HydraSetLevel`,
+  `HydraSetSkill <skill id> <level>`, `HydraSetImprint <level>`, `HydraSpawn <enemy id>
+  <level> [passive]`, `HydraClearEnemies`), so live runs can use and test the same path.
+  Existing commands (`HydraForm`, `HydraXp`, …) are folded in or kept as aliases; README
+  updated.
+- **Development builds only:** compiled out of shipping builds (`UE_BUILD_SHIPPING`).
+- Verified by a live run that drives the commands on host and client and checks the
+  result on both.

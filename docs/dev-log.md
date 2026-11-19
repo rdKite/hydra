@@ -22,7 +22,7 @@ something is open; after two serious failed attempts log it and go on.
    the new skill growth – rules in `docs/design/phase-1.md` §17 and §26. Update §23–§25 to
    what was built.
 3. **M5 preparation** (first roadmap item of M5): look variants, animation proposal,
-   playtest kit. Decide nothing; put the questions for the human at the end of the log
+   playtest kit including the **debug panel** (`docs/design/phase-1.md` §27). Decide nothing; put the questions for the human at the end of the log
    entry.
 
 ### 2026-11-17 – attribute model comes to Phase 1 (human, recorded in the design session)
