@@ -541,4 +541,10 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   stays below an equal opponent's HP, and medium armor survives an uncharged heavy hit of the
   heaviest weapon to the front. Whoever fights without armor may fall to a telegraphed heavy
   hit. Rejected: a cap of about 75 % of maximum HP per hit.
+- **Phase 1 (M4b) takes over the weapon rules of this day:** longsword 1.5 kg, fixed strength
+  / dexterity share (longsword 50/50, slam 70/30), 0.3 per gain, base damage from the cost
+  (longsword light 200), guard rail without a cap. Not built in Phase 1: strength requirement
+  per grip (no case), grip factor (one-handed only). **Slam cost ratio corrected to about
+  0.01** (guess): 0.038 came from the old cost formula and would cost more than a slime's
+  whole bar. Rules: `phase-1.md` §5, §12, §14, §26.
 

@@ -45,7 +45,7 @@ designed once and applies to every form with a matching body.
   | stomp | 100 / 0 | ~0.06 (like a greatsword), area attack | pure weight |
   | charge | 80 / 20 | **whole body** (like a dodge: total weight ÷ body weight × base cost) | mass and momentum, a little aiming |
   | tail strike: club (saurian) | 80 / 20 | ~0.03 | heavy blow to the rear |
-  | slam (slime) | 70 / 30 | 0.038 (0.3 ÷ 8) | the body as mass, but a gel body also snaps |
+  | slam (slime) | 70 / 30 | ~0.01 | the body as mass, but a gel body also snaps. (0.038 = 0.3 ÷ 8 came from the old cost formula ÷ strength; with the cost from ÷ body weight a slam would cost more than a slime's whole bar. ~0.01 gives about two slams in a row at level 0, like the longsword for a human.) |
   | bite (wolf) | 40 / 60 | ~0.02 (like a short sword) | jaw force, above all a fast snap |
   | claws (if they become a skill) | 40 / 60 | ~0.02 | like a short sword |
   | pounce | 30 / 70 | **whole body**, like charge | leaping power, above all body control |

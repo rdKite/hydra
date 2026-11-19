@@ -119,7 +119,7 @@ Rules from the attribute model (decision 2026-11-17; formulas in §26):
 | Dodge cost | total weight ÷ body weight × the form's dodge cost (§8) |
 | Holding a block | shield weight ÷ body weight (§8) |
 | Turn rate | total weight ÷ **strength** (§10) – strength sets the handling |
-| Strength or dexterity for damage | weapon weight ÷ body weight gives the share "heavy" (§12) |
+| Strength or dexterity for damage | a fixed share per weapon schematic or body skill, not from weight (§12) |
 
 Rebound, block cost and interrupts no longer depend on weight (§7, §8). The weak-point
 multiplier depends on dexterity, not on weapon weight (§11).
@@ -337,7 +337,10 @@ fairly, even with different pings.
   That is why position, block and dodge matter. Consequences: resistances matter more;
   healing in combat is rare and slow.
 - **Guardrail:** against roughly equal opponents, no death in one hit from full health
-  without a clear telegraph.
+  without a clear telegraph. **No hard cap** (decision 2026-11-19): it is a balancing
+  target – the strongest **light** hit stays below the HP of an equal opponent. Phase 1 has
+  no armor, so a telegraphed, charged heavy hit to the back may fell a character – the price
+  of bad position.
 - **Hit stop:** a short pause on hit, clear sounds (placeholders), clear telegraphs – so high
   damage feels fair.
 - **Damage types:** physical splits into slash, pierce and blunt. Elements in Phase 1: fire
@@ -349,9 +352,12 @@ fairly, even with different pings.
   chain, weak point – each capped. Then each damage type is reduced by the target's
   resistance curve. **No direct damage or HP bonus per level** – the level acts through the
   attributes.
-- Strength or dexterity: weapon weight ÷ body weight gives a share "heavy" between 0 and 1;
-  bonus = share × strength bonus + (1 − share) × dexterity bonus. Both count only what the
-  level added on top of the form's base value.
+- Strength or dexterity: a **fixed share per schematic or body skill** (decision 2026-11-19;
+  longsword 50/50, slam 70/30); bonus = strength share × strength bonus + dexterity share ×
+  dexterity bonus. Both count only what the level added on top of the form's base value.
+- **Base damage follows from the cost** (decision 2026-11-19): light base damage =
+  efficiency × cost of the light strike, efficiency = 0.41 × (weight ÷ 1.5 kg)^0.1 –
+  longsword light **200**. A heavy attack deals × 2 at × 1.6 cost; full charge × 1.5 on top.
 
 ## 13. Hit detection with lag compensation
 
@@ -373,7 +379,7 @@ The Phase 1 humanoid has a fixed loadout: **longsword in one hand, shield in the
 
 | Family | Item | Damage | Weapon property |
 |---|---|---|---|
-| Swords | **longsword** (middle of short sword → longsword → greatsword) | slash (light), pierce (heavy) | all-rounder, good weapon block |
+| Swords | **longsword** (middle of short sword → longsword → greatsword), **1.5 kg**, strength / dexterity 50 / 50 | slash (light), pierce (heavy) | all-rounder, good weapon block |
 | Shields | **shield** (buckler / round shield / tower shield) | – | directional block; arc and block strength by shield type |
 
 - Hands: a shield always takes one hand. The longsword is used one-handed here (one-handed =
@@ -728,7 +734,7 @@ training) is the one number that strength and dexterity bonuses scale with.
 | Base attributes | per form in `forms.<id>`: vitality, endurance, spirit, strength (weight units), dexterity, plus body weight. Guide values: humanoid 100 / 100 / 60 / 80 / 100; slime and fire elemental slime keep their current proportions to the humanoid (slime ≈ 60 / 50 / 100 / 12, fire elemental slime ≈ 80 / 60 / 130 / 16), dexterity as the build session sees fit |
 | Bars | HP = 10 × vitality, stamina = 10 × endurance, mana = 10 × spirit. A humanoid without a spell form shows no mana bar |
 | Regeneration | `forms.<id>.stamina_regen_share_per_s` and `mana_regen_share_per_s` × maximum. None while an action runs (attack from press to end of recovery, bolt from press until it is out, dodge step and recovery, held block). Replaces `stamina.regen_delay_after_action_ms` |
-| Attack cost | `attack.light/heavy_stamina_per_weight_ratio × weapon weight ÷ body weight × weapons.<id>.demand` (demand 1). Balancing target: a human at **level 0** manages just under two light longsword strikes in a row from a full bar (at the arena start level 9 the bar is 18 % larger – a little over two) |
+| Attack cost | `attack.light/heavy_stamina_per_weight_ratio × weapon weight ÷ body weight × weapons.<id>.demand` (demand 1); body attacks (slam) use `weapons.<id>.cost_ratio` in place of weight ÷ body weight. Longsword `weight` 1.5 kg (real weapon, decision 2026-11-19); one-handed (grip factor 1.0); the strength requirement per grip is not built (the longsword needs 60 one-handed, the humanoid has 80). Slam `cost_ratio` ≈ 0.01 (guess: about two slams in a row for a slime at level 0, like the longsword for a human; see `monsters.md`). Balancing target: a human at **level 0** manages just under two light longsword strikes in a row from a full bar (at the arena start level 9 the bar is 18 % larger – a little over two) |
 | Dodge cost | `forms.<id>.dodge_stamina_cost × total weight ÷ body weight` (strength plays no role) |
 | Dodge | distance × (1 + `dodge.distance_per_dexterity_gain` × g_dex), duration ÷ (1 + `dodge.speed_per_dexterity_gain` × g_dex) – small effects |
 | Holding a block | `block.hold_stamina_per_s_per_weight_ratio × shield weight ÷ body weight` per second while raised |
@@ -736,13 +742,14 @@ training) is the one number that strength and dexterity bonuses scale with.
 | Interrupt | a hit cancels a binding attack if its damage (after block and resistance) ≥ `interrupt.threshold_share_of_max_hp` × target's maximum HP |
 | Damage | `base damage × (1 + skill bonus + attribute bonus + imprint bonus) × charge × chain × weak point`, then per damage type through the resistance curve |
 | Skill bonus | `skills.damage_bonus_per_level` × level of each skill the action trains (weapon skill; projectile; for a fire bolt also fire magic) – added, not multiplied. Instinct levels count as skill levels |
-| Attribute bonus | share heavy h = clamp((weapon weight ÷ body weight − `damage.light_ratio`) ÷ (`damage.heavy_ratio` − `damage.light_ratio`), 0, 1); bonus = h × `damage.strength_bonus_per_gain` × g_str + (1 − h) × `damage.dexterity_bonus_per_gain` × g_dex. The slam uses it like a weapon (its weight ÷ body weight); the bolt uses none (spell damage comes from skill and imprint) |
+| Attribute bonus | bonus = s × `damage.strength_bonus_per_gain` × g_str + (1 − s) × `damage.dexterity_bonus_per_gain` × g_dex, with the fixed strength share s = `weapons.<id>.strength_share` (longsword 0.5, slime slam 0.7). Both bonuses 0.3 per gain (guess). The bolt uses none (spell damage comes from skill and imprint) |
+| Base damage | from the cost (decision 2026-11-19): light damage = `damage.efficiency_base` (0.41) × (weight ÷ `damage.efficiency_reference_kg` (1.5))^`damage.efficiency_exponent` (0.1) × light cost of a human at level 0 (body 70 kg, 1,000 stamina, one-handed). Longsword light **200**; heavy × 2 (cost × 1.6), full charge × 1.5. The slam: the same efficiency at its own light cost for a slime at level 0 (about 95). Store the resulting base damage in `weapons.<id>` (data, not computed at runtime) |
 | Imprint bonus | `imprint.damage_bonus_per_level` × imprint level, on the fire part only |
 | Situational factors | charge and chain as before (each capped); weak point: `weak_point.damage_multiplier + weak_point.multiplier_per_dexterity_gain × g_dex`, capped at `max_damage_multiplier` |
 | Resistance | points per type in `forms.<id>.resistance` (+ `imprint.resistance_points_per_level` × imprint level for fire). Reduction = p ÷ (p + `resistance.curve_constant`) for p ≥ 0 (constant 100: 100 points = −50 %); for p < 0 damage × (1 + \|p\| ÷ constant). Current shares convert: 0.5 → 100 points, −0.25 → −25 points. Burning interval ÷ (1 − reduction) as before |
 | Element body | `element_body_damage` × (1 + imprint bonus), fire, through the attacker's resistance (no level factor any more) |
 | Removed | `progression.hp_bonus_per_level`, `progression.damage_bonus_per_level`, `skills.cost_reduction_per_level`, `skills.min_cost_factor`, `skills.xp_per_dodge`, `skills.dodge_distance_bonus_per_level`, the dodge skill in `skills.json` and `forms.json`, the weight-based interrupt and block keys, `weak_point.reference_weapon_weight_ratio`. "Dodges that avoided a hit" stays as a metric |
-| Scale | HP, stamina and mana grow about tenfold: scale weapon, slam, bolt, burning and element-body damage and the mana costs so that a fight lasts about as long as in M4, except where the stamina target above changes it on purpose |
+| Scale | HP, stamina and mana grow about tenfold. Weapon and slam damage follow from their cost (row above: a human at level 0 falls after five light longsword hits, as in M4). Scale bolt, burning and element-body damage and the mana costs so that a fight lasts about as long as in M4 |
 
 **Skill growth (decision 2026-11-19, §17).**
 

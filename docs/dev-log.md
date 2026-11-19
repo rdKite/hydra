@@ -19,7 +19,9 @@ something is open; after two serious failed attempts log it and go on.
 1. The five items of "answers to the M5 questions" (2026-11-16) below. In item 1 "skill
    XP" becomes hXP in M4b; credit per enemy stays.
 2. **M4b** (`docs/roadmap.md`), all items: the attribute model (entry 2026-11-17 below) and
-   the new skill growth – rules in `docs/design/phase-1.md` §17 and §26. Update §23–§25 to
+   the new skill growth – rules in `docs/design/phase-1.md` §17 and §26. §26 includes the
+   weapon rules of 2026-11-19 (longsword 1.5 kg, fixed strength / dexterity share, base
+   damage from the cost, slam cost ratio about 0.01). Update §23–§25 to
    what was built.
 3. **M5 preparation** (roadmap M5): first the **humanoid base model and rig** – gender-neutral,
    with the shape-key and bone-length pipeline test of the roadmap item (push the rig as
