@@ -207,6 +207,11 @@ part, entry above).
 - `Art/humanoid/humanoid.blend` changes on every build (Blender writes it anew); the
   committed file of the Blender session was kept.
 
+- Final check on a **fresh clone** of `main` (commit ddf0c21, LFS assets from the remote):
+  `Scripts/run_all.sh` all green – 19 tests, live runs 164 / 83 / 125 / 44.
+
+Session paused at the human's request (2026-11-19); nothing is running.
+
 **Interventions:** none in this session.
 
 **Roadmap:** M4b done; of M5 the base model and "prepare the decisions" are done. What is
