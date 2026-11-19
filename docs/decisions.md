@@ -474,4 +474,10 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
 - **Debug panel for testing** (part of the playtest kit, after M4b): set the own form, level,
   skills and imprint, spawn any enemy type with a level; server-authoritative, every action
   also a console command, development builds only. Spec: `phase-1.md` §27.
+- **Humanoid base model and rig by script before the look decision** (first item of the M5
+  preparation): the look and the first animations cannot be judged on the primitive
+  placeholder body. One humanoid skeleton with mannequin-compatible bone names, a plain
+  stand-in body, hand sockets, placeholder animations. A characterful final model is
+  decided after the look (more script work per model, or sculpting on top of the
+  generated base).
 

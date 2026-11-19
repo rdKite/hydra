@@ -21,7 +21,9 @@ something is open; after two serious failed attempts log it and go on.
 2. **M4b** (`docs/roadmap.md`), all items: the attribute model (entry 2026-11-17 below) and
    the new skill growth – rules in `docs/design/phase-1.md` §17 and §26. Update §23–§25 to
    what was built.
-3. **M5 preparation** (first roadmap item of M5): look variants, animation proposal,
+3. **M5 preparation** (roadmap M5): first the **humanoid base model and rig** (push the
+   rig as soon as it imports and plays, so the human can start animating), then look
+   variants, animation proposal,
    playtest kit including the **debug panel** (`docs/design/phase-1.md` §27). Decide nothing; put the questions for the human at the end of the log
    entry.
 

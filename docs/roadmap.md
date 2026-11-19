@@ -85,6 +85,14 @@ skill growth before the playtest, so the playtest tests the rules that stay. Rul
 
 ### M5 – Look and playtest (a few days)
 
+- [ ] **Humanoid base model and rig by script** (first, before the look variants): one
+      skeleton for all humanoids with bone names compatible with the Unreal mannequin (for
+      the human's animations in Blender or Cascadeur, and retargeting); a plain stylised
+      stand-in body (like the wolf pup: good enough to judge proportions, look and readable
+      telegraphs, not a final character); hand sockets for longsword and shield; placeholder
+      animations by script for the humanoid's actions (idle, move, light and heavy attack
+      phases, block, dodge, jump, death). The telegraph colours stay until the human's
+      animations exist. Push the rig early so the human can start animating.
 - [ ] Prepare the decisions (agent, nothing decided): 2–3 look variants of slime, humanoid
       and arena built by script, same shots side by side, switchable by dev command; a
       proposal which placeholder animations to replace first, ranked by the telegraphs they
