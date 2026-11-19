@@ -7,6 +7,8 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
 
 ## Phase 1b – complete the arena (stage 1 complete)
 
+- [ ] **Source-built engine** (Unreal Engine 5.8 from source) so a dedicated server target
+      can be built; build and test scripts working with it. Prerequisite for online play.
 - [ ] **Online:** play over real servers, PvP humanoid against monster.
 - [ ] Numbers and rules as server settings, prepared for private servers.
 - [ ] More weapons: spear, short bow; free choice of hands, switching grip.
