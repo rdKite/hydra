@@ -73,7 +73,8 @@ no longer apply, or are even reversed. This needs many players.
 
 - **Shifters:** a humanoid race of its own for transformed monsters (see humanoid form for
   monsters in [monsters.md](monsters.md)). This way a transformed monster can also enter
-  cities it would never have been allowed into in monster form.
+  cities it would never have been allowed into in monster form. Slimes from epic forms on have **mimicry**:
+  NPCs treat them like other humanoids, while players still see a Shifter.
 - **Demons:** a humanoid race that is generally friendlier towards monsters. They run
   **outposts and trading posts** that untransformed monsters can enter too, and that count
   as **safe zones** – the important places of retreat for monsters. Demons are also

@@ -249,7 +249,10 @@ saurian.
   forms or similar.
 - Transformed monsters always count among humanoids as their own humanoid race, the
   **Shifters** – like the relation between human and elf, not as monsters. Exception:
-  slimes from epic forms on can pass themselves off as one of the humanoid races.
+  slimes from epic forms on have the capability **mimicry**: NPCs do not treat them as
+  Shifters (no distrust or access limits for Shifters in cities). They still **look** like a
+  Shifter with slime marking, so other players recognise them – only NPCs are fooled. (Later,
+  optionally: NPCs with high perception see through it.)
 - The humanoid form opens doors: trade, quests, access to cities you could never enter in
   monster form – at the cost of combat strength (see cities, relations and zones in
   [world.md](world.md)).
@@ -266,7 +269,8 @@ is for monsters only; humanoids have capabilities too).
 
 - A capability **unlocks an action**. Without it, the action does not exist for that form.
 - **First capabilities:** **dodge**, **jump**, **crouch**; from the body-skill catalogue
-  **pursuit**, **front shield**, **glide/fly** and **wall-walking**.
+  **pursuit**, **front shield**, **glide/fly** and **wall-walking**; **mimicry** for slimes
+  from epic forms on (see [Humanoid form for monsters](#humanoid-form-for-monsters)).
 - **Most species have dodge, jump and crouch.** Gigantic forms have none of them – they are
   such a large target that dodging would hardly help; their counter is a large HP pool and
   high resistances. Slimes need no crouch (they are small anyway).
@@ -306,23 +310,34 @@ is for monsters only; humanoids have capabilities too).
 
 ### Look of humanoids: sliders, gender-fluid
 
-- The body is shaped with **sliders**. There are no fixed male and female models: **one
-  base model per race with shape keys** (morph targets). Three **starting presets** –
-  classically male, classically female, neutral – are just slider positions on that one
-  model. One rig and one set of animations per race.
+- The body is shaped with **sliders**. There are no fixed male and female models and no
+  model per race: **one shared humanoid base model** with one skeleton for all races
+  (Shifters included), shaped by shape keys (morph targets). Three **starting presets** –
+  classically male, classically female, neutral – are just slider positions on that model.
+- **Races = slider limits plus add-on parts:** each race has its own ranges (dwarves short and
+  stocky, elves slim), its own skin colors, and add-ons such as elf ears, Demon horns or a
+  tail as extra shape keys or attachable parts.
+- **Bone lengths too:** strong proportion changes (a dwarf's shorter legs, broader torso)
+  need some sliders to scale **bone lengths**, not only shape keys – otherwise the joints sit
+  wrong. Unreal does this at runtime (bone transforms in the C++ anim instance); retargeted
+  animations adapt. The range stays limited (dwarf yes, giant no); bodies with wings or four
+  legs are not humanoids anyway.
+- **One rig, one set of animations and one set of armor models for all races.** Animations
+  are shared, so a dwarf moves like a human at first; race-specific stances (idle, gait) can
+  be added later where they matter.
 - **Look is separate from gameplay:** the shape sliders are purely cosmetic and change
   neither hitbox nor stats. Only the **size slider** (body weight, see below) affects play.
-- **Armor follows every body shape:** the shape keys are transferred from the body to each
-  armor model by script (Blender data transfer or surface deform) – the main extra effort,
-  solved in the pipeline.
+- **Armor follows every body shape:** the shape keys (and bone lengths) are transferred from
+  the body to each armor model by script (Blender data transfer or surface deform) – the
+  main extra effort, solved in the pipeline, and only once for all races.
 - **Voice** (or pitch) is chosen separately from the body; if NPCs address the character,
   **pronouns** are chosen too (or NPCs use the name).
 
 ### Shifters: the editor again
 
 - When a monster gets the humanoid form for the first time, the **same editor** opens for its
-  humanoid figure – with the base model of the **Shifter** race (slimes from epic forms on,
-  which can pass as other races, get those races' models).
+  humanoid figure – the shared base model within the slider limits of the **Shifter** race.
+  Slimes with mimicry use the same model; they are not built as other races.
 - **The marking carries over:** base color, pattern and unlocked colors appear on the
   humanoid figure too (hair, eyes, skin markings), so the monster stays recognisable.
 - **Only in a safe moment:** the first transformation – and with it the editor – works only

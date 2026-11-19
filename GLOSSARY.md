@@ -43,7 +43,8 @@ crafting plans, because that is Unreal's visual scripting).
 | Erweckung | **awakening** – the first imprint level unlocks the element (element skill level 1, bolt) |
 | ~~Start-Ausrichtung~~ | ~~starting alignment~~ – dropped 2026-11-19 (the first free skill point replaces it) |
 | Zeichnung (Monster) | **marking** – base color and pattern, kept across evolutions |
-| Ausgangskörper | **body preset** – a starting slider position (classically male, classically female, neutral) on one base model per race |
+| Ausgangskörper | **body preset** – a starting slider position (classically male, classically female, neutral) on the shared humanoid base model |
+| Nachahmung | **mimicry** – capability of slimes from epic forms on: NPCs do not treat them as Shifters; players still see a Shifter |
 | Elementfeld | **element field** |
 
 ## Debuffs

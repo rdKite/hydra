@@ -58,7 +58,8 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
       element through the first imprint level.
 - [ ] Character creation: species → look → name, then the tutorial (weapon rack, teacher,
       first free skill point); monsters keep their marking across evolutions, imprints unlock
-      colors; humanoids gender-fluid with sliders on one base model per race (three presets,
+      colors; humanoids gender-fluid with sliders on one shared base model for all races
+      (races = slider limits and add-on parts, some sliders scale bone lengths; three presets;
       shape keys transferred to armor by script), voice and pronouns separate; the same
       editor for the Shifter figure on the first humanoid form.
 - [ ] Factions, reputation, friendly fire; three relations, reputation levels, Shifters and

@@ -494,4 +494,12 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   animation set per race is less work than two.
 - **Shifters:** the same editor opens for the humanoid figure on the first humanoid form, only
   out of combat with no enemies nearby; the marking carries over.
+- **One shared humanoid base model for all races** (instead of one per race): races differ by
+  slider limits, skin colors and add-on parts (ears, horns, tail); some sliders scale bone
+  lengths (dwarves). Reason: one rig, one set of animations and one set of armor models for
+  all races. The M5 base model should therefore be gender-neutral and allow shape keys and
+  bone-length scaling.
+- **Mimicry** (capability) replaces "slimes from epic forms on pass as other races": NPCs do
+  not treat them as Shifters, while they still look like Shifters with slime marking, so
+  players recognise them. No extra models.
 
