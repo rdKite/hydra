@@ -62,17 +62,36 @@ Dodge, Death. Clips of actions are time-scaled to the action's duration from
 ## Humanoid base model (M5, Blender part)
 
 `Art/scripts/build_humanoid.py` builds the one base model for all humanoids (decisions of
-2026-11-19). Run: `blender -b --python Art/scripts/build_humanoid.py` (about 70 s with
+2026-11-19). Run: `blender -b --python Art/scripts/build_humanoid.py` (a few minutes with
 previews; `-- nopreview` skips them). `Scripts/build_art.sh humanoid` also works, but it then
 runs the Unreal import as well, which belongs to the Unreal integration (see open points).
 
-**Body.** A plain, stylised, gender-neutral stand-in, 179 cm, A-pose (arms 40° from the
-body), no face, mitten hands. It is not built with the Skin modifier like the wolf pup:
-the script writes a quad cage ring by ring (a torso lattice, 8-sided rings for arms and
-legs with extra loops at shoulder, elbow, wrist, hip, knee and ankle, a 6-sided foot),
-mirrors it and applies one Catmull-Clark level. Result: 2306 vertices, 2304 faces, all
-quads, closed, exactly symmetric, 2 poles with more than 5 edges (at the crotch). The
-build prints these numbers on every run.
+**Body.** A stylised human (detail level of a stylised third-person game, not realistic),
+183 cm, A-pose (arms 40° from the body), with five-finger hands, a face, eyeballs, hair
+volume and a simple outfit (shirt, belt, trousers, boots). Built in three steps:
+1. **Quad cage**, written ring by ring and mirrored: a trunk of 20 layers with the arm
+   hole, head and crown, neck, arm and leg rings with extra loops at the joints, a palm of
+   three rings with four fingers and a thumb (three segments each), a foot. Ring radii are
+   enlarged by `3 / (2 + cos(2π/n))` so they keep their size after subdivision.
+2. **Two Catmull-Clark levels.**
+3. **Sculpt by script**: smooth ellipsoid bumps (`amp · (1 − d²)²` along the vertex
+   normal) for the muscle masses (chest, shoulder blades, deltoid, biceps, forearm, thigh,
+   kneecap, buttocks), the face (eye sockets, lids, brows, nose, lips, chin, cheeks, jaw,
+   ears) and the outfit (cloth thickness, collar, sleeve hem, belt, boot cuff, hair volume).
+   The table is in `sculpt_features()`; each bump has a group whose gain the presets set.
+Result: 24742 vertices, 24736 faces, all quads (about 49 000 triangles in the game),
+closed, exactly symmetric, 17 poles with more than 5 edges. The eyeballs are two separate
+quad spheres in the same mesh, weighted to `head`. The build prints these numbers on every
+run.
+
+**Texture** (`T_humanoid_color.png`, 2048², one material). The object position of every
+texel is baked into a float image (Cycles, emission bake), then the colour is computed per
+texel in numpy from body regions (`regions()`: arm, hair, shirt, belt, trousers, boots by
+height and distance to the arm axis) plus face details (cheeks, lips, brows, lash line,
+iris, pupil) and a faint fabric pattern. **The alpha channel is a tint mask, not
+transparency:** 1 on the shirt, 0 elsewhere – the part of the model the side colour may
+tint. In Blender the image uses `alpha_mode = CHANNEL_PACKED`; otherwise colour is
+premultiplied and everything outside the shirt renders black.
 
 **Weights** are set per cage ring (each ring knows its bones, e.g. the knee ring is half
 thigh, half calf) and smoothed by the subdivision; at most 4 bones per vertex, normalised.
@@ -80,18 +99,21 @@ Weights by distance (as on the wolf pup) were not used: the arm hangs next to th
 the thighs touch, so the nearest bone is often the wrong one. The buttocks follow the thigh
 with only 40 % of their ring's share, otherwise a deep squat folds them into a sharp ridge.
 
-**Skeleton** (25 bones; names of the Unreal mannequin, but Blender bone axes with Y along
+**Skeleton** (55 bones; names of the Unreal mannequin, but Blender bone axes with Y along
 the bone, not the mannequin's axes):
 
 - `root` (at the origin) → `pelvis` → `spine_01` → `spine_02` → `spine_03` → `neck_01` → `head`
 - `spine_03` → `clavicle_l/r` → `upperarm_l/r` → `lowerarm_l/r` → `hand_l/r`
+- `hand_l/r` → `thumb_01..03`, `index_01..03`, `middle_01..03`, `ring_01..03`,
+  `pinky_01..03` (`_l/r`); finger bones are rolled so a positive rotation about their X axis
+  curls the finger toward the palm.
 - `pelvis` → `thigh_l/r` → `calf_l/r` → `foot_l/r` → `ball_l/r`
-- `weapon_r`, child of `hand_r`: the grip in the palm, **+Y of the bone along the blade**
-  (points forward in the rest pose).
+- `weapon_r`, child of `hand_r`: the grip inside the closed fist, **+Y of the bone along the
+  blade** (points forward in the rest pose).
 - `shield_l`, child of `lowerarm_l`: on the outside of the forearm, **+Y of the bone out of
   the shield's face**, shield centre at the bone head.
 
-No finger, twist or IK bones yet. Every bone is flagged as a deform bone (also `root` and
+No twist or IK bones yet. Every bone is flagged as a deform bone (also `root` and
 the two socket bones, which carry no weights), because the export keeps deform bones only.
 The `.blend` holds a stand-in longsword (98 cm) and round shield (60 cm) parented to the
 socket bones, so animations can be judged with them; they are **not** exported.
@@ -108,7 +130,8 @@ from the right shoulder across to the left), Recovery (10), Charge (12, loop, sw
 back at the hip), **HeavyStrike** (4, a thrust with a lunge – the heavy attack is a stab; the
 game falls back to Strike if a model has no HeavyStrike), Block (4, shield in front of the chest, body
 lowered; the last frame is held), Dodge (14), Jump (12, loop while in the air), Death (16,
-falls on its back). Poses with the feet on the ground are lowered by script until the
+falls on its back). In every clip the right hand is closed around the sword grip and the
+left hand around the shield strap (finger curl). Poses with the feet on the ground are lowered by script until the
 lowest sole point touches the floor (for the full leg length; with shorter legs the game
 has to correct the height, see below).
 
@@ -116,9 +139,13 @@ has to correct the height, see below).
 front-left, side, back); two deformation test poses for every preset (`squat`: hips and
 knees at 95° / 115°; `reach`: an arm raised by 120°, a leg spread by 45°); the rest pose,
 both test poses and Idle, Strike and Block with thigh and calf scaled to 80 % (`*_legs80`);
-key frames of every clip with sword and shield.
+key frames of every clip with sword and shield; face close-ups per preset; the right hand
+open, as a fist and around the sword grip.
 
-**What the renders show.** Shoulders, elbows, hips and knees bend without tearing or
+**What the renders show** (detailed model, 2026-11-19). The figure reads as a stylised
+human from every side; face, hands and outfit hold up in close-ups; fists and the sword
+grip close without the fingers passing through each other. Shoulders, elbows, hips and
+knees bend without tearing or
 collapsing in all three presets; the knees keep their volume at 115°. At 80 % leg length
 hips and knees sit right and the proportions read as stocky. The test scales `thigh` and
 `calf` along the bone with `inherit_scale = NONE` on `calf` and `foot` (so the feet keep
@@ -157,8 +184,12 @@ humanoid with the other models (`Content/Characters/humanoid`: mesh with the mor
 **Open points (for the human):**
 - The A-pose is the rest pose. Retargeting from the UE mannequin needs an IK retargeter with
   a pose adjustment (the bone axes differ).
-- Hands are mittens; the sword grip is placed by the socket only. Fingers if the human's
-  animations need them.
+- **Tint:** the game currently tints the whole humanoid toward the side colour, which also
+  colours skin and hair. With this texture the material should tint by the alpha mask only
+  (`lerp(colour, colour × tint, alpha)`).
+- The finger bones are new since the first import (30 bones); the skeleton asset has to be
+  re-imported, and the in-game shots should show the hands closed around the sword.
+- About 49 000 triangles per humanoid: fine for the arena; LODs come with more characters.
 
 ## Animations by the human: the import path
 

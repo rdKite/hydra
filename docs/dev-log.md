@@ -11,6 +11,28 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-19 – humanoid base model, more detail (parallel session, Blender only)
+
+The human found the first stand-in too little like a real human and asked for roughly the
+detail of a stylised third-person game. Fortnite was used only as a benchmark for the level
+of detail; no character of it was recreated.
+- `Art/scripts/build_humanoid.py` rewritten: finer cage with five-finger hands, two
+  subdivision levels, sculpt by script (muscles, face, ears, eyeballs, hair volume, outfit),
+  texture by position bake (skin, hair, face, shirt, trousers, belt, boots) with a **tint
+  mask in the alpha channel**. 24736 quads (~49k triangles), 55 bones (30 finger bones new),
+  shape keys and eleven clips as before; the clips now close the hands around sword and
+  shield. FBX re-import checked (55 bones, `Basis`/`male`/`female`, 11 clips).
+- Problems: Blender premultiplied the colour by the alpha mask, so skin rendered black –
+  fixed with `alpha_mode = CHANNEL_PACKED`. Fingertips and thumb tips took trousers/belt
+  colours (region masks too narrow) – fixed. The mirror check reported 14 lopsided vertices
+  through rounding – now a KD-tree check with 0.1 mm tolerance: 0.
+- For the Unreal side (not done here, no Unreal started): re-import the humanoid (new
+  skeleton with fingers), tint by the alpha mask instead of the whole model. Details under
+  "Open points" in `docs/tech/blender-pipeline.md`.
+- Assumption: the plain look (decision of today) – the detail lives in mesh and texture,
+  no special shading.
+- No intervention.
+
 ### 2026-11-19 – humanoid base model, Blender part (parallel session, 19:50–20:30)
 
 Humanoid base model – Blender part done (parallel session); Unreal integration open:
