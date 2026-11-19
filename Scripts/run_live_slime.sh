@@ -17,7 +17,9 @@
 #   24    AI blocks: the fire bolt bursts in front of the shield
 #   27.5  cast aimed 90 degrees to the side: the slime turns at its turn rate, the bolt
 #         leaves along its facing
-#   29.5  quit
+#   30    a charged cast, the camera turns by 40 degrees during the charge: the slime
+#         follows it and the bolt leaves that way
+#   32.5  quit
 set -u
 source "$(dirname "$0")/env.sh"
 PYTHON="$UE/Engine/Binaries/ThirdParty/Python3/Win64/python.exe"
@@ -41,10 +43,11 @@ H+=";7:HydraResetAll;7.5:HydraOffHand|0;8.3:HydraStats;8.5:HydraTeleport|0|0|90;
 H+=";11:HydraFire|1;11:HydraResetAll;11.5:HydraOffHand|0;14:HydraStats;23.5:HydraStats"
 H+=";24:HydraResetAll;24:HydraAI|block|1;24.5:HydraOffHand|0;26:HydraStats;26.5:HydraAI|block|0"
 H+=";27:HydraTeleport|0|0|0;27.2:HydraLook|90|-10;27.5:HydraOffHand|0;28.8:HydraStats"
+H+=";29.5:HydraResetAll;29.5:HydraTeleport|0|0|0;30:HydraOffHand|1000;30.3:HydraLook|40|-10;31.8:HydraStats"
 
 C="1:HydraStats;3.2:HydraStats;10.8:HydraStats;12.6:HydraTeleport|80|600|180;14:HydraStats;16:HydraTeleport|400|0|180;23.5:HydraStats;26:HydraStats;27.9:HydraTeleport|250|0|180"
 
-COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound "-HydraDataDir=$(cygpath -w "$LIVE/data")" -HydraWaitPlayers=2 -HydraQuit=29.5)
+COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound "-HydraDataDir=$(cygpath -w "$LIVE/data")" -HydraWaitPlayers=2 -HydraQuit=32.5)
 export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 
 "$EDITOR" "$PROJ" "/Game/Maps/Arena?listen?Form=slime" "${COMMON[@]}" -WinX=0 -WinY=40 -log=SlimeHost.log -HydraAIPassive \

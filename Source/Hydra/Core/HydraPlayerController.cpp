@@ -118,9 +118,9 @@ void AHydraPlayerController::BuildInput()
 	Ctx->MapKey(LockOnAction, EKeys::Gamepad_RightThumbstick);
 	Ctx->MapKey(PreciseAction, EKeys::X);
 	Ctx->MapKey(PreciseAction, EKeys::Gamepad_LeftThumbstick);
-	Ctx->MapKey(EvolveAction, EKeys::E);
+	Ctx->MapKey(EvolveAction, EKeys::J);
 	Ctx->MapKey(EvolveAction, EKeys::Gamepad_DPad_Up);
-	Ctx->MapKey(ImprintAction, EKeys::R);
+	Ctx->MapKey(ImprintAction, EKeys::K);
 	Ctx->MapKey(ImprintAction, EKeys::Gamepad_DPad_Right);
 	Ctx->MapKey(ReloadValuesAction, EKeys::F5);
 	Ctx->MapKey(LatencyStepAction, EKeys::F6);

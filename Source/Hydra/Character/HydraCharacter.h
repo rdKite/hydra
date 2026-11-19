@@ -192,7 +192,7 @@ public:
 	void BeginAttackFacing();
 	void EndAttackFacing();
 
-	/** Casting: turn towards the aim direction of the cast (at the turn rate). */
+	/** Casting: players follow the camera until the bolt is out; an AI turns towards where it aimed (both at the turn rate). */
 	void BeginCastFacing();
 
 	// --- Combat (server) -------------------------------------------------------------------

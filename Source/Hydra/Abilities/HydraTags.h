@@ -11,6 +11,7 @@ namespace HydraTags
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Attacking);          // attack ability running (wind-up to end of recovery)
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_AttackCommitted);    // wind-up and strike: the attack binds, slow turning
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Blocking);
+	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Casting);            // bolt: from the press until it is out
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dodging);            // dodge step and its recovery
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Burning);

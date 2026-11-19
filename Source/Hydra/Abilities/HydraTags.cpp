@@ -6,6 +6,7 @@ namespace HydraTags
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Attacking, "State.Attacking", "An attack is running (wind-up, strike or recovery)");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_AttackCommitted, "State.AttackCommitted", "Wind-up or strike: the attack binds, turning is slowed, no dodge");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Blocking, "State.Blocking", "Holding the directional block");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Casting, "State.Casting", "Winding up or charging the bolt: the caster follows the camera direction");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dodging, "State.Dodging", "Dodge step or its recovery");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Dead, "State.Dead", "HP reached 0, waiting for the respawn");
 

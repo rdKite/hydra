@@ -162,6 +162,10 @@ def main(root):
     c.check("the aim is further than the slime can turn during the wind-up", possible < 85, "can turn %.0f degrees" % possible)
     c.between("the bolt leaves along the facing reached at the turn rate (%.0f deg/s while casting)" % attack_rate, cast5.get("yaw"), possible - 12, possible + 12)
     c.check("... so it does not hit the AI it was aimed at", len(host.find("HydraBolt", 27.5, 29.5, attacker=H, target=AI)) == 0)
+    cast6 = one("charged cast while the camera turns", host.find("HydraCast", 30.5, 31.6, attacker=H))
+    c.check("the slime could follow the camera in that time", attack_rate * 0.6 > 40, "%.0f deg/s" % attack_rate)
+    c.between("while it charges the caster follows the camera: the bolt leaves where the camera looks at the release", cast6.get("yaw"), 37, 43)
+    c.check("... and was charged", cast6.get("charge", 0) > 0.5, cast6.get("charge"))
 
     print("--- screenshots")
     shots = os.path.join(root, "Saved", "Screenshots", "LiveSlime")

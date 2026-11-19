@@ -27,7 +27,7 @@
 #         into the fire elemental slime (level 0, skills 0 with instinct, fire imprint 1)
 #   17    H defeats the ember slime with two more slams
 #   19.5  enemies active: the grunt comes for the players
-#   27    quit (the game mode writes the last metrics rows)
+#   30    quit (the game mode writes the last metrics rows)
 set -u
 source "$(dirname "$0")/env.sh"
 PYTHON="$UE/Engine/Binaries/ThirdParty/Python3/Win64/python.exe"
@@ -47,12 +47,12 @@ rm -f "$ROOT/Saved/Logs/WavesHost.log" "$ROOT/Saved/Logs/WavesClient.log"
 H="1:HydraStats;1.5:HydraTeleport|-1416|-100|130;2.2:HydraAI|attack|0;2.25:HydraDodge;3.2:HydraStats"
 H+=";3.5:HydraTeleport|-1416|-100|130;4:HydraAttack|0;4.9:HydraAttack|0;6.5:HydraStats;9.5:HydraStats"
 H+=";13.2:HydraResetAll;13.5:HydraTeleport|-1215|-1215|225;14:HydraAttack|0;14.9:HydraAttack|0;15.8:HydraStats"
-H+=";16:HydraChoose|evolve;16.6:HydraStats;17:HydraAttack|0;17.9:HydraAttack|0;19:HydraStats;19.5:Hydra.AI|1;26:HydraStats"
+H+=";16:HydraChoose|evolve;16.6:HydraStats;17:HydraAttack|0;17.9:HydraAttack|0;19:HydraStats;19.5:Hydra.AI|1;29:HydraStats"
 
 C="1:HydraStats;6.5:HydraStats;9.5:HydraStats;10:HydraTeleport|-1150|-1300|180;10.6:HydraAttack|0;11.5:HydraAttack|0;12.2:HydraStats"
-C+=";12.5:HydraChoose|imprint;13:HydraStats;16.6:HydraStats;19:HydraStats;26:HydraStats"
+C+=";12.5:HydraChoose|imprint;13:HydraStats;16.6:HydraStats;19:HydraStats;29:HydraStats"
 
-COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound "-HydraDataDir=$(cygpath -w "$LIVE/data")" -HydraWaitPlayers=2 -HydraQuit=27)
+COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound "-HydraDataDir=$(cygpath -w "$LIVE/data")" -HydraWaitPlayers=2 -HydraQuit=30)
 export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 
 "$EDITOR" "$PROJ" "/Game/Maps/Arena?listen?Form=slime?Waves=1" "${COMMON[@]}" -WinX=0 -WinY=40 -log=WavesHost.log -HydraAIPassive \

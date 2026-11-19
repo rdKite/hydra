@@ -22,7 +22,7 @@ def edit_values(path):
     with open(path, encoding="utf-8") as f:
         v = json.load(f)
     # Two small waves; the first enemy of the second has an element body.
-    v["waves"]["first_delay_ms"] = 2000
+    v["waves"]["first_delay_ms"] = 100
     v["waves"]["break_ms"] = 3000
     v["waves"]["list"] = [
         {"groups": [{"enemy": "grunt", "count": 1}]},
@@ -261,13 +261,13 @@ def main(root):
     h19 = host.stats(19, H) or {}
     c.check("the new form levels from 0", h19.get("level") == e_level and e_level >= 1, "%s, expected %d" % (h19.get("level"), e_level))
     c.check("wave 2 is not cleared while the grunt stands", not [e for e in host.events.get("HydraWaveCleared", []) if e.get("wave") == 2.0] or host.find("HydraDeath", 0, 99, who="grunt3"))
-    c.check("the ember slime is gone from the arena after a moment", host.stats(26, "ember_slime2") is None and client.stats(26, "ember_slime2") is None)
+    c.check("the ember slime is gone from the arena after a moment", host.stats(29, "ember_slime2") is None and client.stats(29, "ember_slime2") is None)
 
     print("--- wave enemies, active: same rules, reaction time and error rate per type")
     c.check("enemies switched to active", host.count("HydraAI: active") >= 1)
     acted = host.find("HydraHit", 19.5, 28, attacker="grunt3") + host.find("HydraMiss", 19.5, 28, attacker="grunt3")
-    g26 = host.stats(26, "grunt3")
-    if g26 is not None and g26.get("dead") == 0.0:
+    g29 = host.stats(29, "grunt3")
+    if g29 is not None and g29.get("dead") == 0.0:
         c.check("the grunt came for the players and attacked", len(acted) >= 1, "%d attacks" % len(acted))
     else:
         c.check("the grunt fought (it was defeated or attacked)", len(acted) >= 1 or bool([e for e in host.events.get("HydraDeath", []) if e.get("who") == "grunt3"]))

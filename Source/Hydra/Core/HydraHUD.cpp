@@ -82,7 +82,7 @@ void AHydraHUD::DrawNetInfo()
 	DrawText(FString::Printf(TEXT("%s | latency step %d ms (F6) | measured ping %s | packet loss %.0f%% (F8) | values v%d (F5 reloads) | %.0f fps"),
 		GetNetMode() == NM_Client ? TEXT("client") : TEXT("host"), GS->GetLatencyStepMs(), *Rtt, GS->GetPacketLossRatio() * 100.f,
 		Values ? Values->GetValues().version : 0, SmoothedFps), FLinearColor::White, 20.f, 16.f, Font);
-	DrawText(TEXT("WASD move | mouse look | LMB attack (hold = heavy) | RMB block / slime: bolt (hold = charge) | Left Alt dodge | Space jump | Q lock-on | X precise movement | Left Ctrl walk | E evolve / R imprint at a milestone | ~ console"), FLinearColor(1.f, 1.f, 1.f, 0.7f), 20.f, 34.f, Font);
+	DrawText(TEXT("WASD move | mouse look | LMB attack (hold = heavy) | RMB block / slime: bolt (hold = charge) | Left Alt dodge | Space jump | Q lock-on | X precise movement | Left Ctrl walk | J evolve / K imprint at a milestone | ~ console"), FLinearColor(1.f, 1.f, 1.f, 0.7f), 20.f, 34.f, Font);
 }
 
 void AHydraHUD::DrawOwnBars()
@@ -228,11 +228,11 @@ void AHydraHUD::DrawProgress()
 	if (!Evolution.IsNone())
 	{
 		const FHydraFormDef* Next = Values->GetDefinitions().FindForm(Evolution);
-		Offer += FString::Printf(TEXT("[E] evolve into %s (level and skills start again)"), Next ? *Next->name : *Evolution.ToString());
+		Offer += FString::Printf(TEXT("[J] evolve into %s (level and skills start again)"), Next ? *Next->name : *Evolution.ToString());
 	}
 	if (P->CanRaiseImprint())
 	{
-		Offer += FString::Printf(TEXT("%s[R] %s the fire imprint"), Offer.IsEmpty() ? TEXT("") : TEXT("     "), P->GetImprintLevel() == 0 ? TEXT("start") : TEXT("raise"));
+		Offer += FString::Printf(TEXT("%s[K] %s the fire imprint"), Offer.IsEmpty() ? TEXT("") : TEXT("     "), P->GetImprintLevel() == 0 ? TEXT("start") : TEXT("raise"));
 	}
 	if (!Offer.IsEmpty())
 	{

@@ -87,9 +87,10 @@ void UHydraMovementComponent::PhysicsRotation(float DeltaTime)
 		return;
 	}
 
-	// Lock-on, precise movement and a raised block face where the camera looks (the block is
-	// directional, so it has to be aimed); otherwise the character turns into its movement.
-	const bool bFaceCamera = bWantsStrafe || OwnerHasTag(HydraTags::State_Blocking);
+	// Lock-on, precise movement, a raised block and a bolt that is wound up or charged face
+	// where the camera looks (block and bolt have to be aimed); otherwise the character turns
+	// into its movement.
+	const bool bFaceCamera = bWantsStrafe || OwnerHasTag(HydraTags::State_Blocking) || OwnerHasTag(HydraTags::State_Casting);
 	bOrientRotationToMovement = !bFaceCamera;
 	bUseControllerDesiredRotation = bFaceCamera;
 	Super::PhysicsRotation(DeltaTime);

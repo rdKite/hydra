@@ -227,8 +227,8 @@ void AHydraGameMode::OnCharacterDied(AHydraCharacter* Victim, AHydraCharacter* K
 	const FHydraValues& V = UHydraValuesSubsystem::Get(this);
 	if (Victim->GetEnemyId().IsNone())
 	{
-		// A defeated player loses the skill XP of the running fight (it is credited only on
-		// victory); there is no other penalty in the arena.
+		// A defeated player loses the skill XP earned since the last defeated enemy (it is
+		// credited only on victory); there is no other penalty in the arena.
 		if (!Victim->IsAIControlledCharacter() && bWaves)
 		{
 			Victim->GetProgression()->ServerEndFight(false);
@@ -237,16 +237,13 @@ void AHydraGameMode::OnCharacterDied(AHydraCharacter* Victim, AHydraCharacter* K
 	}
 	EnemiesAlive = FMath::Max(0, EnemiesAlive - 1);
 	const bool bCleared = bWaves && EnemiesAlive == 0;
-	if (bCleared)
+	// Victory over this enemy: the skill XP earned since the last defeated enemy is credited
+	// (decision 2026-11-16) - before its nXP, so a level-up it brings can already raise skills.
+	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
 	{
-		// Victory: the skill XP earned in this wave is credited - before the nXP of the last
-		// enemy, so a level-up it brings can already raise the skills.
-		for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
+		if (!It->IsAIControlledCharacter())
 		{
-			if (!It->IsAIControlledCharacter())
-			{
-				It->GetProgression()->ServerEndFight(true);
-			}
+			It->GetProgression()->ServerEndFight(true);
 		}
 	}
 	// nXP depends only on the enemy's type and level. Everyone in the arena gets it.

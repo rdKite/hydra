@@ -544,11 +544,14 @@ void AHydraCharacter::InputOffHand(bool bPressed, float AimYaw)
 
 void AHydraCharacter::BeginCastFacing()
 {
+	// While the bolt is wound up and charged the caster follows the camera direction (the
+	// movement component does that at the turn rate); an AI has no camera and turns to where
+	// it aimed the cast.
 	UHydraMovementComponent* Move = GetHydraMovement();
 	Move->ClearFacingGoal();
-	if (!Move->bWantsStrafe)
+	if (bAIControlled && !Move->bWantsStrafe)
 	{
-		Move->SetFacingGoal(CastAimYaw); // locked on or precise movement: it already faces the camera direction
+		Move->SetFacingGoal(CastAimYaw);
 	}
 }
 

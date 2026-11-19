@@ -294,13 +294,16 @@ void UHydraGA_Cast::SetCommitted(bool bCommitted)
 		return;
 	}
 	bCommittedTag = bCommitted;
+	// Committed = bound like an attack; casting = the caster follows the camera until the bolt is out.
 	if (bCommitted)
 	{
 		ASC->AddLooseGameplayTag(HydraTags::State_AttackCommitted);
+		ASC->AddLooseGameplayTag(HydraTags::State_Casting);
 	}
 	else
 	{
 		ASC->RemoveLooseGameplayTag(HydraTags::State_AttackCommitted);
+		ASC->RemoveLooseGameplayTag(HydraTags::State_Casting);
 	}
 }
 

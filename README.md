@@ -55,7 +55,7 @@ Controls (one button per hand):
 | Lock-on | Q or middle mouse | right stick click |
 | Precise movement on / off: the character keeps facing where the camera looks | X | left stick click |
 | Walk | Left Ctrl | – |
-| At a milestone: evolve / start or raise the fire imprint (only what the HUD offers) | E / R | D-pad up / right |
+| At a milestone: evolve / start or raise the fire imprint (only what the HUD offers) | J / K | D-pad up / right |
 
 F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console:
 `Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`
@@ -73,7 +73,7 @@ enemies give nXP; what you use in a wave (weapon, shield, dodge, bolt) earns ski
 is credited when the wave is cleared and turns into skill levels at your next level-up.
 Contact with fire – ember slimes cast fire bolts, leave fire fields and burn whoever hits
 them – builds the fire imprint. At a milestone (every 10 levels, and the level cap) the HUD
-offers what you earned: `R` starts or raises the imprint, `E` evolves the slime into the
+offers what you earned: `K` starts or raises the imprint, `J` evolves the slime into the
 fire elemental slime (level and skills start again, with an instinct per skill). Every
 cleared wave writes a metrics row per player and enemy type to
 `Saved/Metrics/metrics_<time>.csv`.

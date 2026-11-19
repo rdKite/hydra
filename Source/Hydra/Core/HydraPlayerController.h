@@ -26,8 +26,8 @@ class AHydraCharacter;
  *     (hold); slime = cast the bolt (press, hold = charge)
  *   Lock-on                     Q / middle mouse      right stick click
  *   Precise movement (toggle)   X                     left stick click
- *   Milestone: evolve           E                     D-pad up
- *   Milestone: raise imprint    R                     D-pad right
+ *   Milestone: evolve           J                     D-pad up
+ *   Milestone: raise imprint    K                     D-pad right
  *   Reload values               F5                    -
  *   Latency step                F6                    -
  *   Packet loss                 F8 (toggle)           -

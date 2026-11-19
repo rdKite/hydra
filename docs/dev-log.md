@@ -11,6 +11,30 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-19 – answers to the M5 questions, M4b, M5 preparation (agent session, start 19:10)
+
+Pulled `main` (design sessions of 2026-11-16 to 2026-11-19) and followed the plan of the
+entry below, in its order.
+
+**Step 1 – the five answers to the M5 questions.**
+- Skill XP is credited when an enemy is defeated, not when the wave is cleared; a defeated
+  player loses only what is pending since then. (M4b turns this into hXP.)
+- The bolt follows the camera from the press until it is out, at the turn rate while an
+  attack binds – built like the raised block (new state tag `State.Casting`). An AI has no
+  camera: it still turns to where it aimed the cast.
+- Imprint thresholds 100 / 250 (values v6, set in the design session): nothing in the code
+  or the live runs depended on the old numbers (the waves run sets its own in its data copy).
+- Milestone keys: evolve **J**, imprint **K**; gamepad unchanged (D-pad up / right). HUD
+  hint, README and `phase-1.md` §24/§25 updated.
+- Verified: `Scripts/run_all.sh` green – 19 tests, combat run 153, slime run 80 (4 new: a
+  cast charged for a second while the camera turns by 40 degrees leaves at 40 degrees),
+  waves run 99.
+- Problem: the waves run failed once in three places for reasons of its own timing (the
+  first wave came 2 s after the host's start, which was after the client had joined when
+  the host loaded slowly; the last grunt needs about 6.5 s to cross the arena and the run
+  ended a moment too early). The run's data copy now uses a first delay of 0.1 s and the run
+  is 3 s longer.
+
 ### 2026-11-19 – skill growth comes to Phase 1; plan for an unattended session (design session)
 
 **Next agent session – work through in this order without waiting for the human.** Commit
