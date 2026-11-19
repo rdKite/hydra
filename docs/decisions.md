@@ -452,4 +452,16 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   combat-relevant is hidden.
 - For later: quest design with dynamic events in the open world as in Guild Wars 2, where
   monsters can take part too, maybe on different sides.
+- **Unlocking skills:** a free skill point unlocks any skill the character could learn (one
+  point = level 1): weapon and crafting skills for humanoids, element skills for everyone
+  but **without the imprint** (the awakening by contact stays the way to the imprint),
+  accessible body skills; never capabilities. Teachers do it in cities, at the Adventurers'
+  Guild and with some travelling merchants (the monsters' only, harder access); monsters
+  unlock accessible body skills by instinct. The earlier rejection of teachers is lifted.
+- **Learning by use:** a skill at level 0 is also unlocked by an automatic point after use.
+  Until then a weapon family has **+100 % demand** (a switch, not a curve). Reason: a natural
+  learning phase instead of a lock; rejected: unlocking only with free points (would make rXP
+  mandatory for every new weapon and lock monsters out of elements).
+- For later: every character gets at least one free skill point in the tutorial and spends it
+  there.
 

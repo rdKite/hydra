@@ -375,7 +375,7 @@ weapons.
 | Property | Affects | Related to |
 |---|---|---|
 | **Weight** (for bows: draw weight) | Stamina per strike (weight ÷ body weight); base damage; whether strength or dexterity scales the damage; handling | Strength (handling), stamina |
-| **Demand** | Factor on the stamina per strike on top of the weight – how much force and control the weapon asks for; rises with rarity | Rarity (see [items.md](items.md#what-makes-a-weapon-better)) |
+| **Demand** | Factor on the stamina per strike on top of the weight – how much force and control the weapon asks for; rises with rarity; +100 % while the family's skill is still at level 0 (learning phase) | Rarity (see [items.md](items.md#what-makes-a-weapon-better)), skill unlocked or not |
 | **Reach** | Distance to the opponent | – |
 | **Damage type** | Slash, pierce, blunt | Subtypes of physical |
 | **Weapon property** | One special ability per family | Counterpart to the body skills of monsters |

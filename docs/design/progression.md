@@ -243,7 +243,10 @@ Two terms for two things – for monsters and humanoids alike:
   civilisation; exploring is rewarded (lava, heat, fire monsters …).
   - The first level is **much easier to reach** than the following ones – after that the
     element is easier to build up further with your own attacks.
-  - For now no other ways (books, cores, teachers: rejected or postponed).
+  - **Second way: unlocking.** A free skill point (at a teacher) unlocks the element
+    skill at level 1 – but **not** the imprint (see
+    [Unlocking skills](#unlocking-skills-teachers-and-learning-by-use)). Books and cores stay
+    rejected.
 - **Focus pays off:** whoever focuses on one element collects all progress for it; whoever
   spreads out progresses more slowly on each. Several imprints are possible, but each
   additional one has a steeply rising threshold (as with augments).
@@ -457,7 +460,8 @@ Two terms for two things – for monsters and humanoids alike:
 
 **Free skill points** come from the renown level (one per renown level):
 
-- Assigned to **any skill available** to the character – also above your own level.
+- Assigned to **any skill available** to the character – also above your own level – or used
+  to **unlock** a new skill (see [Unlocking skills](#unlocking-skills-teachers-and-learning-by-use)).
 - They can be **reassigned for a cost** (set with the economy). Automatic points cannot.
 - **At 150 an automatic point pushes out a free one**, and that free point becomes available
   again at no cost.
@@ -468,6 +472,41 @@ Two terms for two things – for monsters and humanoids alike:
   it fully only late, with the humanoid form.
 - **Fairness:** the automatic points follow the hXP ("playing hard pays off"); the free points
   are how casual players catch up – from the start instead of only after max level.
+
+### Unlocking skills: teachers and learning by use
+
+- **A free skill point can unlock any skill the character could learn** (it becomes level 1;
+  one point is enough):
+  - weapon and crafting skills: always, for humanoids;
+  - element skills: for everyone, **without the imprint**;
+  - body skills: only those the form lists as **accessible**;
+  - capabilities: never – they belong to the body.
+- **Two ways to an element:**
+
+  | | Awakening (contact) | Unlocking (free point) |
+  |---|---|---|
+  | Gives | element skill level 1 **and** imprint level 1 (resistance, damage, access to evolutions) | **only** the element skill level 1 – you can cast |
+  | Price | exploring, time, risk | one free point from the budget |
+
+  Whoever buys fire magic casts fire but is **no fire being**: no imprint bonus, no access to
+  fire evolutions. The imprint stays the way for "the being", unlocking the way for "the
+  ability". Opposing imprints stay excluded; opposing element skills are possible (the magic
+  wheel does not select both at once).
+- **Teachers** do the unlocking: for humanoids in cities and at the Adventurers' Guild; also
+  with some **travelling merchants** – so monsters get access too, harder and by luck (for
+  them mainly element skills). Monsters unlock their accessible body skills "by instinct",
+  without a teacher.
+- **Learning by use:** a skill at level 0 can also be unlocked by using it. Whoever fights
+  with a sword without sword fighting gets hXP on it and unlocks it with an automatic skill
+  point at the next level-up. During this **learning phase** a weapon family at level 0 has
+  **+100 % demand** (shield: holding the block; bow: drawing); from level 1 on the malus is
+  gone. A switch, not a curve – a deliberate exception to "skills do not lower costs" that
+  cannot multiply. Because hXP follow the stamina spent, the doubled cost even makes a new
+  skill catch up faster at first. Spells need the element skill at all (the spell forms hang
+  on it), so magic has no malus.
+- **Tutorial (for later):** every character gets at least one free skill point in the
+  tutorial and can spend it there – together with the starting alignment, e.g. on a weapon
+  or an element.
 
 ### Renown and the Adventurers' Guild
 

@@ -50,6 +50,8 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
       the renown level (rXP); see [progression.md](progression.md#skill-points-automatic-and-free).
 - [ ] Skill points: factor and base of the formula, cost of reassigning free points, rXP
       per deed and per renown level, thresholds of the adventurer ranks – in balancing.
+- [x] Other ways to an element besides the awakening – a free skill point at a teacher
+      unlocks the element skill without the imprint (2026-11-19).
 - [ ] Quest design: kinds of quests; dynamic events in the open world as in Guild Wars 2,
       where monsters can take part too, maybe on different sides.
 - [ ] Secret character data (later, low priority): which data can be hidden, from which

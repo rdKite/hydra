@@ -103,6 +103,8 @@ crafting plans, because that is Unreal's visual scripting).
 | Ruhm / Ruhmesstufe | **renown** / **renown level** | rises through rXP; each renown level gives one free skill point |
 | automatischer / freier Skill-Punkt | **automatic skill point** / **free skill point** | automatic: at every level-up, 1 + 2 × log₂(hardship rating), distributed by hXP; free: from the renown level, assigned by the player |
 | Tat | **deed** | anything that gives rXP: quests, dynamic events, discoveries, dungeon floors … |
+| Lehrer | **teacher** | NPC who unlocks a skill for a free skill point (cities, Adventurers' Guild, some travelling merchants) |
+| Lernphase | **learning phase** | using a skill still at level 0: +100 % demand for that weapon family until the first automatic point unlocks it |
 | Instinkt | **instinct** | kept from skills after an evolution |
 | Meilenstein | **milestone** | every 10 levels |
 | Elementkörper | **element body** | melee hits against it deal some of its element's damage back (fire elemental slime) |

@@ -85,7 +85,9 @@ no longer apply, or are even reversed. This needs many players.
   after a while. They let monsters in particular trade far away from any place of retreat.
 - **Completely neutral** towards all species, races and factions.
 - **A small, absolute no-attack zone** around them.
-- Goods: everyday goods and a small, changing selection of rare items.
+- Goods: everyday goods and a small, changing selection of rare items. Some merchants travel
+  with a **teacher** who unlocks skills for a free skill point – the only teachers monsters
+  can reach (see [progression.md](progression.md#unlocking-skills-teachers-and-learning-by-use)).
 - **Against abuse** (luring enemies to the merchant and escaping into the zone): whoever
   enters the zone loses the attention of NPC enemies (they retreat). Whoever is in the
   middle of a fight cannot trade for a short time. The zone stays small.

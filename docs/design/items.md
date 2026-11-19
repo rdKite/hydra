@@ -121,7 +121,9 @@ can be made in different ways.
 - **Demand:** a factor on a weapon's stamina cost, on top of weapon weight ÷ body weight –
   how much force and control the weapon asks for. It slows the number of strikes in a row
   that grows with the bar (see [magic.md](magic.md#stamina-and-mana)). A better weapon is
-  still always a gain, because damage rises faster than demand.
+  still always a gain, because damage rises faster than demand. While the weapon family's
+  skill is still at level 0, demand is **+100 %** (learning phase, see
+  [progression.md](progression.md#unlocking-skills-teachers-and-learning-by-use)).
 - **Rarity works the same way on armor:** each level gives armor +12 % resistance points,
   so better weapons do not shorten fights on their own.
 - **Requirements are soft:** no locks by level or stats. A weapon too heavy for your

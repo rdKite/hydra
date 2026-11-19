@@ -199,7 +199,9 @@ real trade-off instead of a dead stat for melee fighters.
 - Each form and each element is designed once; an ice bolt is bolt plus ice. New forms or
   elements cost work only once.
 - **One skill per element** (fire magic, ice magic …) – the ability to cast, including the
-  elemental augments of that element. The imprint (the
+  elemental augments of that element. It comes with the awakening, or is unlocked with a
+  free skill point at a teacher (without the imprint; see
+  [progression.md](progression.md#unlocking-skills-teachers-and-learning-by-use)). The imprint (the
   being's alignment) strengthens the element on top of that (see "Affinity and imprint" in
   [progression.md](progression.md)).
 - **Spell forms depend on the element skill** – the same for humanoids and monsters: a certain

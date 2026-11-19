@@ -45,6 +45,10 @@ follow `GLOSSARY.md`; decisions behind these items are in [../decisions.md](../d
       rating, distributed by hXP, automatic part at most the own level); free ones from the
       renown level (rXP from deeds, from the start), reassignable for a cost; skill titles
       every 30 levels, traits in between.
+- [ ] Unlocking skills: with a free skill point at a teacher (cities, Adventurers' Guild,
+      some travelling merchants) or by use (learning phase with +100 % demand at skill
+      level 0); element skills without imprint. Tutorial: at least one free skill point,
+      spent there.
 - [ ] Adventurers' Guild with adventurer ranks (copper to adamant) from the renown level:
       jobs by rank, better starting reputation in trusting cities, visible badge; open to
       humanoids and Shifters.
