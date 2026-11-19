@@ -45,7 +45,7 @@ Blender 5.2 is expected under `C:\Program Files\Blender Foundation\`; otherwise 
 
 - `Art/scripts/hydra_blender.py` – shared helpers: scene setup, rig, weights, baking,
   export, preview renders.
-- `Art/scripts/build_slime.py`, `build_wolf_pup.py` – one script per model.
+- `Art/scripts/build_slime.py`, `build_wolf_pup.py`, `build_humanoid.py` – one script per model.
 - `Art/<name>/<name>.blend` and `T_<name>_color.png` – written by the build script (LFS).
 - `Art/export/<name>/*.fbx` – build products, not in git.
 - `Scripts/import_art.py` – Unreal Python commandlet: `Content/Characters/<name>/`
@@ -57,6 +57,85 @@ with it, otherwise with the placeholder body. Animations are looked up as `A_<id
 with the names Idle, Move, Windup, Charge, Strike, Recovery, Cast, CastCharge, CastRelease,
 Dodge, Death. Clips of actions are time-scaled to the action's duration from
 `values.json`, so their length in Blender does not change the gameplay timing.
+
+## Humanoid base model (M5, Blender part)
+
+`Art/scripts/build_humanoid.py` builds the one base model for all humanoids (decisions of
+2026-11-19). Run: `blender -b --python Art/scripts/build_humanoid.py` (about 70 s with
+previews; `-- nopreview` skips them). `Scripts/build_art.sh humanoid` also works, but it then
+runs the Unreal import as well, which belongs to the Unreal integration (see open points).
+
+**Body.** A plain, stylised, gender-neutral stand-in, 179 cm, A-pose (arms 40° from the
+body), no face, mitten hands. It is not built with the Skin modifier like the wolf pup:
+the script writes a quad cage ring by ring (a torso lattice, 8-sided rings for arms and
+legs with extra loops at shoulder, elbow, wrist, hip, knee and ankle, a 6-sided foot),
+mirrors it and applies one Catmull-Clark level. Result: 2306 vertices, 2304 faces, all
+quads, closed, exactly symmetric, 2 poles with more than 5 edges (at the crotch). The
+build prints these numbers on every run.
+
+**Weights** are set per cage ring (each ring knows its bones, e.g. the knee ring is half
+thigh, half calf) and smoothed by the subdivision; at most 4 bones per vertex, normalised.
+Weights by distance (as on the wolf pup) were not used: the arm hangs next to the trunk and
+the thighs touch, so the nearest bone is often the wrong one. The buttocks follow the thigh
+with only 40 % of their ring's share, otherwise a deep squat folds them into a sharp ridge.
+
+**Skeleton** (25 bones; names of the Unreal mannequin, but Blender bone axes with Y along
+the bone, not the mannequin's axes):
+
+- `root` (at the origin) → `pelvis` → `spine_01` → `spine_02` → `spine_03` → `neck_01` → `head`
+- `spine_03` → `clavicle_l/r` → `upperarm_l/r` → `lowerarm_l/r` → `hand_l/r`
+- `pelvis` → `thigh_l/r` → `calf_l/r` → `foot_l/r` → `ball_l/r`
+- `weapon_r`, child of `hand_r`: the grip in the palm, **+Y of the bone along the blade**
+  (points forward in the rest pose).
+- `shield_l`, child of `lowerarm_l`: on the outside of the forearm, **+Y of the bone out of
+  the shield's face**, shield centre at the bone head.
+
+No finger, twist or IK bones yet. Every bone is flagged as a deform bone (also `root` and
+the two socket bones, which carry no weights), because the export keeps deform bones only.
+The `.blend` holds a stand-in longsword (98 cm) and round shield (60 cm) parented to the
+socket bones, so animations can be judged with them; they are **not** exported.
+
+**Body presets.** The cage is built three times with other measures (shoulders, chest,
+waist, hips, limb thickness, neck, jaw); the joints never move, so one skeleton and one set
+of animations fit every preset. Shape keys `male` and `female`; the neutral preset is the
+base shape. They are exported as FBX blend shapes (checked by re-importing the FBX:
+`Basis`, `male`, `female`) and become morph targets in Unreal.
+
+**Placeholder animations** (one action each, exported as `A_humanoid_<Name>.fbx`, 30 fps):
+Idle (40 frames, loop), Move (16, loop, runs on the spot), Windup (8), Strike (4, a slash
+from the right shoulder across to the left), Recovery (10), Charge (12, loop, sword drawn
+back at the hip), **HeavyStrike** (4, a thrust with a lunge – the heavy attack is a stab; the
+game uses Strike until it looks this name up), Block (4, shield in front of the chest, body
+lowered; the last frame is held), Dodge (14), Jump (12, loop while in the air), Death (16,
+falls on its back). Poses with the feet on the ground are lowered by script until the
+lowest sole point touches the floor (for the full leg length; with shorter legs the game
+has to correct the height, see below).
+
+**Previews** (`Saved/ArtPreview/humanoid_*.png`): each preset in the rest pose (front,
+front-left, side, back); two deformation test poses for every preset (`squat`: hips and
+knees at 95° / 115°; `reach`: an arm raised by 120°, a leg spread by 45°); the rest pose,
+both test poses and Idle, Strike and Block with thigh and calf scaled to 80 % (`*_legs80`);
+key frames of every clip with sword and shield.
+
+**What the renders show.** Shoulders, elbows, hips and knees bend without tearing or
+collapsing in all three presets; the knees keep their volume at 115°. At 80 % leg length
+hips and knees sit right and the proportions read as stocky. The test scales `thigh` and
+`calf` along the bone with `inherit_scale = NONE` on `calf` and `foot` (so the feet keep
+their size) and lowers the whole figure until the soles touch the floor. Weak points: in
+the deep squat belly and thigh press into each other and the buttocks still form a mild
+point; the top of the shoulder shows a small bump when the arm is raised high; the presets
+differ clearly but moderately.
+
+**Open points (for the Unreal integration and the human):**
+- `Scripts/import_art.py` imports with `import_morph_targets = False`; the humanoid needs
+  `True`. The humanoid is not in the default model list of `build_art.sh` yet.
+- Bone length at runtime: scale thigh and calf on their bone axis (which Unreal axis
+  Blender's +Y becomes after the import has to be checked), keep the children from
+  inheriting the scale, and lower the mesh by the lost leg length (about 17 cm at 80 %).
+- The A-pose is the rest pose. Retargeting from the UE mannequin needs an IK retargeter with
+  a pose adjustment (the bone axes differ).
+- Hands are mittens; the sword grip is placed by the socket only. Fingers if the human's
+  animations need them.
 
 ## Animations by the human: the import path
 
