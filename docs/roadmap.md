@@ -105,8 +105,10 @@ skill growth before the playtest, so the playtest tests the rules that stay. Rul
       proposal which placeholder animations to replace first, ranked by the telegraphs they
       carry; a playtest kit (start script per form, a script that summarises the metrics
       CSV of a session, a debug panel – see `docs/design/phase-1.md` §27).
-- [ ] **Decide the look** based on our own models (toon or not – still open), and with it how
-      much texture work is needed (procedural only, or hand-painted detail as well).
+- [x] **Decide the look** based on our own models: **plain** (variant 1 – no toon shading,
+      no ink outlines; decision 2026-11-19).
+- [ ] With the plain look: how much texture work is needed (procedural only, or
+      hand-painted detail as well) – the look relies on textures and materials the most.
 - [ ] Decide which placeholder animations are replaced first by the human's own animations
       (combat animations first: they carry the telegraphs).
 - [ ] Playtest: Are combat and progression fun? Is it too complicated?

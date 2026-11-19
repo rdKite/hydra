@@ -26,6 +26,20 @@ import, sockets, morph targets in game, bone-length test, dev commands.
   stand-in sword and shield live only in the `.blend`, not in the export.
 - No intervention.
 
+### 2026-11-19 – look decided (agent session, short)
+
+- The human chose the **plain** look (variant 1). Recorded in `docs/decisions.md`,
+  `docs/design/world.md`, `docs/tech/blender-pipeline.md`, `docs/m5-preparation.md`; roadmap
+  item ticked, the texture question split off as its own open item.
+- No code change: plain is already the default (`AHydraArena::Look = 1`). Nothing was built
+  or run for this.
+- Assumption: the toon and ink variants stay in the code behind `HydraLookVariant` until the
+  human says to remove them. Idea, not built: remove `PP_Look`, the stencil marking and
+  `r.CustomDepth=3` (saves the custom-depth pass).
+- `UE_ROOT` is now set on this machine (user environment) – question 3 of the entry below
+  is settled.
+- No intervention.
+
 ### 2026-11-19 – answers to the M5 questions, M4b, M5 preparation (agent session, start 19:10)
 
 Pulled `main` (design sessions of 2026-11-16 to 2026-11-19) and followed the plan of the

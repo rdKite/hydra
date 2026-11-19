@@ -16,8 +16,9 @@ First used in M3 (slime playable, wolf pup as a pipeline test).
   into Unreal by Python commandlet (`Scripts/`).
 - **One rig per line** (slimes, wolves, saurians). Forms of a line share the rig with other
   proportions – saves a lot of animation work.
-- **Materials** don't transfer 1:1: textures are exported, the look is made in Unreal (still
-  open, decided in M5).
+- **Materials** don't transfer 1:1: textures are exported, the look is made in Unreal (the
+  **plain** look, decision 2026-11-19: standard lighting, no toon pass – so textures and
+  materials carry it).
 
 ## Textures (procedural, by script)
 

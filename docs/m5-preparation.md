@@ -5,6 +5,9 @@ what it is, how to look at it and which question it puts to the human.
 
 ## 1. Look variants
 
+> **Decided 2026-11-19: variant 1, plain.** Open from this part: how much texture detail
+> the models should get, and the questions on the humanoid base model below.
+
 Three variants, switchable while playing with the console command
 `HydraLookVariant 1|2|3` (no argument: the next one). They change only what a window shows.
 
