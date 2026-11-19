@@ -22,15 +22,16 @@ designed once and applies to every form with a matching body.
 | Jumping legs | **pounce** (leap out of a run) | wolves, cats |
 | Endurance runners | **pursuit** (while chasing, movement costs less stamina) – a capability | wolves |
 | Jaws, bite | **bite** (the basic attack, like the slime's slam); **wear down** (a bite costs the target stamina) is a property or trait of bite | wolves, other pursuit hunters |
-| Voice | **howl** or **roar** (strengthens allies) | wolves, maybe dragons |
+| Voice | **howl** or **roar** – an **aura** that strengthens allies nearby (see [Auras](#auras-howl-and-roar)) | wolves, maybe dragons |
 | Tail | **tail strike** (variants: club to the rear, stinger, whip with long reach) | saurians, lizards |
 | Heavy body | **stomp** (area attack) | colossi |
 | Neck frill, armor plate at the front | **front shield** (blocks only to the front, very strong there) – a capability | horned saurians |
 | Wings | **glide**, **fly** – capabilities | flying lizards, dragons |
 | Spinnerets | **threads**, **web**; **wall-walking** – a capability | spiders |
 
-- **Active and levelling:** slam, projectile, bite, charge, pounce, howl/roar, tail strike,
-  stomp, threads/web. **Passive ones are capabilities** (pursuit, front shield, glide/fly,
+- **Active and levelling:** slam, projectile, bite, charge, pounce, tail strike, stomp,
+  threads/web. **Howl/roar** is a levelling **aura** (passive while switched on, see
+  [Auras](#auras-howl-and-roar)). **Passive ones are capabilities** (pursuit, front shield, glide/fly,
   wall-walking): they do not level and sit in the form's list (see
   [Capabilities](#capabilities)).
 - **Every body skill that uses stamina needs two values** (set per skill, or per variant, in
@@ -50,7 +51,7 @@ designed once and applies to every form with a matching body.
   | pounce | 30 / 70 | **whole body**, like charge | leaping power, above all body control |
   | tail strike: whip (long reach) | 30 / 70 | ~0.03 | speed at the tip, little mass |
   | tail strike: stinger | 10 / 90 | ~0.02 | an aimed stab, like a dagger |
-  | howl / roar | – | fixed cost | no damage |
+  | howl / roar | – | binds stamina (aura) | no damage |
   | projectile, threads/web | – | mana | like a spell |
 
   This gives the lines a direction by itself: saurians reward strength, wolves rather
@@ -79,6 +80,27 @@ designed once and applies to every form with a matching body.
   using.
 - **Deferred:** eating/absorbing as a source of abilities – too complex for now. Keep it for
   later, e.g. as a body skill (slimes that absorb the abilities of others).
+
+### Auras: howl and roar
+
+- A voice skill is not a button with a cooldown but an **aura**: switched on, it **binds a
+  fixed amount of stamina** for as long as it stays on (like an augment binds mana) and
+  strengthens **allies within a radius** (guess: about 15 m). Switched on and off via the
+  outer ring of the magic wheel, with the short moment of binding.
+- **Stamina, not mana:** the voice is physical, and wolves as endurance hunters have more
+  stamina than mana. The price is felt: less stamina for one's own attacks. Augments stay
+  on mana – each bar binds its own kind of passive.
+- **The moment stays:** switching on is a visible and audible howl (the telegraph); then the
+  aura runs quietly with a visible shimmer or breath effect – opponents can see whom to take
+  out first.
+- **No stacking:** of each kind of aura only the strongest counts, so a pack of five howlers
+  does not outshine everything.
+- A higher skill level gives **more effect** (maybe a little more radius), not less binding.
+  Bound stamina × time counts as use for the hXP, so wearing the aura in a fight trains it.
+- **Allies only, for now.** A roar against enemies (intimidation) is a possible later variant,
+  e.g. for dragons.
+- The pack wolf's howl: allies nearby regenerate stamina faster; the alpha wolf's howl works
+  on the whole group in a larger radius.
 
 ### Order of the lines
 
@@ -213,8 +235,8 @@ Endurance hunters.
 | **Wolf pup** | common | 40 | – (starting form) | – | base: **pursuit**, **pounce**; accessible: **wear down** |
 | **Wolf** | common | 60 | wolf pup | level cap reached or certain physical values | base: pursuit, pounce, wear down; accessible: **howl** |
 | **Grey wolf** | rare | 100 | wolf | certain physical values | like wolf; stronger wear down, reserve barely drops – the long-distance hunter |
-| **Pack wolf** | rare | 100 | wolf | certain buff skills (e.g. howl) | wear down, **howl**: allies nearby regenerate stamina faster |
-| **Alpha wolf** | epic | 120 | pack wolf | certain buff skills | howl affects the whole group; allies wear down too (bridge to the classes for leaders) |
+| **Pack wolf** | rare | 100 | wolf | certain buff skills (e.g. howl) | wear down, **howl** (aura): allies nearby regenerate stamina faster |
+| **Alpha wolf** | epic | 120 | pack wolf | certain buff skills | howl (aura) affects the whole group in a larger radius; allies wear down too (bridge to the classes for leaders) |
 | **Frost wolf** | common | 60 | wolf pup | ice imprint level 3 | base: pursuit, pounce; accessible: wear down; ice focus |
 | **Windrunner** | common | 60 | wolf pup | wind imprint level 3 | base: pursuit, pounce; accessible: wear down; wind focus |
 | **Polar wolf** | rare | 100 | frost wolf or windrunner | ice and wind imprint, together at least level 3 | pursuit, pounce, wear down; ice and wind focus |

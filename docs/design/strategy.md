@@ -143,7 +143,8 @@ Example (proposal for the assignment):
 - **Following:** players can follow a person or swear loyalty to them. The number of
   **active** followers unlocks abilities for leaders – so leadership is "granted by the
   community", also for streamers, without any link to external platforms.
-- Abilities, e.g.: **banner** (buffs for the group in war), **orders to NPC units**, more
+- Abilities, e.g.: **banner** (buffs for the group in war – could work like an aura that binds
+  a resource, see [monsters.md](monsters.md#auras-howl-and-roar)), **orders to NPC units**, more
   fiefs. Leader can be a hidden title.
 
 ## Coats of arms and colors

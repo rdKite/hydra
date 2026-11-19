@@ -51,8 +51,9 @@ windows for perfect actions.
 
 ### Cooldowns only for big body skills
 
-- Cooldowns exist only for big body skills (e.g. charge, roar). They are then **visible on
-  the character** (stance, glow).
+- Cooldowns exist only for big body skills (e.g. charge). They are then **visible on the
+  character** (stance, glow). Howl and roar are no longer among them – they are auras that
+  bind stamina (see [monsters.md](monsters.md#auras-howl-and-roar)).
 - Everything else follows "resource instead of cooldown": stamina and mana are the limit,
   and both sides see the bars.
 

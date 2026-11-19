@@ -40,7 +40,8 @@ several things at once (it is now only the name of the attribute).
 - **Growth goes into damage, not into more strikes:** a bigger bar lets you use heavier and
   better weapons (more damage, more cost) and stronger spell forms. Whoever stays with the
   old weapon gets more strikes in a row instead – a real choice.
-- **Passives bind instead of consume:** an active aura binds a fixed share of the bar (e.g.
+- **Passives bind instead of consume:** an active aura (e.g. a wolf's howl, binding stamina)
+  or augment (binding mana) binds a fixed share of the bar (e.g.
   20 % mana, shown greyed out) and also slowly drains the reserve. Many passives therefore
   cost little in a fight but cost endurance over the day. The most important case is
   augments (see [Spells and augments](#spells-and-augments)).

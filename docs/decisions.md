@@ -517,4 +517,8 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
 - **Body skills that use stamina** get a strength / dexterity share (with steps in between,
   e.g. stomp 100/0, slam 70/30, bite 40/60, stinger 10/90) and a cost ratio (charge and pounce
   use the whole body like a dodge); mana body skills (projectile, threads/web) need neither.
+- **Howl and roar become auras:** switched on, they bind a fixed amount of **stamina** and
+  strengthen allies within a radius; no cooldown any more. Only the strongest aura of a kind
+  counts (no stacking). A skill level gives more effect, not less binding. Allies only for
+  now. Reason: "resource instead of cooldown", and the augment mechanic already exists.
 

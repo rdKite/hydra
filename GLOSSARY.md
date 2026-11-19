@@ -98,6 +98,7 @@ crafting plans, because that is Unreal's visual scripting).
 | Art-Fähigkeit | **capability** | fixed ability of a form or race (dodge, jump, crouch, glide …); passive, does not level |
 | Fortschritts-Bonus | **progress bonus** | skill, title, strength/dexterity, imprint, hilt – added up into one pool for damage |
 | Lage-Faktor | **situational factor** | charge, chain, weak point – multiplied, each capped |
+| Aura | **aura** | a passive skill that binds a fixed amount of stamina while switched on and strengthens allies within a radius (howl, roar); auras of one kind do not stack |
 | Element-Skill (z. B. Feuermagie) | **element skill** (e.g. fire magic) | |
 | Körper-Skill | **body skill** | shared catalogue, bound to body features |
 | Skill-Titel / verborgener Titel | **skill title** / **hidden title** | skill titles every 30 skill levels (percent bonus) |
