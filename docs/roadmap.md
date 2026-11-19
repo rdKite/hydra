@@ -87,12 +87,19 @@ skill growth before the playtest, so the playtest tests the rules that stay. Rul
 
 - [ ] **Humanoid base model and rig by script** (first, before the look variants): one
       skeleton for all humanoids with bone names compatible with the Unreal mannequin (for
-      the human's animations in Blender or Cascadeur, and retargeting); a plain stylised
-      stand-in body (like the wolf pup: good enough to judge proportions, look and readable
-      telegraphs, not a final character); hand sockets for longsword and shield; placeholder
+      the human's animations in Blender or Cascadeur, and retargeting); a plain stylised,
+      **gender-neutral** stand-in body (good enough to judge proportions, look and readable
+      telegraphs, not a final character) with clean topology for shape keys; hand sockets for longsword and shield; placeholder
       animations by script for the humanoid's actions (idle, move, light and heavy attack
       phases, block, dodge, jump, death). The telegraph colours stay until the human's
       animations exist. Push the rig early so the human can start animating.
+      **Pipeline test for the later character creation** (decision 2026-11-19, one shared
+      base model for all races): the three body presets (classically male, classically
+      female, neutral) as shape keys, imported as morph targets and switchable by dev
+      command; one bone length scaled at runtime in the C++ anim instance (e.g. legs to
+      80 %, towards a dwarf), by dev command; screenshots of every variant in idle, attack
+      and block to check that joints sit right. Not in Phase 1: the editor, races, add-on
+      parts, shape keys on armor, a size slider that affects play.
 - [ ] Prepare the decisions (agent, nothing decided): 2–3 look variants of slime, humanoid
       and arena built by script, same shots side by side, switchable by dev command; a
       proposal which placeholder animations to replace first, ranked by the telegraphs they
