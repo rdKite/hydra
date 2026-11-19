@@ -532,4 +532,13 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   for the howl) only while leading; the banner is one of them. The group's threat rating
   counts them. The **following** stays as its own level in the strategy layer – leadership is
   practice, following is trust.
+- **Weapon base damage from the cost:** damage per stamina about the same for every weapon,
+  rising slightly with weight (efficiency 0.41 × (weight ÷ 1.5)^0.1), on the one-handed cost
+  as reference; longsword light = 200. Two-handed is about 40 % more efficient through its
+  lower cost.
+- **No hard cap for the one-hit guard rail.** It stays "no death from full health in one hit
+  without a clear telegraph" and is held by two balancing targets: the strongest light hit
+  stays below an equal opponent's HP, and medium armor survives an uncharged heavy hit of the
+  heaviest weapon to the front. Whoever fights without armor may fall to a telegraphed heavy
+  hit. Rejected: a cap of about 75 % of maximum HP per hit.
 

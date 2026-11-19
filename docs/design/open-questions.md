@@ -33,7 +33,8 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
       check in playtests whether this is too much, especially with light weapons. If so:
       absolute regeneration per species, or less level growth for endurance and spirit.
 - [ ] Exact formulas: dodge cost (weight, form), size of each progress bonus (guess 0.3 per
-      gain for strength and dexterity), base damage, wind-ups and reach per schematic, caps of the situational factors, resistance curve
+      gain for strength and dexterity), wind-ups and reach per schematic (base damage follows
+      from the cost), resistance points per armor schematic, caps of the situational factors, resistance curve
       constant, detection radius factors – in balancing.
 - [ ] Display of perceived enemies: minimap or compass? Decide with the user interface
       (Phase 2).

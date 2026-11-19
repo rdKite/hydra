@@ -215,7 +215,9 @@ damage = base damage (weapon or spell form: material, rarity, weight)
   value ÷ base − 1); at level 100 without training that is +60 %, about a third of the
   targeted pool.
 - Guard rail stays: against roughly equal opponents, no death from full health in one hit
-  (see [combat.md](combat.md#high-damage-no-meat-shields)).
+  without a clear telegraph – held by balancing and armor, not by a cap (see
+  [combat.md](combat.md#high-damage-no-meat-shields)). Base damage per schematic follows
+  from its stamina cost (see [combat.md](combat.md#base-damage-from-the-cost)).
 
 ---
 

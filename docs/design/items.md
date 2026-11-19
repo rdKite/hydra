@@ -36,6 +36,13 @@ components, like weapons (see [Crafting](#crafting-weapons-and-armor)).
   | Armor smithing | mail / plate harness | 12 / 25 kg – much protection, heavy, loud |
 
   Split over the slots: torso 50 %, legs 20 %, head 10 %, boots 10 %, hands 5 %, back 5 %.
+- **Protection targets (guess, blunt points of a full set at a matching level):** robe ~20,
+  leather ~60, scale or bone ~90, plate ~70 against blunt (metal is weak against it) but
+  ~150 against slash and pierce. Target: medium armor survives an uncharged heavy hit of
+  the heaviest weapon of an equal opponent to the front (needs about 55 points); a fully
+  charged one needs about 130 (see the guard rail in
+  [combat.md](combat.md#high-damage-no-meat-shields)). For monsters the base resistance
+  points of the form take this role.
   Example: a human in heavy plate weighs 95 kg – dodging costs × 1.36, turning and sprinting
   slow down, and they are noticed from further away.
 - Example: metal protects strongly against slash and pierce, but is weak against blunt and

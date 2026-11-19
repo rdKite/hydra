@@ -98,7 +98,13 @@ windows for perfect actions.
 - Consequences: resistances and armour become more important. Healing in combat is rather
   little and slow.
 - Guard rail: against roughly equal opponents, no death from full health in one hit
-  without a clear telegraph.
+  without a clear telegraph. **No hard cap** enforces it; it is held by two balancing
+  targets: (1) the strongest **light** hit stays below 100 % of the HP of an equal opponent
+  (war hammer: 76 %); (2) **medium armor** survives an uncharged heavy hit of the heaviest
+  weapon to the front. Whoever goes into a fight **without armor** may be knocked down by a
+  telegraphed heavy hit; a fully charged heavy war hammer blow is the longest telegraph in
+  the game. Hits to the back or at the end of a chain can still fell armored characters –
+  the price of bad position. Attacks from hiding stay never lethal from full health.
 - Deliberate exception: a newcomer who takes on a legendary opponent may fall to one hit.
   In return, the hXP are huge by themselves: an opponent who can kill you with one hit is
   already far stronger by the numbers. No extra bonus is needed.
@@ -445,6 +451,40 @@ stamina), calibrated so that the longsword manages just under two strikes in a r
   counts as load.
 - Base damage, wind-ups and reach per schematic come with balancing (when the families are
   added in Phase 1b).
+
+### Base damage from the cost
+
+- **Damage per stamina is about the same for every weapon**, rising slightly with weight,
+  because light weapons get the weak-point bonus (dexterity):
+  `light base damage = efficiency × cost of the strike (one-handed reference)`, with
+  `efficiency = 0.41 × (weight ÷ 1.5 kg)^0.1` – a dagger about 0.36, the longsword 0.41, the
+  war hammer about 0.46. Calibrated on **longsword light = 200** (a fifth of the 1,000 HP of a
+  human at level 0 – few hits decide).
+- The **one-handed** cost is the reference. Whoever holds a weapon **two-handed** pays only
+  70 %, so is about 40 % more efficient – the advantage of the two-handed grip, without a
+  damage bonus. A big weapon held one-handed is accordingly less efficient; the free hand is
+  the gain.
+- A heavy attack keeps × 2 damage at × 1.6 cost (slightly more efficient); full charge ×
+  1.5 on top.
+
+| Schematic | Weight | Grip | Cost (grip) | **Light damage** | Damage per stamina | Light hits to 1,000 HP |
+|---|---|---|---|---|---|---|
+| knife | 0.2 kg | 1h | 65 | **22** | 0.34 | 46 |
+| dagger | 0.4 kg | 1h | 130 | **47** | 0.36 | 22 |
+| long dagger | 0.6 kg | 1h | 195 | **73** | 0.37 | 14 |
+| hand axe | 0.8 kg | 1h | 260 | **100** | 0.38 | 10 |
+| short sword | 1.0 kg | 1h | 325 | **130** | 0.40 | 8 |
+| longsword | 1.5 kg | 1h / 2h | 490 / 345 | **200** | 0.41 / 0.58 | 5 |
+| mace | 1.5 kg | 1h | 490 | **200** | 0.41 | 5 |
+| battle axe, spear (2h) | 2.0 kg | 2h | 455 | **275** | 0.60 | 4 |
+| greatsword, halberd | 3.0 kg | 2h | 685 | **430** | 0.63 | 3 |
+| war hammer | 5.0 kg | 2h | 1,140 | **755** | 0.66 | 2 |
+
+- Daggers deal very little per stab but many times that at the back with dexterity – their
+  strength is position. Heavy weapons deal big single hits that interrupt by themselves (the
+  threshold is a share of maximum HP) and press blockers.
+- Material (profile slash, pierce, blunt) and rarity (+12 % per level) come on top of these
+  base values.
 
 ### Free choice of hands
 
