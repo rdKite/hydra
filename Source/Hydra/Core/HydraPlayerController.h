@@ -151,6 +151,14 @@ public:
 	UFUNCTION(Exec)
 	void HydraAI(const FString& Verb, float Value);
 
+	/** Dev, looks only: body preset of every character with the humanoid base model - neutral | male | female. */
+	UFUNCTION(Exec)
+	void HydraBody(const FString& Preset);
+
+	/** Dev, looks only: length factor of the leg bones of every character (1 = as built, 0.8 = towards a dwarf). */
+	UFUNCTION(Exec)
+	void HydraLegs(float Scale);
+
 	/** Dev: full stamina and mana for the own character (health and chain stay as they are). */
 	UFUNCTION(Exec)
 	void HydraRefill();

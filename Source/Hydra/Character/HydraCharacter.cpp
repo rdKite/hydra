@@ -9,6 +9,7 @@
 #include "AbilitySystemComponent.h"
 #include "Animation/AnimSequence.h"
 #include "Camera/CameraComponent.h"
+#include "Character/HydraAnimInstance.h"
 #include "Character/HydraMovementComponent.h"
 #include "Character/HydraProgressionComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -61,6 +62,17 @@ namespace HydraCharacterLook
 	const FRotator ShieldRestRot(0.f, -55.f, 0.f);
 	const FVector ShieldBlock(34.f, -6.f, 12.f);
 	const FRotator ShieldBlockRot(0.f, 0.f, 0.f);
+
+	// The humanoid base model holds the placeholder sword and shield at its socket bones.
+	// Bones from Blender have their length along +Y; the blade and the shield's face look along +X.
+	const FName WeaponSocket(TEXT("weapon_r"));
+	const FName ShieldSocket(TEXT("shield_l"));
+	const FVector SwordInHand(0.f, -6.f, 0.f);
+	const FRotator SwordInHandRot(0.f, 90.f, 0.f);
+	const FVector ShieldOnArm(0.f, 4.f, 0.f);
+	const FRotator ShieldOnArmRot(0.f, 90.f, 0.f);
+	const FName MorphMale(TEXT("male"));
+	const FName MorphFemale(TEXT("female"));
 }
 
 AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
@@ -176,6 +188,30 @@ void AHydraCharacter::OnRep_FormId()
 	RebuildStats();
 }
 
+void AHydraCharacter::OnRep_BodyLook()
+{
+	ApplyBodyLook();
+}
+
+void AHydraCharacter::ServerSetBodyLook(uint8 InBodyPreset, float InLegScale)
+{
+	BodyPreset = FMath::Min<uint8>(InBodyPreset, 2);
+	LegScale = FMath::Clamp(InLegScale, 0.3f, 2.f);
+	ApplyBodyLook();
+	UE_LOG(LogHydra, Log, TEXT("HydraBodyLook who=%s preset=%d legs=%.2f"), *GetLogId(), BodyPreset, LegScale);
+}
+
+void AHydraCharacter::ApplyBodyLook()
+{
+	// The presets are shape keys of the one base model (morph targets); the leg scale is
+	// applied to the bones by the anim instance every frame.
+	if (USkeletalMeshComponent* Model = GetMesh(); Model && bUsesModel)
+	{
+		Model->SetMorphTarget(HydraCharacterLook::MorphMale, BodyPreset == 1 ? 1.f : 0.f);
+		Model->SetMorphTarget(HydraCharacterLook::MorphFemale, BodyPreset == 2 ? 1.f : 0.f);
+	}
+}
+
 void AHydraCharacter::OnRep_Dead()
 {
 	// The tag blocks abilities and movement on the client as well.
@@ -196,6 +232,8 @@ void AHydraCharacter::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME(AHydraCharacter, ActionState);
 	DOREPLIFETIME(AHydraCharacter, ChainCount);
 	DOREPLIFETIME(AHydraCharacter, BurningStacks);
+	DOREPLIFETIME(AHydraCharacter, BodyPreset);
+	DOREPLIFETIME(AHydraCharacter, LegScale);
 	DOREPLIFETIME(AHydraCharacter, EnemyId);
 	DOREPLIFETIME(AHydraCharacter, EnemySerial);
 }
@@ -378,11 +416,13 @@ void AHydraCharacter::ApplyFormLook()
 		Model->SetSkeletalMesh(ModelMesh);
 		if (bUsesModel)
 		{
-			Model->SetAnimationMode(EAnimationMode::AnimationSingleNode);
+			// Animation in C++: UHydraAnimInstance evaluates the clip this class picks.
+			Model->SetAnimationMode(EAnimationMode::AnimationBlueprint);
+			Model->SetAnimInstanceClass(UHydraAnimInstance::StaticClass());
 			Model->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			Model->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
-			static const TCHAR* Names[] = { TEXT("Idle"), TEXT("Move"), TEXT("Windup"), TEXT("Charge"), TEXT("Strike"), TEXT("Recovery"),
-				TEXT("Cast"), TEXT("CastCharge"), TEXT("CastRelease"), TEXT("Dodge"), TEXT("Death") };
+			static const TCHAR* Names[] = { TEXT("Idle"), TEXT("Move"), TEXT("Windup"), TEXT("Charge"), TEXT("Strike"), TEXT("HeavyStrike"), TEXT("Recovery"),
+				TEXT("Cast"), TEXT("CastCharge"), TEXT("CastRelease"), TEXT("Block"), TEXT("Dodge"), TEXT("Jump"), TEXT("Death") };
 			for (const TCHAR* Name : Names)
 			{
 				const FString Asset = FString::Printf(TEXT("%sA_%s_%s.A_%s_%s"), *Folder, *Form, Name, *Form, Name);
@@ -404,6 +444,25 @@ void AHydraCharacter::ApplyFormLook()
 			}
 			UE_LOG(LogHydra, Log, TEXT("Form %s uses the model %s with %d animations"), *FormId.ToString(), *Form, FormAnimations.Num());
 		}
+		// Sword and shield (placeholders from primitives): in the hands of a model that has the
+		// socket bones, otherwise on the placeholder body.
+		bModelHoldsItems = bUsesModel && Model->GetBoneIndex(HydraCharacterLook::WeaponSocket) != INDEX_NONE && Model->GetBoneIndex(HydraCharacterLook::ShieldSocket) != INDEX_NONE;
+		const FAttachmentTransformRules Rules(EAttachmentRule::SnapToTarget, EAttachmentRule::SnapToTarget, EAttachmentRule::KeepRelative, false);
+		if (bModelHoldsItems)
+		{
+			SwordPivot->AttachToComponent(Model, Rules, HydraCharacterLook::WeaponSocket);
+			SwordPivot->SetRelativeLocationAndRotation(HydraCharacterLook::SwordInHand, HydraCharacterLook::SwordInHandRot);
+			ShieldPivot->AttachToComponent(Model, Rules, HydraCharacterLook::ShieldSocket);
+			ShieldPivot->SetRelativeLocationAndRotation(HydraCharacterLook::ShieldOnArm, HydraCharacterLook::ShieldOnArmRot);
+		}
+		else
+		{
+			SwordPivot->AttachToComponent(BodyRoot, Rules);
+			SwordPivot->SetRelativeLocationAndRotation(HydraCharacterLook::SwordRest, HydraCharacterLook::SwordRestRot);
+			ShieldPivot->AttachToComponent(BodyRoot, Rules);
+			ShieldPivot->SetRelativeLocationAndRotation(HydraCharacterLook::ShieldRest, HydraCharacterLook::ShieldRestRot);
+		}
+		ApplyBodyLook();
 	}
 	// Models from Blender look along +Y and stand on the floor at their origin.
 	Model->SetRelativeLocation(FVector(0.f, 0.f, -Stats.BodyHalfHeightCm));
@@ -415,8 +474,8 @@ void AHydraCharacter::ApplyFormLook()
 	BodyTorso->SetVisibility(!bUsesModel);
 	BodyHead->SetVisibility(!bUsesModel);
 	BodyVisor->SetVisibility(!bUsesModel);
-	SwordPivot->SetVisibility(!bUsesModel && Stats.bHasWeapon, true);
-	ShieldPivot->SetVisibility(!bUsesModel && Stats.bHasShield, true);
+	SwordPivot->SetVisibility((!bUsesModel || bModelHoldsItems) && Stats.bHasWeapon, true);
+	ShieldPivot->SetVisibility((!bUsesModel || bModelHoldsItems) && Stats.bHasShield, true);
 }
 
 void AHydraCharacter::GrantAbilities()
@@ -735,6 +794,14 @@ void AHydraCharacter::UpdateTint()
 	{
 		BodyColor = HitFlashKind == 1 ? BlockFlashColor : HitFlashColor;
 	}
+	// The humanoid base model is plain: it takes the colour of its side like the placeholder body.
+	if (bModelHoldsItems)
+	{
+		if (UMaterialInstanceDynamic* Material = Cast<UMaterialInstanceDynamic>(GetMesh()->GetMaterial(0)))
+		{
+			Material->SetVectorParameterValue(TEXT("Tint"), FMath::Lerp(FLinearColor::White, BodyColor, 0.65f) * 1.25f);
+		}
+	}
 	Tint(BodyTorso, BodyColor);
 	Tint(BodyHead, BodyColor);
 	Tint(BodyVisor, VisorColor);
@@ -825,8 +892,14 @@ void AHydraCharacter::UpdatePose()
 void AHydraCharacter::UpdateMeshAnimation()
 {
 	// One clip per thing the game shows; clips of actions are time-scaled to the action's
-	// duration from values.json, so wind-up, strike and recovery follow the data.
+	// duration from values.json, so wind-up, strike and recovery follow the data. The anim
+	// instance (C++) fades between the clips and scales bone lengths.
 	USkeletalMeshComponent* Model = GetMesh();
+	UHydraAnimInstance* Anim = Cast<UHydraAnimInstance>(Model->GetAnimInstance());
+	if (!Anim)
+	{
+		return;
+	}
 	const FHydraActionState& Shown = GetShownAction();
 	FName Wanted = TEXT("Idle");
 	bool bLoop = true;
@@ -841,30 +914,62 @@ void AHydraCharacter::UpdateMeshAnimation()
 		{
 		case EHydraAction::LightWindup: Wanted = TEXT("Windup"); bLoop = false; break;
 		case EHydraAction::HeavyCharge: Wanted = TEXT("Charge"); break;
-		case EHydraAction::LightStrike:
-		case EHydraAction::HeavyStrike: Wanted = TEXT("Strike"); bLoop = false; break;
+		case EHydraAction::LightStrike: Wanted = TEXT("Strike"); bLoop = false; break;
+		case EHydraAction::HeavyStrike: Wanted = FormAnimations.Contains(TEXT("HeavyStrike")) ? TEXT("HeavyStrike") : TEXT("Strike"); bLoop = false; break;
 		case EHydraAction::Recovery: Wanted = TEXT("Recovery"); bLoop = false; break;
 		case EHydraAction::CastWindup: Wanted = TEXT("Cast"); bLoop = false; break;
 		case EHydraAction::CastCharge: Wanted = TEXT("CastCharge"); break;
 		case EHydraAction::CastRelease: Wanted = TEXT("CastRelease"); bLoop = false; break;
+		case EHydraAction::Block: Wanted = TEXT("Block"); bLoop = false; break;
 		case EHydraAction::Dodge: Wanted = TEXT("Dodge"); bLoop = false; break;
-		default: Wanted = GetVelocity().Size2D() > 20.f ? TEXT("Move") : TEXT("Idle"); break;
+		default:
+			Wanted = (GetCharacterMovement()->IsFalling() && FormAnimations.Contains(TEXT("Jump"))) ? TEXT("Jump")
+				: (GetVelocity().Size2D() > 20.f ? TEXT("Move") : TEXT("Idle"));
+			break;
 		}
+	}
+	const TObjectPtr<UAnimSequence>* Found = FormAnimations.Find(Wanted);
+	if (!Found)
+	{
+		// A form without this clip (the slime has no block, no jump clip): its idle instead.
+		Wanted = TEXT("Idle");
+		bLoop = true;
+		Found = FormAnimations.Find(Wanted);
 	}
 	const bool bActionRestarted = !bLoop && IsAlive() && !FMath::IsNearlyEqual(Shown.StartServerTime, PlayingStartTime);
 	if (Wanted != PlayingAnimation || bActionRestarted)
 	{
 		PlayingAnimation = Wanted;
 		PlayingStartTime = Shown.StartServerTime;
-		if (const TObjectPtr<UAnimSequence>* Sequence = FormAnimations.Find(Wanted))
+		AnimClipTime = 0.f;
+		++AnimSerial;
+	}
+	const UAnimSequence* Clip = Found ? Found->Get() : nullptr;
+	const float Length = Clip ? Clip->GetPlayLength() : 0.f;
+	// Hit stop: the pose freezes for a moment (looks only; the timeline of the ability runs on).
+	if (GetWorld()->GetTimeSeconds() >= HitStopUntil && Length > 0.f)
+	{
+		const bool bTimed = !bLoop && IsAlive() && Shown.DurationS > 0.f;
+		if (bTimed)
 		{
-			Model->PlayAnimation(*Sequence, bLoop);
-			const bool bTimed = !bLoop && IsAlive() && Shown.DurationS > 0.f;
-			Model->SetPlayRate(bTimed ? (*Sequence)->GetPlayLength() / Shown.DurationS : 1.f);
+			AnimClipTime = FMath::Clamp((GetServerTime() - Shown.StartServerTime) / Shown.DurationS, 0.f, 1.f) * Length;
+		}
+		else if (bLoop)
+		{
+			AnimClipTime = FMath::Fmod(AnimClipTime + GetWorld()->GetDeltaSeconds(), Length);
+		}
+		else
+		{
+			AnimClipTime = FMath::Min(AnimClipTime + GetWorld()->GetDeltaSeconds(), Length);   // plays once and holds (block, death)
 		}
 	}
-	// Hit stop: the pose freezes for a moment.
-	Model->GlobalAnimRateScale = GetWorld()->GetTimeSeconds() < HitStopUntil ? 0.f : 1.f;
+	FHydraAnimInput Input;
+	Input.Clip = Clip;
+	Input.Time = AnimClipTime;
+	Input.bLoop = bLoop;
+	Input.Serial = AnimSerial;
+	Input.LegScale = LegScale;
+	Anim->SetInput(Input);
 }
 
 void AHydraCharacter::MulticastHitFeedback_Implementation(uint8 Kind, float HitStopS)

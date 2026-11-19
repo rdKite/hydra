@@ -668,6 +668,16 @@ void AHydraPlayerController::HydraAI(const FString& Verb, float Value)
 	ServerDevCommand(FString::Printf(TEXT("ai %s %f"), *Verb, Value));
 }
 
+void AHydraPlayerController::HydraBody(const FString& Preset)
+{
+	ServerDevCommand(FString::Printf(TEXT("body %s"), *Preset));
+}
+
+void AHydraPlayerController::HydraLegs(float Scale)
+{
+	ServerDevCommand(FString::Printf(TEXT("legs %f"), Scale));
+}
+
 void AHydraPlayerController::HydraRefill()
 {
 	ServerDevCommand(TEXT("refill"));
@@ -747,6 +757,24 @@ void AHydraPlayerController::ServerDevCommand_Implementation(const FString& Comm
 			{
 				It->ServerTeleport(FVector(Number(2), Number(3), It->GetActorLocation().Z), Number(4));
 			}
+		}
+	}
+	else if ((Args[0] == TEXT("body") || Args[0] == TEXT("legs")) && Args.Num() >= 2)
+	{
+		// Looks of the humanoid base model, for every character (a pipeline test, not a game feature).
+		for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
+		{
+			uint8 Preset = It->GetBodyPreset();
+			float Legs = It->GetLegScale();
+			if (Args[0] == TEXT("body"))
+			{
+				Preset = Args[1] == TEXT("male") ? 1 : (Args[1] == TEXT("female") ? 2 : 0);
+			}
+			else
+			{
+				Legs = Number(1);
+			}
+			It->ServerSetBodyLook(Preset, Legs);
 		}
 	}
 	else if (Args[0] == TEXT("refill") && Self)

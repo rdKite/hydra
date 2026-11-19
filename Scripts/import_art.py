@@ -50,7 +50,8 @@ def import_mesh(name, destination):
     ui.import_textures = False
     ui.create_physics_asset = True
     ui.mesh_type_to_import = unreal.FBXImportType.FBXIT_SKELETAL_MESH
-    ui.skeletal_mesh_import_data.set_editor_property("import_morph_targets", False)
+    # Shape keys arrive as morph targets (the body presets of the humanoid base model).
+    ui.skeletal_mesh_import_data.set_editor_property("import_morph_targets", True)
     paths = run_task(os.path.join(EXPORT, name, "SK_%s.fbx" % name), destination, "SK_" + name, ui)
     mesh = skeleton = None
     for path in assets.list_assets(destination, recursive=False):
@@ -100,6 +101,7 @@ def build_material(name, destination, mesh):
     # Without this flag a game build shows the grey default material on skinned meshes
     # (the editor would set it by itself the first time it draws the mesh).
     materials.set_material_usage(material, unreal.MaterialUsage.MATUSAGE_SKELETAL_MESH)
+    materials.set_material_usage(material, unreal.MaterialUsage.MATUSAGE_MORPH_TARGETS)
     materials.recompile_material(material)
     assets.save_loaded_asset(material)
 

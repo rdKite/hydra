@@ -105,6 +105,15 @@ public:
 
 	UHydraMovementComponent* GetHydraMovement() const;
 
+	/**
+	 * Looks of the humanoid base model (pipeline test for the later character creation; dev
+	 * commands HydraBody and HydraLegs): body preset 0 = neutral, 1 = male, 2 = female (shape
+	 * keys imported as morph targets), and the length factor of the leg bones (1 = as built).
+	 */
+	void ServerSetBodyLook(uint8 InBodyPreset, float InLegScale);
+	uint8 GetBodyPreset() const { return BodyPreset; }
+	float GetLegScale() const { return LegScale; }
+
 	/** Server, before BeginPlay: this character belongs to the AI opponent. */
 	void SetAIControlled() { bAIControlled = true; }
 	bool IsAIControlledCharacter() const { return bAIControlled; }
@@ -279,6 +288,11 @@ protected:
 	UFUNCTION()
 	void OnRep_AIControlled();
 
+	UFUNCTION()
+	void OnRep_BodyLook();
+
+	void ApplyBodyLook();
+
 	void OnValuesReloaded(const FHydraValues& Values);
 	void InitProgress();
 	void ChangeForm(FName NewFormId);
@@ -369,6 +383,12 @@ protected:
 	UPROPERTY(Replicated)
 	uint8 BurningStacks = 0;
 
+	UPROPERTY(ReplicatedUsing = OnRep_BodyLook)
+	uint8 BodyPreset = 0;
+
+	UPROPERTY(ReplicatedUsing = OnRep_BodyLook)
+	float LegScale = 1.f;
+
 	/** Wave enemies: type (enemies.json) and a number to tell them apart. */
 	UPROPERTY(Replicated)
 	FName EnemyId;
@@ -382,8 +402,13 @@ protected:
 
 	/** The form is shown by a skeletal mesh from the Blender pipeline (otherwise: placeholder primitives). */
 	bool bUsesModel = false;
+	/** The model has the socket bones for sword and shield (the humanoid base model): the placeholder items hang there. */
+	bool bModelHoldsItems = false;
 	FName PlayingAnimation;
 	float PlayingStartTime = -1.f;
+	/** Where the shown clip is (seconds) and a counter that changes when a clip starts again. */
+	float AnimClipTime = 0.f;
+	int32 AnimSerial = 0;
 	FName LookBuiltForForm;
 
 	/** Owning client only: action of a predicted ability. */

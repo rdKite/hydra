@@ -97,6 +97,33 @@ built: §23–§25, rows marked *(M4b)*; numbers `data/values.json` v7, `data/CH
 **Problems in M4b.** The HUD bars ran off the screen with the tenfold numbers (seen on a
 screenshot of the waves run, not by a check) – the bar scale is 0.3 pixels per point now.
 
+**Step 3 – M5 preparation, humanoid base model: the Unreal side.** The human started a
+second agent session for the Blender part (model, rig, shape keys, placeholder animations,
+export) while this session had just begun it; this session handed it over and built the
+side of the game:
+- **`UHydraAnimInstance`** (C++, no Animation Blueprint): every form with a model is
+  animated through it now – one clip per thing the game shows, time-scaled to the action,
+  with a short cross-fade, plus bone lengths that can be scaled at runtime. The slime uses
+  it too (the single-node playback of M3 is gone).
+- **Clips** looked up in addition: `HeavyStrike` (else `Strike`), `Block`, `Jump`.
+- **Sockets:** a model with the bones `weapon_r` and `shield_l` holds the placeholder sword
+  and shield there (the blade still carries the telegraph colours); it takes the colour of
+  its side through the material's Tint parameter.
+- **Body presets and bone length** (pipeline test for the character creation): replicated
+  per character, dev commands `HydraBody neutral|male|female` (morph targets `male`,
+  `female`) and `HydraLegs <factor>` (thigh and calf shorter or longer, pelvis lowered by
+  what the legs lost, girth unchanged) – both for every character at once.
+- **Import:** morph targets are imported; the generated material is flagged for them.
+- Verified with a local draft of the model (not committed): shown in the game with 11
+  clips, block pose through the anim instance, male preset and legs at 80 % visible on
+  host and AI (screenshots looked at). `Scripts/run_all.sh` green with the draft model
+  (19 / 164 / 83 / 125) and the combat and slime runs green without it (the state of the
+  repository until the Blender part lands).
+- **Open until the Blender part is on `main`:** import it and commit
+  `Content/Characters/humanoid`, set the orientation of sword and shield on the sockets by
+  eye (they depend on the bone axes of the final rig), the screenshots of every variant in
+  idle, attack and block, and a check in a live run.
+
 ### 2026-11-19 – skill growth comes to Phase 1; plan for an unattended session (design session)
 
 **Next agent session – work through in this order without waiting for the human.** Commit

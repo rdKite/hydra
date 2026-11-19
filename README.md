@@ -60,7 +60,8 @@ Controls (one button per hand):
 F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console:
 `Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`
 (AI opponent passive / active, on the host), `Hydra.LagCompensation [0|1]`, `HydraStats`,
-`HydraResetAll`, `HydraRefill` (full stamina and mana), `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraPrecise 0|1`, `HydraFire 1`
+`HydraResetAll`, `HydraRefill` (full stamina and mana), `HydraBody neutral|male|female` and `HydraLegs 0.8`
+(looks of the humanoid base model: body preset and leg length), `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraPrecise 0|1`, `HydraFire 1`
 (fire awakened without earning it: the slime's bolt carries fire, leaves a fire field and
 causes burning), `HydraWaves 1` (switch a practice session to waves), `HydraXp <n>` and
 `HydraImprintProgress <n>` (dev: give yourself nXP or imprint progress), `HydraChoose
