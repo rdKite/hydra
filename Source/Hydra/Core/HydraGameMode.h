@@ -14,8 +14,8 @@ class AHydraCharacter;
  *  - Practice (default): players at the arena's spawn points and one AI opponent
  *    (AHydraAIController; passive with Hydra.AI 0).
  *  - Waves (start option ?Waves=1 on the host, or the dev command HydraWaves 1): AI enemies
- *    come in waves (values.json: waves, enemies). Defeated enemies give nXP to every player;
- *    a cleared wave credits the skill XP earned in it and writes a metrics row per player
+ *    come in waves (values.json: waves, enemies). Defeated enemies give nXP and hXP to every
+ *    player (hXP go to the skills by use); a cleared wave writes a metrics row per player
  *    and enemy type to Saved/Metrics/metrics_<time>.csv (-HydraMetricsDir=<dir> overrides).
  *    After the last wave of the list they start again with stronger enemies.
  */

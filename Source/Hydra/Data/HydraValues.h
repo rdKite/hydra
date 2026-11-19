@@ -9,13 +9,14 @@
 // Member names are snake_case on purpose, so that FJsonObjectConverter maps the JSON keys
 // 1:1 without a hand-written parser (this deviates from Unreal naming). Units as in the
 // file: times in ms, rates per second, distances in metres, angles in degrees (arcs as half
-// angles); "weight ratio" = weight / strength.
+// angles), weights in kg (strength in the same unit).
 // Adding a value: data/values.json (bump version, changelog line) plus a member here; the
 // automation tests Hydra.Values.* fail if the two drift apart.
 
 /**
- * Resistance per damage type: the share of that damage a form shrugs off (0.5 = half).
- * Negative = vulnerable (-0.25 = a quarter more).
+ * Resistance per damage type in points: reduction = points / (points + resistance.curve_constant),
+ * so 100 points halve the damage at a constant of 100. Negative points = weakness:
+ * damage x (1 + |points| / constant).
  */
 USTRUCT()
 struct FHydraResistanceValues
@@ -27,23 +28,30 @@ struct FHydraResistanceValues
 	UPROPERTY() float fire = 0.f;
 };
 
-/** Numbers of one form. body_weight and strength share a unit with the weapon weights. */
+/**
+ * Numbers of one form. The body attributes are base values at level 0 and grow with
+ * progression.level_growth per level: 10 HP per vitality, 10 stamina per endurance, 10 mana
+ * per spirit; strength (in kg) sets the handling, dexterity the weak-point bonus and the dodge.
+ */
 USTRUCT()
 struct FHydraFormValues
 {
 	GENERATED_BODY()
-	/** Weight of the body (weight = body plus load). */
+	/** Weight of the body in kg (weight = body plus load). Costs are measured against it. */
 	UPROPERTY() float body_weight = 0.f;
+	UPROPERTY() float vitality = 0.f;
+	UPROPERTY() float endurance = 0.f;
+	UPROPERTY() float spirit = 0.f;
 	UPROPERTY() float strength = 0.f;
+	UPROPERTY() float dexterity = 0.f;
 	/** Size of the body for movement and hit areas (a capsule). */
 	UPROPERTY() float body_radius_m = 0.f;
 	UPROPERTY() float body_height_m = 0.f;
-	UPROPERTY() float hp_max = 0.f;
-	UPROPERTY() float stamina_max = 0.f;
-	UPROPERTY() float stamina_regen_per_s = 0.f;
-	/** 0 = the form has no mana bar. */
-	UPROPERTY() float mana_max = 0.f;
-	UPROPERTY() float mana_regen_per_s = 0.f;
+	/** Regeneration as a share of the maximum per second; none while an action runs. */
+	UPROPERTY() float stamina_regen_share_per_s = 0.f;
+	UPROPERTY() float mana_regen_share_per_s = 0.f;
+	/** Stamina of a dodge step for the bare body; x total weight / body weight. */
+	UPROPERTY() float dodge_stamina_cost = 0.f;
 	UPROPERTY() FHydraResistanceValues resistance;
 	/** Highest character level of the form. */
 	UPROPERTY() int32 level_cap = 0;
@@ -85,11 +93,22 @@ struct FHydraHeavyAttackValues
 	UPROPERTY() float half_arc_deg = 0.f;
 };
 
+/**
+ * A weapon schematic or a body attack. Base damage (light.damage, heavy.damage) follows
+ * from the cost (damage.efficiency_*) and is stored here, not computed at runtime.
+ */
 USTRUCT()
 struct FHydraWeaponValues
 {
 	GENERATED_BODY()
+	/** In kg; counts as load. 0 for a body attack. */
 	UPROPERTY() float weight = 0.f;
+	/** Body attacks: used in place of weight / body weight for the stamina cost. 0 = a weapon (cost from its weight). */
+	UPROPERTY() float cost_ratio = 0.f;
+	/** Factor on the stamina cost (rarity); 1 in Phase 1. */
+	UPROPERTY() float demand = 0.f;
+	/** Share of the attribute bonus that comes from strength; the rest comes from dexterity. */
+	UPROPERTY() float strength_share = 0.f;
 	UPROPERTY() FHydraLightAttackValues light;
 	UPROPERTY() FHydraHeavyAttackValues heavy;
 };
@@ -154,17 +173,10 @@ struct FHydraAimAssistValues
 };
 
 USTRUCT()
-struct FHydraStaminaValues
-{
-	GENERATED_BODY()
-	UPROPERTY() float regen_delay_after_action_ms = 0.f;
-};
-
-USTRUCT()
 struct FHydraAttackValues
 {
 	GENERATED_BODY()
-	/** Stamina of a light / heavy attack = this x weapon weight / strength (x skill factor, M4). */
+	/** Stamina of a light / heavy attack = this x weapon weight / body weight x demand (body attacks: x cost_ratio). */
 	UPROPERTY() float light_stamina_per_weight_ratio = 0.f;
 	UPROPERTY() float heavy_stamina_per_weight_ratio = 0.f;
 	/** Movement speed factor during wind-up and strike. */
@@ -184,28 +196,30 @@ USTRUCT()
 struct FHydraInterruptValues
 {
 	GENERATED_BODY()
-	/** A hit interrupts the target's attack if damage >= this x target weight (body plus load). */
-	UPROPERTY() float damage_threshold_per_weight = 0.f;
-	/** While attacking, the target's weapon weight counts this many times extra. */
-	UPROPERTY() float attacking_weapon_weight_factor = 0.f;
+	/** A hit interrupts the target's attack if its damage is at least this share of the target's maximum HP. */
+	UPROPERTY() float threshold_share_of_max_hp = 0.f;
 };
 
 USTRUCT()
 struct FHydraBlockValues
 {
 	GENERATED_BODY()
-	/** Stamina the blocker pays for a light attack by a weapon as heavy as the blocking item. */
-	UPROPERTY() float stamina_cost_per_hit = 0.f;
-	UPROPERTY() float heavy_attack_factor = 0.f;
-	/** Limits for (attacking weapon weight / blocking item weight) in block cost and rebound. */
-	UPROPERTY() float weight_ratio_min = 0.f;
-	UPROPERTY() float weight_ratio_max = 0.f;
-	UPROPERTY() bool no_regen_while_holding = false;
+	/** Stamina per second while the block is raised = this x shield weight / body weight. */
+	UPROPERTY() float hold_stamina_per_s_per_weight_ratio = 0.f;
+	/**
+	 * A blocked hit costs the blocker (blocked damage x share) stamina, share = blocker_share x
+	 * reference_shield_ratio / (shield weight / body weight), inside share_min .. share_max:
+	 * a heavier shield takes hits more cheaply (and costs more to hold).
+	 */
+	UPROPERTY() float blocker_share = 0.f;
+	UPROPERTY() float reference_shield_ratio = 0.f;
+	UPROPERTY() float share_min = 0.f;
+	UPROPERTY() float share_max = 0.f;
+	/** Rebound: the attacker loses this share of the blocked damage as stamina (not for bolts). */
+	UPROPERTY() float rebound_share = 0.f;
 	UPROPERTY() float move_speed_ratio = 0.f;
 	/** Block with the weapon (no shield): not used by the Phase 1 loadout yet. */
 	UPROPERTY() float weapon_half_arc_deg = 0.f;
-	/** Rebound: share of its own attack cost the attacker loses extra, at equal weights. */
-	UPROPERTY() float rebound_attacker_stamina_ratio = 0.f;
 	/** Share of a bolt's damage that still gets through a plain shield. */
 	UPROPERTY() float projectile_damage_through = 0.f;
 };
@@ -214,11 +228,12 @@ USTRUCT()
 struct FHydraDodgeValues
 {
 	GENERATED_BODY()
-	/** At weight ratio 1; scales with the weight ratio (body plus load). */
-	UPROPERTY() float stamina_cost = 0.f;
 	UPROPERTY() float distance_m = 0.f;
 	UPROPERTY() float duration_ms = 0.f;
 	UPROPERTY() float recovery_ms = 0.f;
+	/** Dexterity: distance x (1 + this x gain), duration / (1 + speed_per_dexterity_gain x gain). */
+	UPROPERTY() float distance_per_dexterity_gain = 0.f;
+	UPROPERTY() float speed_per_dexterity_gain = 0.f;
 };
 
 USTRUCT()
@@ -226,10 +241,37 @@ struct FHydraWeakPointValues
 {
 	GENERATED_BODY()
 	UPROPERTY() float back_half_arc_deg = 0.f;
-	/** Multiplier for a weapon at reference_weapon_weight_ratio; lighter weapons get more bonus. */
+	/** Multiplier = damage_multiplier + multiplier_per_dexterity_gain x the attacker's dexterity gain, capped. */
 	UPROPERTY() float damage_multiplier = 0.f;
-	UPROPERTY() float reference_weapon_weight_ratio = 0.f;
+	UPROPERTY() float multiplier_per_dexterity_gain = 0.f;
 	UPROPERTY() float max_damage_multiplier = 0.f;
+};
+
+/**
+ * Damage = base x (1 + progress bonuses added up) x situational factors multiplied. The
+ * attribute bonus: strength share x strength_bonus_per_gain x strength gain + dexterity share
+ * x dexterity_bonus_per_gain x dexterity gain (gain = what the level added on top of the base
+ * value, as a share of it). efficiency_*: how the stored base damage of a weapon follows from
+ * its cost - light damage = efficiency_base x (weight / efficiency_reference_kg) ^
+ * efficiency_exponent x light cost of a human at level 0 (checked by an automation test).
+ */
+USTRUCT()
+struct FHydraDamageValues
+{
+	GENERATED_BODY()
+	UPROPERTY() float strength_bonus_per_gain = 0.f;
+	UPROPERTY() float dexterity_bonus_per_gain = 0.f;
+	UPROPERTY() float efficiency_base = 0.f;
+	UPROPERTY() float efficiency_reference_kg = 0.f;
+	UPROPERTY() float efficiency_exponent = 0.f;
+};
+
+USTRUCT()
+struct FHydraResistanceRuleValues
+{
+	GENERATED_BODY()
+	/** Points at which the damage is halved. */
+	UPROPERTY() float curve_constant = 0.f;
 };
 
 USTRUCT()
@@ -272,6 +314,8 @@ struct FHydraEnemyValues
 	UPROPERTY() int32 skill_level = 0;
 	/** nXP for defeating it = nxp_base x (1 + progression.nxp_bonus_per_enemy_level x its level). */
 	UPROPERTY() float nxp_base = 0.f;
+	/** hXP = nXP x this (at least 1): the stand-in for the threat rating. */
+	UPROPERTY() float hxp_factor = 0.f;
 	UPROPERTY() FHydraAiValues ai;
 };
 
@@ -304,7 +348,10 @@ struct FHydraWavesValues
 	UPROPERTY() TArray<FHydraWaveValues> list;
 };
 
-/** Character level. nXP needed for the step from level L to L + 1 = xp_base + xp_per_level x L. */
+/**
+ * Character level. nXP needed for the step from level L to L + 1 = xp_base + xp_per_level x L.
+ * Each level raises every body attribute by level_growth of the form's base value.
+ */
 USTRUCT()
 struct FHydraProgressionValues
 {
@@ -312,35 +359,28 @@ struct FHydraProgressionValues
 	UPROPERTY() float xp_base = 0.f;
 	UPROPERTY() float xp_per_level = 0.f;
 	UPROPERTY() float nxp_bonus_per_enemy_level = 0.f;
-	/** Each level: this share more maximum HP and base damage. */
-	UPROPERTY() float hp_bonus_per_level = 0.f;
-	UPROPERTY() float damage_bonus_per_level = 0.f;
+	UPROPERTY() float level_growth = 0.f;
 	UPROPERTY() int32 milestone_every_levels = 0;
 };
 
-/**
- * Skills (grow by use). Skill XP for the step from skill level L to L + 1 = xp_base +
- * xp_per_level x L. What a level does: more damage and lower cost for the skill's actions,
- * and per kind a wider block arc, a longer dodge step, a bigger element field.
- */
+/** What a skill level does (effect, never lower costs). */
 USTRUCT()
 struct FHydraSkillsValues
 {
 	GENERATED_BODY()
-	UPROPERTY() float xp_base = 0.f;
-	UPROPERTY() float xp_per_level = 0.f;
-	/** Skill XP per landed weapon or body attack, per hit taken on the block, per dodge that avoided a hit, per bolt that hit. */
-	UPROPERTY() float xp_per_hit = 0.f;
-	UPROPERTY() float xp_per_block = 0.f;
-	UPROPERTY() float xp_per_dodge = 0.f;
-	UPROPERTY() float xp_per_bolt_hit = 0.f;
+	/** Progress bonus on the damage of the skill's actions, per level (added to the other progress bonuses). */
 	UPROPERTY() float damage_bonus_per_level = 0.f;
-	/** Cost factor = 1 - this x level, never below min_cost_factor. */
-	UPROPERTY() float cost_reduction_per_level = 0.f;
-	UPROPERTY() float min_cost_factor = 0.f;
 	UPROPERTY() float block_arc_deg_per_level = 0.f;
-	UPROPERTY() float dodge_distance_bonus_per_level = 0.f;
 	UPROPERTY() float field_radius_bonus_per_level = 0.f;
+};
+
+/** Automatic skill points at a level-up = base + factor x log2(hardship rating), rating = hXP / nXP of the level (at least 1). */
+USTRUCT()
+struct FHydraSkillPointsValues
+{
+	GENERATED_BODY()
+	UPROPERTY() float base = 0.f;
+	UPROPERTY() float factor = 0.f;
 };
 
 /** Imprint: an acquired alignment to an element. Progress comes from contact with the element. */
@@ -355,8 +395,8 @@ struct FHydraImprintValues
 	/** Progress needed for the first level and for each further one (the first is clearly easier). */
 	UPROPERTY() float progress_first_level = 0.f;
 	UPROPERTY() float progress_per_further_level = 0.f;
-	/** Per imprint level: resistance against the element and damage with it. */
-	UPROPERTY() float resistance_per_level = 0.f;
+	/** Per imprint level: resistance points against the element and a progress bonus on damage with it. */
+	UPROPERTY() float resistance_points_per_level = 0.f;
 	UPROPERTY() float damage_bonus_per_level = 0.f;
 };
 
@@ -367,7 +407,7 @@ struct FHydraInstinctValues
 	GENERATED_BODY()
 	/** Permanent bonus on the skill, in skill levels, at ratio 1. */
 	UPROPERTY() float skill_level_bonus_max = 0.f;
-	/** Extra share of skill XP for that skill at ratio 1 (it is relearned faster). */
+	/** The skill's share of the hXP counts this much more at ratio 1 when skill points are split (it is relearned faster). */
 	UPROPERTY() float xp_bonus_max = 0.f;
 };
 
@@ -444,13 +484,14 @@ struct FHydraValues
 	UPROPERTY() FHydraTurnRateValues turn_rate;
 	UPROPERTY() FHydraLockOnValues lock_on;
 	UPROPERTY() FHydraAimAssistValues aim_assist;
-	UPROPERTY() FHydraStaminaValues stamina;
 	UPROPERTY() FHydraAttackValues attack;
 	UPROPERTY() FHydraChainValues chain;
 	UPROPERTY() FHydraInterruptValues interrupt;
 	UPROPERTY() FHydraBlockValues block;
 	UPROPERTY() FHydraDodgeValues dodge;
 	UPROPERTY() FHydraWeakPointValues weak_point;
+	UPROPERTY() FHydraDamageValues damage;
+	UPROPERTY() FHydraResistanceRuleValues resistance;
 	UPROPERTY() FHydraLagCompensationValues lag_compensation;
 	UPROPERTY() FHydraAiValues ai_practice;
 	/** Per ID from enemies.json. */
@@ -458,6 +499,7 @@ struct FHydraValues
 	UPROPERTY() FHydraWavesValues waves;
 	UPROPERTY() FHydraProgressionValues progression;
 	UPROPERTY() FHydraSkillsValues skills;
+	UPROPERTY() FHydraSkillPointsValues skill_points;
 	UPROPERTY() FHydraImprintValues imprint;
 	UPROPERTY() FHydraInstinctValues instinct;
 	UPROPERTY() FHydraBoltValues bolt;

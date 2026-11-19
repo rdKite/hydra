@@ -12,7 +12,9 @@
 # (Saved/Live/data), so the script can change values during the run without touching the
 # real files; in the copy everyone starts at level 0 without skill levels, so the run
 # measures the plain rules. The AI opponent starts passive and is driven by dev commands, so every
-# situation is the same in every run; it is switched to active at the end.
+# situation is the same in every run; it is switched to active at the end. A light strike
+# costs about half the stamina bar, so the script refills the host's bar (HydraRefill) where
+# a step tests something other than stamina.
 # Screenshots are only taken in quiet moments or long phases: the first one of a process
 # stalls it for a few hundred milliseconds (hence the warm-up shot at 0.3 s).
 #
@@ -57,11 +59,11 @@ DATA_DIR="$(cygpath -w "$LIVE/data")"
 "$PYTHON" "$(cygpath -w "$ROOT/Scripts/check_live.py")" --plain-start "$(cygpath -w "$LIVE/data/values.json")" > /dev/null
 
 H="1:HydraStats;1.5:HydraTeleport|0|440|90;2:HydraStats"
-H+=";2.5:HydraAttack|0;3.3:HydraAttack|0;4.1:HydraAttack|0;4.6:HydraStats;7:HydraStats;7.2:HydraAttack|0;8:HydraResetAll"
+H+=";2.5:HydraAttack|0;3.25:HydraRefill;3.3:HydraAttack|0;4.05:HydraRefill;4.1:HydraAttack|0;4.6:HydraStats;7:HydraStats;7.2:HydraAttack|0;8:HydraResetAll"
 H+=";8.5:HydraAttack|300;9.3:HydraStats;10:HydraResetAll;10.5:HydraAttack|3000;11:HydraStats;12.4:HydraJump;12.75:HydraStats"
-H+=";13:HydraResetAll;13:HydraTeleport|0|760|-90;13.6:HydraAttack|0;14.5:HydraAttack|700;17:HydraStats;19.8:HydraStats"
-H+=";20:HydraResetAll;20:HydraTeleport|0|440|90;20.5:HydraAI|block|1;21:HydraStats;21.2:HydraAttack|0;22.2:HydraAttack|300;23.2:HydraStats"
-H+=";23.5:HydraTeleport|0|760|-90;24:HydraAttack|0"
+H+=";13:HydraResetAll;13:HydraTeleport|0|760|-90;13.6:HydraAttack|0;14.45:HydraRefill;14.5:HydraAttack|700;17:HydraStats;19.8:HydraStats"
+H+=";20:HydraResetAll;20:HydraTeleport|0|440|90;20.5:HydraAI|block|1;21:HydraStats;21.2:HydraAttack|0;22.15:HydraRefill;22.2:HydraAttack|300;23.2:HydraStats"
+H+=";23.5:HydraTeleport|0|760|-90;23.9:HydraRefill;24:HydraAttack|0"
 H+=";25:HydraTeleport|0|440|90;25:HydraAI|stamina|5;25.6:HydraAttack|0;26.6:HydraAI|block|0"
 H+=";27:HydraResetAll;27.5:HydraAI|attack|3000;27.7:HydraAttack|0;29.5:HydraResetAll"
 H+=";30:HydraAI|attack|3000;30.2:HydraAttack|300;32:HydraStats"

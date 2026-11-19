@@ -24,6 +24,8 @@ void UHydraProgressionComponent::GetLifetimeReplicatedProps(TArray<FLifetimeProp
 	Super::GetLifetimeReplicatedProps(OutLifetimeProps);
 	DOREPLIFETIME(UHydraProgressionComponent, Level);
 	DOREPLIFETIME(UHydraProgressionComponent, Xp);
+	DOREPLIFETIME(UHydraProgressionComponent, LevelHxp);
+	DOREPLIFETIME(UHydraProgressionComponent, LevelNxp);
 	DOREPLIFETIME(UHydraProgressionComponent, Skills);
 	DOREPLIFETIME(UHydraProgressionComponent, ImprintLevel);
 	DOREPLIFETIME(UHydraProgressionComponent, ImprintProgress);
@@ -157,6 +159,8 @@ void UHydraProgressionComponent::ServerInit(int32 InLevel, int32 InSkillLevel, i
 	}
 	Level = FMath::Max(0, InLevel);
 	Xp = 0.f;
+	LevelHxp = 0.f;
+	LevelNxp = 0.f;
 	ImprintLevel = FMath::Clamp(InImprintLevel, 0, FMath::Max(0, Subsystem->GetValues().imprint.max_level));
 	ImprintProgress = 0.f;
 	OpenMilestones = 0;
@@ -180,18 +184,84 @@ void UHydraProgressionComponent::ServerInit(int32 InLevel, int32 InSkillLevel, i
 	Changed();
 }
 
-void UHydraProgressionComponent::ServerAddXp(float Nxp)
+void UHydraProgressionComponent::ServerAddUse(FName SkillId, float Amount)
 {
 	const AHydraCharacter* C = GetCharacter();
-	if (!C || Nxp <= 0.f)
+	if (!C || C->IsAIControlledCharacter() || SkillId.IsNone() || Amount <= 0.f)
+	{
+		return;
+	}
+	if (FHydraSkillState* Skill = Skills.FindByPredicate([SkillId](const FHydraSkillState& S) { return S.Id == SkillId; }))
+	{
+		Skill->Use += Amount;
+	}
+}
+
+void UHydraProgressionComponent::ServerDropUse()
+{
+	const AHydraCharacter* C = GetCharacter();
+	float Dropped = 0.f;
+	for (FHydraSkillState& S : Skills)
+	{
+		Dropped += S.Use;
+		S.Use = 0.f;
+	}
+	if (Dropped > 0.f)
+	{
+		UE_LOG(LogHydra, Log, TEXT("HydraUseDropped t=%.2f who=%s use=%.1f"), UHydraDevSubsystem::ClockOf(this), C ? *C->GetLogId() : TEXT("?"), Dropped);
+	}
+}
+
+void UHydraProgressionComponent::ServerEnemyDefeated(float Nxp, float Hxp)
+{
+	const AHydraCharacter* C = GetCharacter();
+	if (!C || C->IsAIControlledCharacter() || Nxp <= 0.f)
 	{
 		return;
 	}
 	const FHydraValues& V = UHydraValuesSubsystem::Get(this);
-	const int32 LevelCap = C->GetStats().LevelCap;
+	const double Clock = UHydraDevSubsystem::ClockOf(this);
+	const FString Who = C->GetLogId();
+	Hxp = FMath::Max(Hxp, Nxp);
+
+	// hXP are distributed by use: each skill gets a share in proportion to the stamina and
+	// mana its actions spent since the last defeated enemy. Without any use they go to no
+	// skill but still count for the hardship rating.
+	float UseSum = 0.f;
+	for (const FHydraSkillState& S : Skills)
+	{
+		UseSum += S.Use;
+	}
+	for (FHydraSkillState& S : Skills)
+	{
+		if (UseSum > 0.f && S.Use > 0.f)
+		{
+			const float Share = Hxp * S.Use / UseSum;
+			S.LevelHxp += Share;
+			UE_LOG(LogHydra, Log, TEXT("HydraHxp t=%.2f who=%s skill=%s use=%.1f hxp=%.2f level_hxp=%.2f"), Clock, *Who, *S.Id.ToString(), S.Use, Share, S.LevelHxp);
+		}
+		S.Use = 0.f;
+	}
+	LevelHxp += Hxp;
+	LevelNxp += Nxp;
 	Xp += Nxp;
-	UE_LOG(LogHydra, Log, TEXT("HydraXp t=%.2f who=%s nxp=%.1f xp=%.1f need=%.1f level=%d"), UHydraDevSubsystem::ClockOf(this), *C->GetLogId(), Nxp, Xp,
-		HydraCombatMath::XpForNextLevel(V.progression, Level), Level);
+	UE_LOG(LogHydra, Log, TEXT("HydraXp t=%.2f who=%s nxp=%.1f hxp=%.1f xp=%.1f need=%.1f level=%d hardship=%.3f"), Clock, *Who, Nxp, Hxp, Xp,
+		HydraCombatMath::XpForNextLevel(V.progression, Level), Level, GetHardship());
+
+	// Level-ups. Each gives automatic skill points by the hardship rating of the level, split
+	// in proportion to the hXP each skill got in it (a skill with an instinct counts more).
+	const int32 LevelCap = C->GetStats().LevelCap;
+	const float Hardship = GetHardship();
+	const float Points = HydraCombatMath::SkillPoints(V.skill_points, Hardship);
+	TArray<float> Weights;
+	TArray<int32> Levels;
+	TArray<float> Progress;
+	for (const FHydraSkillState& S : Skills)
+	{
+		Weights.Add(S.LevelHxp * HydraCombatMath::InstinctShareFactor(V.instinct, S.InstinctRatio));
+		Levels.Add(S.Level);
+		Progress.Add(S.Progress);
+	}
 	bool bLevelled = false;
 	while (Level < LevelCap && Xp >= HydraCombatMath::XpForNextLevel(V.progression, Level))
 	{
@@ -203,21 +273,9 @@ void UHydraProgressionComponent::ServerAddXp(float Nxp)
 		{
 			++OpenMilestones;
 		}
-		UE_LOG(LogHydra, Log, TEXT("HydraLevelUp t=%.2f who=%s level=%d cap=%d milestone=%d open_milestones=%d"), UHydraDevSubsystem::ClockOf(this), *C->GetLogId(),
-			Level, LevelCap, bMilestone ? 1 : 0, OpenMilestones);
-		// Every skill with enough skill XP rises - at most one level per level-up and skill,
-		// and never above the character level.
-		for (FHydraSkillState& S : Skills)
-		{
-			const float Need = HydraCombatMath::SkillXpForNextLevel(V.skills, S.Level);
-			if (S.Level < Level && S.Xp >= Need)
-			{
-				S.Xp -= Need;
-				++S.Level;
-				UE_LOG(LogHydra, Log, TEXT("HydraSkillUp t=%.2f who=%s skill=%s level=%d xp_left=%.1f"), UHydraDevSubsystem::ClockOf(this), *C->GetLogId(),
-					*S.Id.ToString(), S.Level, S.Xp);
-			}
-		}
+		UE_LOG(LogHydra, Log, TEXT("HydraLevelUp t=%.2f who=%s level=%d cap=%d milestone=%d open_milestones=%d hardship=%.3f skill_points=%.3f"), Clock, *Who,
+			Level, LevelCap, bMilestone ? 1 : 0, OpenMilestones, Hardship, Points);
+		HydraCombatMath::DistributeSkillPoints(Points, Weights, Level, Levels, Progress);
 	}
 	if (Level >= LevelCap)
 	{
@@ -225,41 +283,22 @@ void UHydraProgressionComponent::ServerAddXp(float Nxp)
 	}
 	if (bLevelled)
 	{
+		for (int32 i = 0; i < Skills.Num(); ++i)
+		{
+			FHydraSkillState& S = Skills[i];
+			if (Levels[i] != S.Level || !FMath::IsNearlyEqual(Progress[i], S.Progress))
+			{
+				UE_LOG(LogHydra, Log, TEXT("HydraSkillUp t=%.2f who=%s skill=%s level=%d was=%d progress=%.3f level_hxp=%.2f"), Clock, *Who, *S.Id.ToString(),
+					Levels[i], S.Level, Progress[i], S.LevelHxp);
+			}
+			S.Level = Levels[i];
+			S.Progress = Progress[i];
+			S.LevelHxp = 0.f;
+		}
+		// The counters of the level start again.
+		LevelHxp = 0.f;
+		LevelNxp = 0.f;
 		Changed();
-	}
-}
-
-void UHydraProgressionComponent::ServerAddSkillXp(FName SkillId, float Amount)
-{
-	const AHydraCharacter* C = GetCharacter();
-	if (!C || C->IsAIControlledCharacter() || SkillId.IsNone() || Amount <= 0.f)
-	{
-		return;
-	}
-	FHydraSkillState* Skill = Skills.FindByPredicate([SkillId](const FHydraSkillState& S) { return S.Id == SkillId; });
-	if (Skill)
-	{
-		Skill->PendingXp += HydraCombatMath::SkillXpGain(UHydraValuesSubsystem::Get(this).instinct, Amount, Skill->InstinctRatio);
-	}
-}
-
-void UHydraProgressionComponent::ServerEndFight(bool bVictory)
-{
-	const AHydraCharacter* C = GetCharacter();
-	for (FHydraSkillState& S : Skills)
-	{
-		if (S.PendingXp <= 0.f)
-		{
-			continue;
-		}
-		if (bVictory)
-		{
-			S.Xp += S.PendingXp;
-		}
-		UE_LOG(LogHydra, Log, TEXT("HydraSkillXp t=%.2f who=%s skill=%s %s=%.1f xp=%.1f need=%.1f level=%d"), UHydraDevSubsystem::ClockOf(this),
-			C ? *C->GetLogId() : TEXT("?"), *S.Id.ToString(), bVictory ? TEXT("credited") : TEXT("dropped"), S.PendingXp, S.Xp,
-			HydraCombatMath::SkillXpForNextLevel(UHydraValuesSubsystem::Get(this).skills, S.Level), S.Level);
-		S.PendingXp = 0.f;
 	}
 }
 
@@ -286,13 +325,6 @@ void UHydraProgressionComponent::ServerAddImprintProgress(float Amount)
 	}
 }
 
-void UHydraProgressionComponent::ServerSetImprintLevel(int32 NewLevel)
-{
-	ImprintLevel = FMath::Clamp(NewLevel, 0, FMath::Max(0, UHydraValuesSubsystem::Get(this).imprint.max_level));
-	AwakenElementSkill();
-	Changed();
-}
-
 bool UHydraProgressionComponent::ServerChoose(FName Choice)
 {
 	AHydraCharacter* C = GetCharacter();
@@ -301,7 +333,6 @@ bool UHydraProgressionComponent::ServerChoose(FName Choice)
 	{
 		return false;
 	}
-	const FHydraValues& V = Subsystem->GetValues();
 	if (Choice == HydraProgression::ChoiceImprint && CanRaiseImprint())
 	{
 		ImprintProgress = 0.f;
@@ -328,8 +359,9 @@ bool UHydraProgressionComponent::ServerChoose(FName Choice)
 		S.InstinctRatio = FMath::Max(S.InstinctRatio, HydraCombatMath::InstinctRatio(S.Level, OldCap));
 		Instincts += FString::Printf(TEXT("%s%s:%.2f"), Instincts.IsEmpty() ? TEXT("") : TEXT(","), *S.Id.ToString(), S.InstinctRatio);
 		S.Level = 0;
-		S.Xp = 0.f;
-		S.PendingXp = 0.f;
+		S.Progress = 0.f;
+		S.LevelHxp = 0.f;
+		S.Use = 0.f;
 	}
 	for (const FName Id : NewDef->skills)
 	{
@@ -337,6 +369,8 @@ bool UHydraProgressionComponent::ServerChoose(FName Choice)
 	}
 	Level = 0;
 	Xp = 0.f;
+	LevelHxp = 0.f;
+	LevelNxp = 0.f;
 	OpenMilestones = 0;
 	ImprintProgress = 0.f;
 	// The form built on an imprint keeps it at level 1; every other imprint is reset.
@@ -346,4 +380,51 @@ bool UHydraProgressionComponent::ServerChoose(FName Choice)
 		*OldForm.ToString(), *NewForm.ToString(), OldLevel, ImprintLevel, *Instincts);
 	C->ServerEvolveTo(NewForm);
 	return true;
+}
+
+// --- Test tools --------------------------------------------------------------------------
+
+void UHydraProgressionComponent::ServerSetLevel(int32 NewLevel)
+{
+	const AHydraCharacter* C = GetCharacter();
+	if (!C)
+	{
+		return;
+	}
+	// Attributes and bars follow through the stats; skills stay inside the limit.
+	Level = FMath::Clamp(NewLevel, 0, FMath::Max(0, C->GetStats().LevelCap));
+	Xp = 0.f;
+	LevelHxp = 0.f;
+	LevelNxp = 0.f;
+	for (FHydraSkillState& S : Skills)
+	{
+		S.Level = FMath::Min(S.Level, Level);
+		S.LevelHxp = 0.f;
+	}
+	AwakenElementSkill();
+	Changed();
+}
+
+void UHydraProgressionComponent::ServerSetSkill(FName SkillId, int32 NewLevel, float NewProgress)
+{
+	// Only skills the character has; at most the character level, as the rule says.
+	if (FHydraSkillState* Skill = Skills.FindByPredicate([SkillId](const FHydraSkillState& S) { return S.Id == SkillId; }))
+	{
+		Skill->Level = FMath::Clamp(NewLevel, 0, Level);
+		Skill->Progress = FMath::Clamp(NewProgress, 0.f, 0.999f);
+		Changed();
+	}
+}
+
+void UHydraProgressionComponent::ServerSetImprintLevel(int32 NewLevel)
+{
+	ImprintLevel = FMath::Clamp(NewLevel, 0, FMath::Max(0, UHydraValuesSubsystem::Get(this).imprint.max_level));
+	ImprintProgress = 0.f;
+	AwakenElementSkill();
+	Changed();
+}
+
+void UHydraProgressionComponent::ServerOpenMilestone()
+{
+	++OpenMilestones;
 }

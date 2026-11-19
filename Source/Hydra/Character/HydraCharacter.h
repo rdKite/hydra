@@ -197,6 +197,9 @@ public:
 
 	// --- Combat (server) -------------------------------------------------------------------
 
+	/** Server: the bolt spent mana - it counts as use of the projectile skill (and of fire magic for a fire bolt). */
+	void ServerNoteBoltMana(float Mana) const;
+
 	/** Server: a dodge step starts here (for the check whether it avoided a hit). */
 	void ServerNoteDodge();
 
@@ -243,6 +246,9 @@ public:
 	/** Move the character and forget its pose history (respawn; also a dev command). */
 	void ServerTeleport(const FVector& Location, float Yaw);
 
+	/** Full stamina and mana, nothing else touched (dev command for scripted runs). */
+	void ServerRefill();
+
 	/** Stamina to a fixed value (dev command for scripted runs). */
 	void ServerSetStamina(float Value);
 
@@ -282,6 +288,7 @@ protected:
 	void ApplyFormLook();
 	void UpdateMeshAnimation();
 	void UpdateBurning();
+	void UpdateRegenTags();
 	void SetBurningStacks(int32 NewStacks, const TCHAR* Reason);
 
 	// Combat, server (HydraCharacterCombat.cpp).

@@ -287,7 +287,7 @@ void AHydraAIController::Tick(float DeltaSeconds)
 	// A caster keeps its distance while it has the mana for a bolt and a clear line to its
 	// target; otherwise it comes close.
 	const bool bCaster = Stats.bCanCast && !Stats.bHasShield && A.cast_range_m > 0.f;
-	const bool bRanged = bCaster && Self->GetMana() >= Stats.Bolt.mana_cost
+	const bool bRanged = bCaster && Self->GetMana() >= UHydraValuesSubsystem::Get(this).bolt.mana_cost
 		&& !IsWayBlocked(Self, Self->GetActorLocation(), ToTarget.GetSafeNormal2D(), FMath::Max(0.f, ToTarget.Size2D() - T->GetCapsuleComponent()->GetScaledCapsuleRadius() - 10.f));
 	const float CastRangeCm = A.cast_range_m * 100.f;
 	const float StandGap = bRanged ? CastRangeCm * HydraAI::StandAtCastRangeRatio : ReachCm * HydraAI::StandAtReachRatio;

@@ -628,34 +628,34 @@ Needed by Phase 1, not set in the notes – all TBD (tune in playtests):
 
 ## 23. Rules as built in M2 (starting formulas)
 
-> **M4b replaces parts of §23–§25** with the attribute model of §26: attack and dodge cost,
-> regeneration delay, interrupt, block cost, rebound, weak point, resistance, the level
-> bonuses, what a skill level does, the dodge skill, skill XP and skill levels
-> (now hXP and automatic skill points). The build session updates these tables
-> once M4b is built.
+> **Updated for M4b** (attribute model and skill growth, §26): the tables of §23–§25 say what
+> is in the game now. Rows that M4b changed are marked *(M4b)*.
 
 The sections above leave several formulas open ("TBD"). M2 needed them, so these are the
 formulas in the game now. They are **assumptions to be confirmed or changed in playtests**;
-all numbers are in `data/values.json` (see `data/CHANGELOG.md` v2). "Weight ratio" = weight
-÷ strength; weight = body plus load.
+all numbers are in `data/values.json` (see `data/CHANGELOG.md`, v2 and v7). Weight = body
+plus load, in kg; g = attribute gain = `progression.level_growth` × level.
 
 | Rule | Formula (values.json section) |
 |---|---|
-| Unit | body weight, weapon weight and strength share one unit; at weight ratio 1 the rules below apply unchanged |
-| Turn rate | `base ÷ ratio^exponent`, capped; × `blocking_factor` while blocking, × `attacking_factor` while an attack binds; never below the floor (`turn_rate`) |
-| Attack cost | `light/heavy_stamina_per_weight_ratio × weapon weight ÷ strength` (`attack`); skill factor comes with M4 |
-| Dodge cost | `dodge.stamina_cost × weight ratio` of the character |
+| Unit | *(M4b)* weights in kg (strength in the same unit). Body attributes per form (`forms.<id>`: vitality, endurance, spirit, strength, dexterity) × (1 + g); HP = 10 × vitality, stamina = 10 × endurance, mana = 10 × spirit (only for a form with a spell form) |
+| Turn rate | `base ÷ ratio^exponent` with ratio = total weight ÷ strength (the grown strength), capped; × `blocking_factor` while blocking, × `attacking_factor` while an attack binds; never below the floor (`turn_rate`) |
+| Attack cost | *(M4b)* `attack.light/heavy_stamina_per_weight_ratio × weapon weight ÷ body weight × weapons.<id>.demand`; a body attack uses `weapons.<id>.cost_ratio` in place of weight ÷ body weight. Neither strength, level nor skill changes it. Longsword: 490 light, 784 heavy; slam: 229 / 366 |
+| Dodge cost | *(M4b)* `forms.<id>.dodge_stamina_cost × total weight ÷ body weight` |
+| Regeneration | *(M4b)* stamina: `forms.<id>.stamina_regen_share_per_s` × maximum per second; **none while an action runs** – an attack from the press to the end of its recovery, a dodge step and its recovery, a raised block. No delay afterwards (`stamina.regen_delay_after_action_ms` is gone). The owning client shows the same from its own predicted actions |
+| Damage | *(M4b)* `base damage × (1 + skill bonus + attribute bonus) × charge × chain × weak point`, then through the target's resistance curve (§24). Skill bonus = `skills.damage_bonus_per_level` × level of the weapon's skill (instinct levels count). Attribute bonus = s × `damage.strength_bonus_per_gain` × g + (1 − s) × `damage.dexterity_bonus_per_gain` × g with s = `weapons.<id>.strength_share`. Base damage is stored per weapon (`light.damage`, `heavy.damage`) and follows from the cost: `damage.efficiency_base` × (weight ÷ `efficiency_reference_kg`)^`efficiency_exponent` × light cost – an automation test checks that the stored numbers match (longsword 200 / 400; slam 95 / 190 with the reference efficiency, as it has no weight) |
 | Heavy attack | every attack starts as a light one and pays the light cost. If the button is still held when the light wind-up is over and the extra stamina is there, it becomes a heavy attack (pays the difference), strikes on release – not before `min_windup_ms` – or at `max_charge_ms`; damage grows linearly to × `full_charge_damage_factor` |
 | Chain | damage × (1 + `damage_bonus_per_hit` × hits so far, capped at `max_bonus`); ends `reset_after_ms` after the last hit or when the attacker is interrupted (`chain`). Blocked hits get the multiplier but do not advance the chain |
-| Interrupt | a hit cancels the target's attack while it binds (wind-up, charge, strike) if damage ≥ `damage_threshold_per_weight × (target weight + attacking_weapon_weight_factor × its weapon weight)` (`interrupt`). No stun |
-| Block cost | `stamina_cost_per_hit × r × (heavy_attack_factor for heavy attacks)`, r = attacking weapon weight ÷ shield weight, limited to `weight_ratio_min … max` (`block`) |
-| Rebound | attacker loses `rebound_attacker_stamina_ratio × its attack cost ÷ r` |
+| Interrupt | *(M4b)* a hit cancels the target's attack while it binds (wind-up, charge, strike) if its damage – after resistance and block – is at least `interrupt.threshold_share_of_max_hp` × the target's maximum HP. Also a hit that landed in a block can interrupt. No stun |
+| Block cost | *(M4b)* blocked damage = damage after resistance × `block_damage_reduction` of the shield. The blocker pays blocked damage × share, share = `block.blocker_share × block.reference_shield_ratio ÷ (shield weight ÷ body weight)`, limited to `share_min … share_max` |
+| Rebound | *(M4b)* the attacker loses blocked damage × `block.rebound_share` (not for bolts) |
+| Holding a block | *(M4b)* `block.hold_stamina_per_s_per_weight_ratio × shield weight ÷ body weight` stamina per second while raised (taken in steps of 0.1 s). At empty stamina the block stays up; the next hit breaks it |
 | Block break | if the blocker cannot pay the block cost: its stamina goes to 0, the block ends, the hit lands in full |
-| Weak point | attacker inside `back_half_arc_deg` around the target's back: damage × `1 + (damage_multiplier − 1) × reference_weapon_weight_ratio ÷ (weapon weight ÷ strength)`, capped at `max_damage_multiplier` (`weak_point`) |
+| Weak point | *(M4b)* attacker inside `back_half_arc_deg` around the target's back: damage × (`weak_point.damage_multiplier + multiplier_per_dexterity_gain × g` of the attacker), capped at `max_damage_multiplier`. The weapon's weight plays no role |
 | Hit area | target's body (capsule radius) reaches into `reach_m` and its centre is inside `half_arc_deg` of the attacker's facing; checked every server tick during `hit_ms`, each target once |
 | Lag compensation | targets are checked where they were `min(attacker's ping, max_rewind_ms)` ago: position (hit area), facing and block state (block arc, weak point). The attacker itself is taken at the server's present |
 | Bind | from the press to the end of the strike: no dodge, no block, slow turning, movement × `attack.move_speed_ratio`; in the recovery a dodge may cancel |
-| Dodge | a step of `distance_m` over `duration_ms` in the input direction (backwards without input), then `recovery_ms` without actions; no invulnerability |
+| Dodge | a step of `distance_m` over `duration_ms` in the input direction (backwards without input), then `recovery_ms` without actions; no invulnerability. *(M4b)* A capability, not a skill: distance × (1 + `dodge.distance_per_dexterity_gain` × g), duration ÷ (1 + `dodge.speed_per_dexterity_gain` × g) |
 
 Not built in M2 (not on the roadmap list): feints (out of the plan, see §21), block with the weapon, stamina cost for
 running, hit stop as more than a short freeze of the pose.
@@ -669,40 +669,40 @@ Like §23: assumptions to be confirmed or changed in playtests; numbers in
 |---|---|
 | Choosing a form | arena start option per player (`?Form=slime`, see README); no menu yet |
 | Size | every form has a body radius and height (`forms.<id>`); hit areas and movement use them |
-| Resistance | damage × (1 − resistance of the target for that type); types: slash, pierce, blunt, fire (`forms.<id>.resistance`). The slime resists slash and pierce and is vulnerable to blunt |
+| Resistance | *(M4b)* points per type in `forms.<id>.resistance` (slash, pierce, blunt, fire). Damage × (1 − p ÷ (p + `resistance.curve_constant`)) for p ≥ 0, × (1 + \|p\| ÷ constant) for a weakness. The slime has 100 points against slash and pierce (half damage) and −25 against blunt |
 | Slime buttons | weapon-hand button = slam (press light, hold heavy, like a weapon); off-hand button = the bolt (press, hold = charge). No block. Dodge and jump like everyone |
-| Slam | a body attack with its own numbers (`weapons.slime_slam`), blunt, costs stamina by its weight like a weapon; chain, interrupt, weak point as for weapons |
-| Bolt | costs mana: the base cost at the press, the extra for the charge at the release (cut down to what the mana pays for). Wind-up, then it leaves; held longer it charges up to `max_charge_ms`: damage and cost grow linearly to their full-charge factors. Binds like an attack until it is out |
+| Slam | a body attack with its own numbers (`weapons.slime_slam`), blunt; *(M4b)* its stamina cost comes from its `cost_ratio` (it has no weight), its attribute bonus from its `strength_share` (0.7); chain, interrupt, weak point as for weapons |
+| Bolt | costs mana: the base cost at the press, the extra for the charge at the release (cut down to what the mana pays for). Wind-up, then it leaves; held longer it charges up to `max_charge_ms`: damage and cost grow linearly to their full-charge factors. Binds like an attack until it is out. *(M4b)* Damage = `bolt.damage` × (1 + `skills.damage_bonus_per_level` × projectile level [+ fire magic level + `imprint.damage_bonus_per_level` × imprint level for a fire bolt]) × charge; no strength or dexterity bonus. The mana cost is the same for everyone |
 | Aiming | the cast is aimed where the camera looks; from the press until the bolt is out the caster **follows the camera direction at its turn rate while an attack binds** (like a raised block; decision 2026-11-16) and the bolt leaves along the facing it has reached. It flies level and straight at `bolt.speed_m_s` up to `bolt.range_m` (no gravity yet) |
 | Element | without an element the bolt deals blunt damage and nothing else. With fire awakened (M4 earns that; M3 has a start option and a dev command) it deals fire damage, adds `burning.stacks_per_hit` and leaves a fire field where it lands |
-| Bolt against a block | it bursts on the shield: `block.projectile_damage_through` of the damage gets through, the blocker pays `block.stamina_cost_per_hit`, no burning stack, and the fire field appears in front of the blocker (one body radius plus one field radius towards the caster). Empty stamina: block break, full hit |
+| Bolt against a block | it bursts on the shield: `block.projectile_damage_through` of the damage gets through; *(M4b)* the blocker pays the damage the shield took × its block share (as for a strike), no rebound; no burning stack, and the fire field appears in front of the blocker (one body radius plus one field radius towards the caster). Empty stamina: block break, full hit |
 | Fire field | a circle of `fire_field.radius_m` for `duration_ms`; it burns everyone in it, the caster too |
-| Burning | in a field: first stack at once, then +1 per `stack_interval_ms`; outside −1 per interval (it keeps burning after leaving). The interval is divided by (1 − fire resistance). Damage: `damage_per_s_per_stack` × stacks, in ticks of `tick_interval_ms`, as fire damage |
-| Mana | per form (`mana_max`, `mana_regen_per_s`); regenerates without a delay; the humanoid has none |
+| Burning | in a field: first stack at once, then +1 per `stack_interval_ms`; outside −1 per interval (it keeps burning after leaving). *(M4b)* The interval is divided by (1 − the reduction of the fire resistance points). Damage: `damage_per_s_per_stack` × stacks, in ticks of `tick_interval_ms`, as fire damage |
+| Mana | *(M4b)* 10 × spirit × (1 + g) for a form with a spell form (the humanoid has no mana bar); regenerates with `forms.<id>.mana_regen_share_per_s` × maximum per second, **not while a bolt is wound up or charged** |
 
 ## 25. Rules as built in M4 (progression and waves, starting formulas)
 
 Like §23 and §24: assumptions to be confirmed or changed in playtests; numbers in
-`data/values.json` (`data/CHANGELOG.md` v5).
+`data/values.json` (`data/CHANGELOG.md` v5 and v7).
 
 | Rule | As built |
 |---|---|
 | Start | every player starts at `forms.<id>.start_level` with every skill of the form at `start_skill_level` (humanoid 9 / 6, slime 29 / 20); nothing is kept between sessions |
-| Character level | nXP for level L → L + 1 = `xp_base + xp_per_level × L` (`progression`). Per level: maximum HP × (1 + `hp_bonus_per_level` × level), damage of weapon, body attack, bolt and element body × (1 + `damage_bonus_per_level` × level). No level above the form's `level_cap`; nXP at the cap is lost |
-| nXP | an enemy gives `nxp_base × (1 + nxp_bonus_per_enemy_level × its level)` – by its type and level only. **Every player in the arena gets it in full** (assumption; groups and sharing are out of scope) |
-| Skills of a form | from `forms.json`; plus the element skill (fire magic) once the element is awakened |
-| Skill XP | per landed, unblocked weapon or body attack (`xp_per_hit`, to the weapon's skill), per hit taken on the block (`xp_per_block`, shield skill), per dodge that avoided a hit (`xp_per_dodge`), per bolt that hit unblocked (`xp_per_bolt_hit`, to projectile and, for a fire bolt, also to fire magic). Earned XP is **pending** until the next enemy is defeated, then credited; a player who is defeated loses only what is pending since then ("only on victory", per enemy – decision 2026-11-16) |
-| Dodge counts | only against a real attack: during the strike the server finds the target outside the hit area, the target started a dodge within the last `dodge.duration_ms + recovery_ms`, and the place where the step began was inside the hit area. Once per attack. (Melee only; bolts do not count yet) |
-| Skill levels | at each character level-up every skill whose credited XP reaches `xp_base + xp_per_level × skill level` rises by one (at most one per level-up and skill, never above the character level); the rest of the XP waits. The last enemy of a wave credits first and gives its nXP second, so that level-up can already raise skills |
-| What a skill level does | × (1 + `damage_bonus_per_level` × level) damage and × max(`min_cost_factor`, 1 − `cost_reduction_per_level` × level) cost for the skill's actions (weapon skill: attacks; shield skill: cost of a blocked hit; dodge: the step; projectile: the bolt's damage and mana). Also: block arc + `block_arc_deg_per_level` per level (shield), dodge step × (1 + `dodge_distance_bonus_per_level` × level), fire field radius × (1 + `field_radius_bonus_per_level` × fire magic level) |
+| Character level | nXP for level L → L + 1 = `xp_base + xp_per_level × L` (`progression`). *(M4b)* Each level raises every body attribute by `level_growth` (2 %) of the form's base value – nothing else. No level above the form's `level_cap`; nXP at the cap is lost |
+| nXP | an enemy gives `nxp_base × (1 + nxp_bonus_per_enemy_level × its level)` – by its type and level only – *(M4b)* and hXP = nXP × `enemies.<id>.hxp_factor` (at least 1; the stand-in for the threat rating). **Every player in the arena gets both in full** (assumption; groups and sharing are out of scope) |
+| Skills of a form | from `forms.json`; plus the element skill (fire magic) once the element is awakened. *(M4b)* Dodge is a capability and no skill any more |
+| Skill XP | *(M4b)* replaced by **hXP by use**: the server sums per player and skill the stamina and mana its actions spent since the last defeated enemy – attack cost → the weapon's skill (the slam for the slime); holding a block and the stamina for blocked hits → shield fighting; bolt mana → projectile and, for a fire bolt, the same amount also to fire magic; dodging counts for no skill. When an enemy is defeated its hXP are split over the skills in proportion to that use and added to each skill's hXP of the current level. No use at all: the hXP go to no skill but still count for the hardship rating. A defeated player loses only the use counted since the last defeated enemy |
+| Dodge counts | *(M4b)* only a metric now ("dodges that avoided a hit"): during the strike the server finds the target outside the hit area, the target started a dodge within the last `dodge.duration_ms + recovery_ms`, and the place where the step began was inside the hit area. Once per attack; melee only |
+| Skill levels | *(M4b)* **automatic skill points** at each character level-up: points = `skill_points.base + skill_points.factor × log₂(hardship rating)`, hardship rating = hXP ÷ nXP earned in the level (at least 1). They are split in proportion to each skill's hXP of the level × (1 + `instinct.xp_bonus_max` × instinct ratio). Each skill has a progress bar: whole points raise its level, the fraction stays on the bar. No skill rises above the character level; what it cannot take goes to the other skills used in the level, and if there is none it waits on the bar (shown full). If no skill was used the points are not handed out. Then the counters of the level start again. Several level-ups from one enemy each give the points of that hardship rating. The enemy's hXP are credited before its nXP |
+| What a skill level does | *(M4b)* effect, never lower costs: `skills.damage_bonus_per_level` × level as a progress bonus on the damage of the skill's actions (added to the attribute bonus, see §23); shield fighting: block arc + `block_arc_deg_per_level` per level; fire magic: fire field radius × (1 + `field_radius_bonus_per_level` × level) |
 | Imprint progress | from contact with fire: fire damage taken × `progress_per_damage_taken` plus fire damage dealt × `progress_per_damage_dealt` (bolt, burning, element body). Progress is kept up to what the next level needs (`progress_first_level`, later `progress_per_further_level`) |
 | Milestone | reaching a level divisible by `milestone_every_levels`, or the level cap, opens a milestone. **It stays open until it is used** (assumption: so the imprint can still be earned after the level was reached). The HUD offers only what was earned |
-| Imprint | at an open milestone with enough progress: the imprint starts or rises by one (key K), the milestone is used, progress starts again. Per level: fire resistance + `resistance_per_level`, fire damage × (1 + `damage_bonus_per_level` × level). Level 1 awakens fire: fire magic starts at level 1, a bolt carries fire |
+| Imprint | at an open milestone with enough progress: the imprint starts or rises by one (key K), the milestone is used, progress starts again. *(M4b)* Per level: + `resistance_points_per_level` fire resistance points and + `damage_bonus_per_level` as a progress bonus on fire damage. Level 1 awakens fire: fire magic starts at level 1, a bolt carries fire |
 | Evolution | offered (key J) if the form has an evolution (`forms.json`), a milestone is open **or the level cap is reached**, and the new form's imprint is there or earned (it is then taken together with the evolution). Slime → fire elemental slime |
-| After the evolution | level 0, nXP 0, every skill level 0 and skill XP 0, milestones used; the fire elemental slime keeps the fire imprint at level 1 (fire magic 1); full bars with the base values of the new form |
-| Instinct | per skill the ratio old skill level ÷ old level cap is kept (the highest ever reached). The skill counts as `skill_level_bonus_max × ratio` levels higher for good, and earns × (1 + `xp_bonus_max × ratio`) skill XP. Skills the new form lacks keep their ratio for later |
-| Fire elemental slime | own numbers in `forms.fire_elemental_slime`; shown with the slime's model, tinted and glowing. **Element body:** an unblockable `element_body_damage` × level factor of fire damage back to whoever lands a melee hit on it (after the target's fire resistance) |
-| Enemy types | `enemies.json` (form, imprint) with `enemies.<id>` in `values.json`: level, skill level (all skills of the form), nXP and the AI numbers – reaction time, error rate, pauses and chances per type. They are ordinary characters: same stamina, mana, turn rate, telegraphs, level and skill rules |
+| After the evolution | level 0, nXP 0, every skill level 0 with an empty bar, counters of the level 0, milestones used; the fire elemental slime keeps the fire imprint at level 1 (fire magic 1); full bars with the base attributes of the new form – it is weaker at first |
+| Instinct | per skill the ratio old skill level ÷ old level cap is kept (the highest ever reached). The skill counts as `skill_level_bonus_max × ratio` levels higher for good; *(M4b)* its share of the hXP counts × (1 + `xp_bonus_max × ratio`) when skill points are split. Skills the new form lacks keep their ratio for later |
+| Fire elemental slime | own numbers in `forms.fire_elemental_slime`; shown with the slime's model, tinted and glowing. **Element body:** *(M4b)* `element_body_damage` × (1 + imprint bonus of the body) of fire damage back to whoever lands a melee hit on it, through the attacker's fire resistance (no level factor) |
+| Enemy types | `enemies.json` (form, imprint) with `enemies.<id>` in `values.json`: level, skill level (all skills of the form), nXP, hXP factor and the AI numbers – reaction time, error rate, pauses and chances per type. They are ordinary characters: same attributes by level, stamina, mana, turn rate, telegraphs and skill rules |
 | Enemy behaviour | as the practice opponent of M2. New: a form with the bolt and `cast_range_m` > 0 stands at 60 % of that range while it has the mana and casts where its target stands (no leading – walking sideways avoids the bolt); without mana it comes close and slams |
 | Sides | AI characters do not hurt each other with attacks and bolts (assumption; their fire fields burn everyone). Players can hurt each other |
 | Waves | `waves.list` in order, `first_delay_ms` after the start, `break_ms` after a wave is cleared; enemies appear at spots near the arena border. After the last wave the list starts again with every enemy `level_bonus_per_loop` levels higher. A defeated enemy lies for `character.respawn_delay_ms` and is removed; a defeated player respawns as before, the wave goes on |
@@ -765,6 +765,17 @@ training) is the one number that strength and dexterity bonuses scale with.
 Unchanged: turn rate (weight ÷ strength, now with the grown strength), imprint progress and
 milestones, evolution and instinct (except its XP bonus, see above), waves, metrics, lag
 compensation.
+
+**As built (M4b, values v7).** All of the above; the tables of §23–§25 carry the result.
+Numbers the build session chose (guesses, `data/CHANGELOG.md` v7): dexterity 100 / 80 / 90
+(humanoid, slime, fire elemental slime); regeneration shares 0.35 / 0.40 / 0.37 per second
+(stamina) and 0.10 (mana); dodge cost 190 / 140 / 130; attack cost factors 22,867 and 36,587
+(longsword 490 and 784); block: 875 per weight ratio and second (50 stamina per second with
+the round shield), blocker share 1.0 at the round shield's ratio, limits 0.5–2.0, rebound
+share 0.4; interrupt at 25 % of maximum HP; weak point 1.5 + 0.5 × dexterity gain; dodge
++25 % distance and speed per dexterity gain; bolt 150 damage for 200 mana; burning 10 per
+second and stack; element body 40; imprint 10 resistance points per level and thresholds
+1,000 / 2,500 (the v6 numbers × 10, like every damage number).
 
 ## 27. Debug panel (M5 playtest kit, decision 2026-11-19)
 

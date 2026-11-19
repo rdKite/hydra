@@ -26,8 +26,8 @@ public:
 
 /**
  * Stamina regeneration: lasts forever, adds Data.Amount every TickS seconds, pauses while
- * the character owns State.StaminaRegenBlocked. The caller passes
- * stamina.regen_per_s x TickS as the amount.
+ * the character owns State.StaminaRegenBlocked (an action runs). The caller passes
+ * regeneration per second x TickS as the amount.
  */
 UCLASS()
 class HYDRA_API UHydraGE_StaminaRegen : public UHydraGameplayEffect
@@ -49,23 +49,11 @@ public:
 	UHydraGE_ManaChange();
 };
 
-/** Mana regeneration: lasts forever, adds Data.Amount every TickS seconds (no delay: mana has none). */
+/** Mana regeneration: lasts forever, adds Data.Amount every TickS seconds, pauses while the character owns State.ManaRegenBlocked. */
 UCLASS()
 class HYDRA_API UHydraGE_ManaRegen : public UHydraGameplayEffect
 {
 	GENERATED_BODY()
 public:
 	UHydraGE_ManaRegen();
-};
-
-/**
- * Regeneration delay after an action: grants State.StaminaRegenBlocked for Data.Duration.
- * Applying it again restarts the delay.
- */
-UCLASS()
-class HYDRA_API UHydraGE_StaminaRegenDelay : public UHydraGameplayEffect
-{
-	GENERATED_BODY()
-public:
-	UHydraGE_StaminaRegenDelay();
 };

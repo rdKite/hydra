@@ -9,17 +9,19 @@
 #         Saved/Screenshots/LiveWaves/*.png, Saved/LiveWaves/metrics/metrics_*.csv
 #
 # The run reads a copy of data/ (Saved/LiveWaves/data) with a few numbers changed so that it
-# is short and the same every time: two small waves, low thresholds for level, skill and
-# imprint, weak humanoids (check_live_waves.py --edit). The rules are the game's; the checker
+# is short and the same every time: two small waves, low thresholds for level and imprint,
+# a grunt that counts as hard, weak bodies (check_live_waves.py --edit). The rules are the game's; the checker
 # works out what it expects from that copy. The enemies start passive and are switched to
 # active at the end.
 #
 # What happens when (seconds on the dev clock; the first wave is already there at 0).
 # H = host (slime), C = client (humanoid).
-#    1    baseline: start levels, skill levels, wave 1 = one grunt at (-1500, 0)
-#    2.2  the grunt attacks, H dodges out of the hit area: counts for the dodge skill
-#    4    H slams the grunt twice: defeated. Wave cleared: skill XP credited, then nXP -
-#         H reaches level 30 (cap, milestone), its slam skill rises; C levels up too
+#    1    baseline: start levels, attributes by level, wave 1 = one grunt at (-1500, 0)
+#    2.2  the grunt attacks, H dodges out of the hit area (a capability: no skill grows)
+#    3.7  H casts a bolt at the grunt and slams it twice: defeated. Its hXP go to slam and
+#         projectile by the stamina and mana they spent; its nXP take H to level 30 (cap,
+#         milestone); the level-up gives automatic skill points by the hardship rating,
+#         split by those hXP. C levels up too, without points for skills it did not use
 #    9.5  wave 2: an ember slime (element body) at (-1300, -1300) and a grunt
 #   10.6  C hits the ember slime twice: fire damage back = contact with fire; 12.5 C starts
 #         its fire imprint at its open milestone
@@ -45,7 +47,7 @@ rm -f "$ROOT/Saved/Logs/WavesHost.log" "$ROOT/Saved/Logs/WavesClient.log"
 
 # In front of the grunt, 50 degrees to its right: the step back from there is clear of the cover.
 H="1:HydraStats;1.5:HydraTeleport|-1416|-100|130;2.2:HydraAI|attack|0;2.25:HydraDodge;3.2:HydraStats"
-H+=";3.5:HydraTeleport|-1416|-100|130;4:HydraAttack|0;4.9:HydraAttack|0;6.5:HydraStats;9.5:HydraStats"
+H+=";3.5:HydraTeleport|-1416|-100|130;3.7:HydraOffHand|0;4.4:HydraAttack|0;5.3:HydraAttack|0;6.5:HydraStats;9.5:HydraStats"
 H+=";13.2:HydraResetAll;13.5:HydraTeleport|-1215|-1215|225;14:HydraAttack|0;14.9:HydraAttack|0;15.8:HydraStats"
 H+=";16:HydraChoose|evolve;16.6:HydraStats;17:HydraAttack|0;17.9:HydraAttack|0;19:HydraStats;19.5:Hydra.AI|1;29:HydraStats"
 

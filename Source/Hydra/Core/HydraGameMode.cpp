@@ -227,34 +227,28 @@ void AHydraGameMode::OnCharacterDied(AHydraCharacter* Victim, AHydraCharacter* K
 	const FHydraValues& V = UHydraValuesSubsystem::Get(this);
 	if (Victim->GetEnemyId().IsNone())
 	{
-		// A defeated player loses the skill XP earned since the last defeated enemy (it is
-		// credited only on victory); there is no other penalty in the arena.
-		if (!Victim->IsAIControlledCharacter() && bWaves)
+		// A defeated player loses the use counted since the last defeated enemy (hXP are
+		// credited only on victory, per enemy); there is no other penalty in the arena.
+		if (!Victim->IsAIControlledCharacter())
 		{
-			Victim->GetProgression()->ServerEndFight(false);
+			Victim->GetProgression()->ServerDropUse();
 		}
 		return;
 	}
 	EnemiesAlive = FMath::Max(0, EnemiesAlive - 1);
 	const bool bCleared = bWaves && EnemiesAlive == 0;
-	// Victory over this enemy: the skill XP earned since the last defeated enemy is credited
-	// (decision 2026-11-16) - before its nXP, so a level-up it brings can already raise skills.
-	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
-	{
-		if (!It->IsAIControlledCharacter())
-		{
-			It->GetProgression()->ServerEndFight(true);
-		}
-	}
-	// nXP depends only on the enemy's type and level. Everyone in the arena gets it.
+	// nXP depends only on the enemy's type and level; hXP = nXP x the stand-in factor of its
+	// type. Everyone in the arena gets both in full. Each player's hXP go to its skills by the
+	// stamina and mana they spent since the last defeated enemy.
 	if (const FHydraEnemyValues* Enemy = V.enemies.Find(Victim->GetEnemyId()))
 	{
 		const float Nxp = HydraCombatMath::EnemyNxp(V.progression, Enemy->nxp_base, Victim->GetStats().Level);
+		const float Hxp = HydraCombatMath::EnemyHxp(Nxp, Enemy->hxp_factor);
 		for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
 		{
 			if (!It->IsAIControlledCharacter())
 			{
-				It->GetProgression()->ServerAddXp(Nxp);
+				It->GetProgression()->ServerEnemyDefeated(Nxp, Hxp);
 			}
 		}
 	}

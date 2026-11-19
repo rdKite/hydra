@@ -85,14 +85,26 @@ bool FHydraCombatRulesTest::RunTest(const FString& Parameters)
 	using namespace HydraCombatMath;
 	const float Tolerance = 0.001f;
 
-	// Weight costs stamina: cost = factor x weapon weight / strength.
-	TestEqual(TEXT("attack cost"), AttackStaminaCost(800.f, 2.5f, 80.f), 25.f, Tolerance);
-	TestTrue(TEXT("a heavier weapon costs more"), AttackStaminaCost(800.f, 5.f, 80.f) > AttackStaminaCost(800.f, 2.5f, 80.f));
-	TestTrue(TEXT("more strength costs less"), AttackStaminaCost(800.f, 2.5f, 160.f) < AttackStaminaCost(800.f, 2.5f, 80.f));
-	FHydraDodgeValues Dodge;
-	Dodge.stamina_cost = 20.f;
-	TestEqual(TEXT("dodge cost at ratio 1"), DodgeStaminaCost(Dodge, 1.f), 20.f, Tolerance);
-	TestEqual(TEXT("dodge cost with a heavy load"), DodgeStaminaCost(Dodge, 1.5f), 30.f, Tolerance);
+	// One quantity, one source: costs come from weight / body weight (x demand) only.
+	FHydraWeaponValues Sword;
+	Sword.weight = 1.5f;
+	Sword.demand = 1.f;
+	TestEqual(TEXT("cost ratio of a weapon = weight / body weight"), AttackCostRatio(Sword, 75.f), 0.02f, Tolerance);
+	FHydraWeaponValues Slam;
+	Slam.cost_ratio = 0.01f;
+	TestEqual(TEXT("a body attack names its cost ratio"), AttackCostRatio(Slam, 8.f), 0.01f, Tolerance);
+	TestEqual(TEXT("attack cost"), AttackStaminaCost(20000.f, 0.02f, 1.f), 400.f, Tolerance);
+	TestEqual(TEXT("demand raises the cost"), AttackStaminaCost(20000.f, 0.02f, 1.06f), 424.f, 0.01f);
+	TestEqual(TEXT("dodge cost of the bare body"), DodgeStaminaCost(190.f, 70.f, 70.f), 190.f, Tolerance);
+	TestEqual(TEXT("dodge cost with load"), DodgeStaminaCost(190.f, 77.f, 70.f), 209.f, Tolerance);
+	FHydraBlockValues Block;
+	Block.hold_stamina_per_s_per_weight_ratio = 875.f;
+	Block.blocker_share = 1.f;
+	Block.reference_shield_ratio = 0.05f;
+	Block.share_min = 0.5f;
+	Block.share_max = 2.f;
+	Block.rebound_share = 0.4f;
+	TestEqual(TEXT("holding a block: by shield weight / body weight"), BlockHoldStaminaPerS(Block, 4.f, 80.f), 43.75f, Tolerance);
 
 	// Heavy attack: charge.
 	FHydraHeavyAttackValues Heavy;
@@ -113,38 +125,41 @@ bool FHydraCombatRulesTest::RunTest(const FString& Parameters)
 	TestEqual(TEXT("third hit"), ChainMultiplier(Chain, 2), 1.2f, Tolerance);
 	TestEqual(TEXT("cap"), ChainMultiplier(Chain, 40), 1.5f, Tolerance);
 
-	// Interrupt by weight: heavy characters are hard to interrupt.
+	// Interrupt: a share of the target's maximum HP - weight and weapon play no role.
 	FHydraInterruptValues Interrupt;
-	Interrupt.damage_threshold_per_weight = 0.3f;
-	Interrupt.attacking_weapon_weight_factor = 2.f;
-	TestEqual(TEXT("threshold"), InterruptThreshold(Interrupt, 76.5f, 2.5f), 0.3f * 81.5f, Tolerance);
-	TestTrue(TEXT("a heavier target needs more damage"), InterruptThreshold(Interrupt, 200.f, 2.5f) > InterruptThreshold(Interrupt, 76.5f, 2.5f));
-	TestTrue(TEXT("a heavier weapon is harder to interrupt"), InterruptThreshold(Interrupt, 76.5f, 12.f) > InterruptThreshold(Interrupt, 76.5f, 2.5f));
+	Interrupt.threshold_share_of_max_hp = 0.25f;
+	TestEqual(TEXT("interrupt threshold"), InterruptThreshold(Interrupt, 1000.f), 250.f, Tolerance);
+	TestTrue(TEXT("more HP: harder to interrupt"), InterruptThreshold(Interrupt, 3000.f) > InterruptThreshold(Interrupt, 1000.f));
 
-	// Block cost and rebound by weight.
-	FHydraBlockValues Block;
-	Block.stamina_cost_per_hit = 24.f;
-	Block.heavy_attack_factor = 1.6f;
-	Block.weight_ratio_min = 0.25f;
-	Block.weight_ratio_max = 4.f;
-	Block.rebound_attacker_stamina_ratio = 0.15f;
-	TestEqual(TEXT("block cost: longsword on round shield"), BlockStaminaCost(Block, 2.5f, 4.f, false), 15.f, Tolerance);
-	TestEqual(TEXT("block cost: heavy attack"), BlockStaminaCost(Block, 2.5f, 4.f, true), 24.f, Tolerance);
-	TestEqual(TEXT("rebound: longsword on round shield"), ReboundStamina(Block, 25.f, 2.5f, 4.f), 6.f, Tolerance);
-	// Dagger blocks a giant club: the blocker pays a lot, the attacker hardly anything.
-	TestTrue(TEXT("light item blocking a heavy weapon costs the blocker much more"), BlockStaminaCost(Block, 12.f, 1.f, false) > 4.f * BlockStaminaCost(Block, 2.5f, 4.f, false));
-	TestTrue(TEXT("... and rebounds less on the attacker"), ReboundStamina(Block, 25.f, 12.f, 1.f) < ReboundStamina(Block, 25.f, 2.5f, 4.f));
-	TestEqual(TEXT("the ratio is limited"), BlockWeightRatio(Block, 1000.f, 1.f), 4.f, Tolerance);
+	// Block cost and rebound: shares of the damage actually blocked.
+	TestEqual(TEXT("blocker share at the reference shield"), BlockerShare(Block, 4.f, 80.f), 1.f, Tolerance);
+	TestEqual(TEXT("a heavier shield takes hits more cheaply"), BlockerShare(Block, 6.f, 80.f), 2.f / 3.f, Tolerance);
+	TestEqual(TEXT("a light shield pays more"), BlockerShare(Block, 2.4f, 80.f), 5.f / 3.f, Tolerance);
+	TestEqual(TEXT("the share is limited above"), BlockerShare(Block, 0.5f, 80.f), 2.f, Tolerance);
+	TestEqual(TEXT("... and below"), BlockerShare(Block, 40.f, 80.f), 0.5f, Tolerance);
+	TestEqual(TEXT("rebound: a share of the blocked damage"), ReboundStamina(Block, 140.f), 56.f, Tolerance);
 
-	// Weak point: fixed multiplier, bigger for weapons that are light for their wielder.
+	// Weak point: fixed multiplier, raised by dexterity, whatever the weapon weighs.
 	FHydraWeakPointValues Weak;
 	Weak.damage_multiplier = 1.5f;
-	Weak.reference_weapon_weight_ratio = 0.03125f;
+	Weak.multiplier_per_dexterity_gain = 0.5f;
 	Weak.max_damage_multiplier = 2.5f;
-	TestEqual(TEXT("reference weapon"), WeakPointMultiplier(Weak, 0.03125f), 1.5f, Tolerance);
-	TestEqual(TEXT("half as heavy: double bonus"), WeakPointMultiplier(Weak, 0.015625f), 2.f, Tolerance);
-	TestEqual(TEXT("twice as heavy: half bonus"), WeakPointMultiplier(Weak, 0.0625f), 1.25f, Tolerance);
-	TestEqual(TEXT("cap for very light weapons"), WeakPointMultiplier(Weak, 0.001f), 2.5f, Tolerance);
+	TestEqual(TEXT("no dexterity gain: the base multiplier"), WeakPointMultiplier(Weak, 0.f), 1.5f, Tolerance);
+	TestEqual(TEXT("dexterity raises it"), WeakPointMultiplier(Weak, 0.4f), 1.7f, Tolerance);
+	TestEqual(TEXT("capped"), WeakPointMultiplier(Weak, 10.f), 2.5f, Tolerance);
+
+	// Damage: the attribute bonus by the fixed strength share of the weapon; base damage from the cost.
+	FHydraDamageValues Damage;
+	Damage.strength_bonus_per_gain = 0.3f;
+	Damage.dexterity_bonus_per_gain = 0.2f;
+	Damage.efficiency_base = 0.41f;
+	Damage.efficiency_reference_kg = 1.5f;
+	Damage.efficiency_exponent = 0.1f;
+	TestEqual(TEXT("pure strength weapon"), AttributeDamageBonus(Damage, 1.f, 0.5f, 0.1f), 0.15f, Tolerance);
+	TestEqual(TEXT("pure dexterity weapon"), AttributeDamageBonus(Damage, 0.f, 0.5f, 0.1f), 0.02f, Tolerance);
+	TestEqual(TEXT("half and half"), AttributeDamageBonus(Damage, 0.5f, 0.5f, 0.1f), 0.085f, Tolerance);
+	TestEqual(TEXT("base damage at the reference weight"), BaseDamageFromCost(Damage, 1.5f, 490.f), 200.9f, 0.01f);
+	TestTrue(TEXT("a heavier weapon is slightly more efficient"), BaseDamageFromCost(Damage, 3.f, 490.f) > BaseDamageFromCost(Damage, 1.5f, 490.f));
 	return true;
 }
 
@@ -257,7 +272,7 @@ bool FHydraLagCompensationTest::RunTest(const FString& Parameters)
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FHydraCombatStatsTest, "Hydra.Combat.StatsFromData", HydraTests::Flags)
 bool FHydraCombatStatsTest::RunTest(const FString& Parameters)
 {
-	// The numbers the game derives for the humanoid from the real data files.
+	// The numbers the game derives for the forms from the real data files, at level 0.
 	FHydraValues V;
 	FHydraDefinitions Defs;
 	TArray<FString> Problems;
@@ -271,26 +286,50 @@ bool FHydraCombatStatsTest::RunTest(const FString& Parameters)
 	const FHydraShieldValues& Shield = V.shields.FindChecked(TEXT("round_shield"));
 	TestTrue(TEXT("humanoid is valid"), Humanoid.bValid);
 	TestTrue(TEXT("humanoid holds its sword and shield"), Humanoid.bHasWeapon && Humanoid.bHasShield);
+	TestEqual(TEXT("10 HP per vitality"), Humanoid.HpMax, 10.f * Form.vitality, 0.01f);
+	TestEqual(TEXT("10 stamina per endurance"), Humanoid.StaminaMax, 10.f * Form.endurance, 0.01f);
+	TestEqual(TEXT("regeneration is a share of the bar"), Humanoid.StaminaRegenPerS, Humanoid.StaminaMax * Form.stamina_regen_share_per_s, 0.01f);
+	TestEqual(TEXT("a humanoid without a spell form has no mana bar"), Humanoid.ManaMax, 0.f, 0.01f);
 	TestEqual(TEXT("weight = body plus load"), Humanoid.TotalWeight, Form.body_weight + Sword.weight + Shield.weight, 0.001f);
-	TestEqual(TEXT("weight ratio"), Humanoid.WeightRatio, Humanoid.TotalWeight / Form.strength, 0.0001f);
-	TestEqual(TEXT("light attack cost"), Humanoid.LightStaminaCost, V.attack.light_stamina_per_weight_ratio * Sword.weight / Form.strength, 0.001f);
-	TestTrue(TEXT("a light attack costs 10 to 90 % of the bar (design)"), Humanoid.LightStaminaCost >= 0.1f * Form.stamina_max && Humanoid.LightStaminaCost <= 0.9f * Form.stamina_max);
-	TestTrue(TEXT("a heavy attack fits into the bar"), Humanoid.HeavyStaminaCost > Humanoid.LightStaminaCost && Humanoid.HeavyStaminaCost <= Form.stamina_max);
+	TestEqual(TEXT("handling: total weight / strength"), Humanoid.WeightRatio, Humanoid.TotalWeight / Form.strength, 0.0001f);
+	TestEqual(TEXT("light attack cost: weapon weight / body weight"), Humanoid.LightStaminaCost, V.attack.light_stamina_per_weight_ratio * Sword.weight / Form.body_weight * Sword.demand, 0.01f);
+	TestEqual(TEXT("dodge cost: total weight / body weight"), Humanoid.DodgeStaminaCost, Form.dodge_stamina_cost * Humanoid.TotalWeight / Form.body_weight, 0.01f);
+	// Balancing target: a human at level 0 manages two light longsword strikes in a row, not three.
+	TestTrue(FString::Printf(TEXT("two light strikes from a full bar, not three (cost %.0f of %.0f)"), Humanoid.LightStaminaCost, Humanoid.StaminaMax),
+		2.f * Humanoid.LightStaminaCost <= Humanoid.StaminaMax && 2.2f * Humanoid.LightStaminaCost > Humanoid.StaminaMax);
+	TestTrue(TEXT("a heavy attack fits into the bar"), Humanoid.HeavyStaminaCost > Humanoid.LightStaminaCost && Humanoid.HeavyStaminaCost <= Humanoid.StaminaMax);
 	TestTrue(TEXT("the heavy wind-up is a readable telegraph (at least 400 ms)"), Sword.heavy.min_windup_ms >= 400.f);
-	// Guard rail: no death in one hit from full health between equals, even at full charge on the back.
-	const float WorstHit = Sword.heavy.damage * Sword.heavy.full_charge_damage_factor * HydraCombatMath::WeakPointMultiplier(V.weak_point, Humanoid.WeaponWeightRatio);
-	TestTrue(FString::Printf(TEXT("no one-hit kill between equal humanoids (worst hit %.0f of %.0f hp)"), WorstHit, Form.hp_max), WorstHit < Form.hp_max);
+	// Base damage follows from the cost (stored in the data): longsword light 200, heavy x 2.
+	TestEqual(TEXT("longsword: stored light damage matches the efficiency formula"), Sword.light.damage,
+		HydraCombatMath::BaseDamageFromCost(V.damage, Sword.weight, Humanoid.LightStaminaCost), Sword.light.damage * 0.01f);
+	TestEqual(TEXT("longsword light = 200"), Sword.light.damage, 200.f, 0.01f);
+	TestEqual(TEXT("heavy = light x 2"), Sword.heavy.damage, 2.f * Sword.light.damage, 0.01f);
+	TestEqual(TEXT("a human at level 0 falls after five light longsword hits"), Humanoid.HpMax / Sword.light.damage, 5.f, 0.01f);
+	TestEqual(TEXT("at level 0 the damage is the base damage"), Humanoid.Weapon.light.damage, Sword.light.damage, 0.01f);
+	// Guard rail (no hard cap): the strongest light hit stays below the HP of an equal opponent.
+	const float StrongestLight = Sword.light.damage * (1.f + V.chain.max_bonus) * V.weak_point.max_damage_multiplier;
+	TestTrue(FString::Printf(TEXT("strongest light hit (%.0f) below the HP of an equal (%.0f)"), StrongestLight, Humanoid.HpMax), StrongestLight < Humanoid.HpMax);
+	// Interrupt: a light hit does not interrupt an equal, a heavy one does.
+	TestTrue(TEXT("light hit below the interrupt threshold, heavy hit above"), Sword.light.damage < Humanoid.InterruptThreshold && Sword.heavy.damage >= Humanoid.InterruptThreshold);
+	// Block: a light hit on the shield costs the blocker less stamina than the strike cost the attacker.
+	const float BlockedLight = Sword.light.damage * Shield.block_damage_reduction;
+	TestTrue(TEXT("blocking a light hit is cheaper than striking it"), BlockedLight * Humanoid.BlockerShare < Humanoid.LightStaminaCost);
+	TestTrue(TEXT("holding the block costs stamina every second"), Humanoid.BlockHoldStaminaPerS > 0.f && Humanoid.BlockHoldStaminaPerS < 0.2f * Humanoid.StaminaMax);
 
-	// Phase 1 check from the design: humanoid with shield and slime turn clearly differently.
+	// The slime: little stamina, a lot of mana, resistant to slash and pierce, weak to blunt.
 	const FHydraCombatStats Slime = HydraCombatMath::BuildStats(Defs, V, TEXT("slime"));
 	const FHydraFormValues& SlimeForm = V.forms.FindChecked(TEXT("slime"));
+	const FHydraWeaponValues& Slam = V.weapons.FindChecked(TEXT("slime_slam"));
 	TestTrue(TEXT("slime is valid"), Slime.bValid);
 	TestTrue(TEXT("slime attacks with its body (slam) and has no shield"), Slime.bHasWeapon && !Slime.bHasShield);
 	TestEqual(TEXT("the slam is blunt"), Slime.LightDamageType, FName(TEXT("blunt")));
 	TestTrue(TEXT("slime casts the bolt, the humanoid does not (Phase 1)"), Slime.bCanCast && !Humanoid.bCanCast);
-	TestTrue(TEXT("slime: little stamina, a lot of mana"), SlimeForm.stamina_max < Form.stamina_max && SlimeForm.mana_max > SlimeForm.stamina_max && Form.mana_max == 0.f);
-	TestTrue(TEXT("slime line: raised resistance to slash and pierce"), SlimeForm.resistance.slash > 0.f && SlimeForm.resistance.pierce > 0.f);
-	TestTrue(TEXT("slime can pay for its slam and its bolt"), Slime.HeavyStaminaCost <= SlimeForm.stamina_max && V.bolt.mana_cost * V.bolt.full_charge_cost_factor <= SlimeForm.mana_max);
+	TestTrue(TEXT("slime: little stamina, a lot of mana"), Slime.StaminaMax < Humanoid.StaminaMax && Slime.ManaMax > Slime.StaminaMax);
+	TestTrue(TEXT("slime line: resistance points against slash and pierce, a weakness to blunt"), SlimeForm.resistance.slash > 0.f && SlimeForm.resistance.pierce > 0.f && SlimeForm.resistance.blunt < 0.f);
+	TestEqual(TEXT("slam cost: its cost ratio in place of weight / body weight"), Slime.LightStaminaCost, V.attack.light_stamina_per_weight_ratio * Slam.cost_ratio * Slam.demand, 0.01f);
+	TestTrue(TEXT("about two slams in a row for a slime at level 0"), 2.f * Slime.LightStaminaCost <= Slime.StaminaMax && 3.f * Slime.LightStaminaCost > Slime.StaminaMax);
+	TestEqual(TEXT("slam: stored light damage matches its cost (reference efficiency)"), Slam.light.damage, V.damage.efficiency_base * Slime.LightStaminaCost, Slam.light.damage * 0.02f);
+	TestTrue(TEXT("slime can pay for a fully charged bolt"), V.bolt.mana_cost * V.bolt.full_charge_cost_factor <= Slime.ManaMax);
 	TestTrue(TEXT("slime is small"), Slime.BodyHalfHeightCm < Humanoid.BodyHalfHeightCm && Slime.BodyHalfHeightCm >= Slime.BodyRadiusCm);
 	TestEqual(TEXT("humanoid is 1.8 m tall"), Humanoid.BodyHalfHeightCm * 2.f, Form.body_height_m * 100.f, 0.01f);
 	TestTrue(FString::Printf(TEXT("slime turns clearly faster (%.0f vs %.0f deg/s)"), Slime.TurnRateDegS, Humanoid.TurnRateDegS), Slime.TurnRateDegS > Humanoid.TurnRateDegS * 1.15f);
@@ -305,16 +344,20 @@ bool FHydraMagicMathTest::RunTest(const FString& Parameters)
 	using namespace HydraCombatMath;
 	const float Tolerance = 0.001f;
 
-	// Resistance per damage type.
+	// Resistance points per damage type, turned into a reduction by one flattening curve.
 	FHydraResistanceValues R;
-	R.slash = 0.5f;
-	R.blunt = -0.25f;
-	TestEqual(TEXT("resistance by type"), ResistanceTo(R, TEXT("slash")), 0.5f, Tolerance);
-	TestEqual(TEXT("no resistance where none is set"), ResistanceTo(R, TEXT("fire")), 0.f, Tolerance);
+	R.slash = 100.f;
+	R.blunt = -25.f;
+	FHydraResistanceRuleValues Curve;
+	Curve.curve_constant = 100.f;
+	TestEqual(TEXT("points by type"), ResistanceTo(R, TEXT("slash")), 100.f, Tolerance);
+	TestEqual(TEXT("no points where none are set"), ResistanceTo(R, TEXT("fire")), 0.f, Tolerance);
 	TestEqual(TEXT("unknown type: none"), ResistanceTo(R, TEXT("sonic")), 0.f, Tolerance);
-	TestEqual(TEXT("half resisted"), ResistedDamage(20.f, 0.5f), 10.f, Tolerance);
-	TestEqual(TEXT("vulnerable: more damage"), ResistedDamage(20.f, -0.25f), 25.f, Tolerance);
-	TestTrue(TEXT("never fully immune"), ResistedDamage(20.f, 5.f) > 0.f);
+	TestEqual(TEXT("points = the constant: half"), ResistedDamage(Curve, 200.f, 100.f), 100.f, Tolerance);
+	TestEqual(TEXT("the curve flattens: three times the points, three quarters"), ResistedDamage(Curve, 200.f, 300.f), 50.f, Tolerance);
+	TestEqual(TEXT("no points: full damage"), ResistedDamage(Curve, 200.f, 0.f), 200.f, Tolerance);
+	TestEqual(TEXT("weakness: more damage"), ResistedDamage(Curve, 200.f, -25.f), 250.f, Tolerance);
+	TestTrue(TEXT("never fully immune"), ResistedDamage(Curve, 200.f, 100000.f) > 0.f);
 
 	// Bolt: charging makes it stronger and costlier.
 	FHydraBoltValues B;
@@ -338,9 +381,9 @@ bool FHydraMagicMathTest::RunTest(const FString& Parameters)
 	// Burning: resistance lengthens the interval between stacks.
 	FHydraBurningValues Burn;
 	Burn.stack_interval_ms = 10000.f;
-	TestEqual(TEXT("interval"), BurningIntervalS(Burn, 0.f), 10.f, Tolerance);
-	TestEqual(TEXT("fire resistance 0.5 doubles the interval"), BurningIntervalS(Burn, 0.5f), 20.f, Tolerance);
-	TestEqual(TEXT("a vulnerability does not shorten it"), BurningIntervalS(Burn, -0.5f), 10.f, Tolerance);
+	TestEqual(TEXT("interval"), BurningIntervalS(Burn, Curve, 0.f), 10.f, Tolerance);
+	TestEqual(TEXT("100 fire resistance points double the interval"), BurningIntervalS(Burn, Curve, 100.f), 20.f, Tolerance);
+	TestEqual(TEXT("a weakness does not shorten it"), BurningIntervalS(Burn, Curve, -50.f), 10.f, Tolerance);
 
 	// A bolt flying past: distance of a body to the path of one step.
 	TestEqual(TEXT("point beside the path"), DistancePointToSegment(FVector(50.f, 30.f, 0.f), FVector::ZeroVector, FVector(100.f, 0.f, 0.f)), 30.f, Tolerance);

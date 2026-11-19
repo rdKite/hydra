@@ -1,5 +1,62 @@
 # values.json changelog
 
+## v7 – 2026-11-19 (M4b, attribute model and skill growth)
+
+Rules: `docs/design/phase-1.md` §26. Numbers named there are taken over; **everything else
+here is a guess, not yet playtested.** The scale changed: HP, stamina, mana and every damage
+number are about ten times what they were.
+
+- **`forms.<id>`: body attributes instead of bars.** New `vitality`, `endurance`, `spirit`,
+  `dexterity` (HP = 10 × vitality, stamina = 10 × endurance, mana = 10 × spirit); `strength`
+  stays; `stamina_regen_share_per_s`, `mana_regen_share_per_s` and `dodge_stamina_cost`
+  per form. Removed: `hp_max`, `stamina_max`, `stamina_regen_per_s`, `mana_max`,
+  `mana_regen_per_s`. Humanoid 100 / 100 / 60 / 80 with dexterity 100 (design); slime
+  60 / 50 / 100 / 12 and fire elemental slime 80 / 60 / 130 / 16 (design), dexterity 80 and
+  90 (guess: a gel body is not nimble). Regeneration shares 0.35 / 0.40 / 0.37 (the old rates
+  as shares of the old bars), mana 0.10. Dodge cost 190 / 140 / 130 (about a fifth of the
+  bar with the loadout, as before).
+- **Resistances are points** (`forms.<id>.resistance`): slime slash 100, pierce 100, blunt
+  −25 (were shares 0.5 / 0.5 / −0.25); fire elemental slime also fire 100. New
+  `resistance.curve_constant` 100 (design).
+- **Weapons:** longsword `weight` 2.5 → **1.5** kg (design, real weapon); new `cost_ratio`
+  (0 for a weapon; slam **0.01**, design guess), `demand` 1, `strength_share` (longsword 0.5,
+  slam 0.7, design). Base damage from the cost (design): longsword light **200**, heavy
+  **400**; slam light **95**, heavy **190**. The slam's `weight` is 0 (a body attack has
+  none; it no longer counts as load).
+- **`attack`:** `light_stamina_per_weight_ratio` **22867**, `heavy_…` **36587** – a light
+  longsword strike costs 490 of 1,000 stamina at level 0 (design table), a heavy one × 1.6.
+- **New `damage`:** `strength_bonus_per_gain` and `dexterity_bonus_per_gain` 0.3 (design),
+  `efficiency_base` 0.41, `efficiency_reference_kg` 1.5, `efficiency_exponent` 0.1 (design;
+  used by an automation test that checks the stored base damage).
+- **`interrupt`:** `threshold_share_of_max_hp` **0.25** replaces the two weight keys (guess:
+  a light longsword hit, 20 % of an equal's HP, does not interrupt; a heavy one does).
+- **`block`:** new `hold_stamina_per_s_per_weight_ratio` 875 (50 stamina per second with the
+  round shield: 20 seconds of holding empty a full bar), `blocker_share` 1.0 with
+  `reference_shield_ratio` 0.0571 (= round shield ÷ human body) and limits `share_min` 0.5,
+  `share_max` 2.0 (a blocked light longsword hit costs 140 stamina, a heavy one 280),
+  `rebound_share` 0.4 (56 and 112 for the attacker). Removed: `stamina_cost_per_hit`,
+  `heavy_attack_factor`, `weight_ratio_min/max`, `rebound_attacker_stamina_ratio`,
+  `no_regen_while_holding` (a general rule now).
+- **`dodge`:** `stamina_cost` moved to the forms; new `distance_per_dexterity_gain` and
+  `speed_per_dexterity_gain` 0.25 (a slime at level 29 steps 14 % further and faster).
+- **`weak_point`:** `multiplier_per_dexterity_gain` 0.5 replaces
+  `reference_weapon_weight_ratio` (1.5 at level 0, 1.79 for the slime at level 29, cap 2.5).
+- **Removed `stamina`** (`regen_delay_after_action_ms`): no regeneration while an action
+  runs instead.
+- **`progression`:** new `level_growth` 0.02 (design); removed `hp_bonus_per_level` and
+  `damage_bonus_per_level`.
+- **`skills`:** only `damage_bonus_per_level` 0.01 (now added to the other progress
+  bonuses), `block_arc_deg_per_level`, `field_radius_bonus_per_level` stay. Removed: every
+  `xp_*` key, `cost_reduction_per_level`, `min_cost_factor`, `dodge_distance_bonus_per_level`.
+  The dodge skill is gone from `skills.json` and `forms.json`.
+- **New `skill_points`:** `base` 1, `factor` 2 (design: 1 + 2 × log₂ of the hardship rating).
+- **`enemies.<id>.hxp_factor`** (design guesses): grunt 1.0, veteran 1.5, ember slime 1.5.
+- **`imprint`:** `resistance_points_per_level` 10 replaces `resistance_per_level`; thresholds
+  100 / 250 → **1000 / 2500** (the same meaning at the new damage scale: about one wave of
+  real fire contact).
+- **Scaled with the bars:** `bolt.mana_cost` 20 → 200, `bolt.damage` 15 → 150,
+  `burning.damage_per_s_per_stack` 1 → 10, fire elemental slime `element_body_damage` 4 → 40.
+
 ## v6 – 2026-11-16 (answers to the M5 questions)
 
 - `imprint.progress_first_level` 30 → **100**, `imprint.progress_per_further_level` 60 →

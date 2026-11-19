@@ -151,6 +151,10 @@ public:
 	UFUNCTION(Exec)
 	void HydraAI(const FString& Verb, float Value);
 
+	/** Dev: full stamina and mana for the own character (health and chain stay as they are). */
+	UFUNCTION(Exec)
+	void HydraRefill();
+
 	/** Everyone alive with full health and stamina. */
 	UFUNCTION(Exec)
 	void HydraResetAll();

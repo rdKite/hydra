@@ -36,6 +36,9 @@ protected:
 	/** Stamina needed to start (and taken on the server when it starts). 0 = free. */
 	virtual float GetStaminaCost(const FHydraCombatStats& Stats) const { return 0.f; }
 
+	/** The skill this ability's stamina counts for when hXP are distributed by use; None = no skill (dodge). */
+	virtual FName GetUseSkill(const FHydraCombatStats& Stats) const { return NAME_None; }
+
 	/** Anything else the character needs for this ability (a weapon, a shield). */
 	virtual bool CanStart(const FHydraCombatStats& Stats) const { return true; }
 
@@ -43,7 +46,7 @@ protected:
 	const FHydraValues& GetValues() const;
 	bool IsServer() const;
 
-	/** Server: take stamina and start the regeneration delay. No-op on clients. */
+	/** Server: take stamina and count it as use of this ability's skill. No-op on clients. */
 	void SpendStamina(float Cost) const;
 
 	/** One-shot timer, cleared automatically when the ability ends. DelayS <= 0 runs at once. */

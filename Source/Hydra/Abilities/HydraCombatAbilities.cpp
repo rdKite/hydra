@@ -7,6 +7,7 @@
 #include "Character/HydraCharacter.h"
 #include "Character/HydraCombatMath.h"
 #include "Character/HydraMovementComponent.h"
+#include "Character/HydraProgressionComponent.h"
 #include "Data/HydraValuesSubsystem.h"
 #include "Engine/World.h"
 
@@ -14,6 +15,8 @@ namespace HydraAbilityConstants
 {
 	/** How often the server checks the hit area during a strike (technical, not a gameplay value). */
 	constexpr float HitTestIntervalS = 1.f / 60.f;
+	/** Granularity of the stamina a raised block costs (technical; the rate per second is the gameplay value). */
+	constexpr float BlockHoldTickS = 0.1f;
 }
 
 // --- Attack ------------------------------------------------------------------------------
@@ -31,6 +34,11 @@ UHydraGA_Attack::UHydraGA_Attack()
 bool UHydraGA_Attack::CanStart(const FHydraCombatStats& Stats) const
 {
 	return Stats.bHasWeapon;
+}
+
+FName UHydraGA_Attack::GetUseSkill(const FHydraCombatStats& Stats) const
+{
+	return Stats.WeaponSkill;
 }
 
 float UHydraGA_Attack::GetStaminaCost(const FHydraCombatStats& Stats) const
@@ -201,6 +209,7 @@ UHydraGA_Cast::UHydraGA_Cast()
 {
 	SetAssetTags(FGameplayTagContainer(HydraTags::Ability_Cast));
 	ActivationOwnedTags.AddTag(HydraTags::State_Attacking);
+	ActivationOwnedTags.AddTag(HydraTags::State_Spell);
 	ActivationBlockedTags.AddTag(HydraTags::State_Attacking);
 	ActivationBlockedTags.AddTag(HydraTags::State_Blocking);
 	ActivationBlockedTags.AddTag(HydraTags::State_Dodging);
@@ -211,7 +220,7 @@ bool UHydraGA_Cast::CheckCost(const FGameplayAbilitySpecHandle Handle, const FGa
 {
 	const AHydraCharacter* C = ActorInfo ? Cast<AHydraCharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
 	return C && C->GetStats().bValid && C->GetStats().bCanCast
-		&& HydraGas::CanAffordMana(C->GetAbilitySystemComponent(), C->GetStats().Bolt.mana_cost);
+		&& HydraGas::CanAffordMana(C->GetAbilitySystemComponent(), UHydraValuesSubsystem::Get(C).bolt.mana_cost);
 }
 
 void UHydraGA_Cast::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo) const
@@ -219,7 +228,9 @@ void UHydraGA_Cast::ApplyCost(const FGameplayAbilitySpecHandle Handle, const FGa
 	const AHydraCharacter* C = ActorInfo ? Cast<AHydraCharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
 	if (C && C->HasAuthority())
 	{
-		HydraGas::SpendMana(C->GetAbilitySystemComponent(), C->GetStats().Bolt.mana_cost);
+		const float Cost = UHydraValuesSubsystem::Get(C).bolt.mana_cost;
+		HydraGas::SpendMana(C->GetAbilitySystemComponent(), Cost);
+		C->ServerNoteBoltMana(Cost);
 	}
 }
 
@@ -336,6 +347,11 @@ bool UHydraGA_Block::CanStart(const FHydraCombatStats& Stats) const
 	return Stats.bHasShield;
 }
 
+FName UHydraGA_Block::GetUseSkill(const FHydraCombatStats& Stats) const
+{
+	return Stats.ShieldSkill;
+}
+
 void UHydraGA_Block::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
 	if (!CommitAbility(Handle, ActorInfo, ActivationInfo))
@@ -344,21 +360,23 @@ void UHydraGA_Block::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 		return;
 	}
 	GetHydraCharacter()->SetAction(EHydraAction::Block, 0.f);
-	if (GetValues().block.no_regen_while_holding)
+	// A raised block costs stamina every second (shield weight / body weight). With empty
+	// stamina it stays up, but the next hit breaks it.
+	if (IsServer())
 	{
-		GetAbilitySystemComponentFromActorInfo()->AddLooseGameplayTag(HydraTags::State_StaminaRegenBlocked);
-		bRegenBlockedTag = true;
+		StartLoopingTimer(HydraAbilityConstants::BlockHoldTickS, [this]()
+		{
+			if (const AHydraCharacter* C = GetHydraCharacter())
+			{
+				SpendStamina(C->GetStats().BlockHoldStaminaPerS * HydraAbilityConstants::BlockHoldTickS);
+			}
+		});
 	}
 	// Ends when the button is released (AHydraCharacter::InputBlock cancels it) or the block breaks.
 }
 
 void UHydraGA_Block::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, bool bReplicateEndAbility, bool bWasCancelled)
 {
-	if (bRegenBlockedTag)
-	{
-		GetAbilitySystemComponentFromActorInfo()->RemoveLooseGameplayTag(HydraTags::State_StaminaRegenBlocked);
-		bRegenBlockedTag = false;
-	}
 	if (AHydraCharacter* C = GetHydraCharacter())
 	{
 		C->ClearAction({ EHydraAction::Block });
@@ -394,8 +412,9 @@ void UHydraGA_Dodge::ActivateAbility(const FGameplayAbilitySpecHandle Handle, co
 	}
 	AHydraCharacter* C = GetHydraCharacter();
 	const FHydraDodgeValues& D = GetValues().dodge;
-	const float DurationS = FMath::Max(0.05f, D.duration_ms / 1000.f);
-	const float DistanceCm = D.distance_m * 100.f * C->GetStats().DodgeDistanceFactor;   // a higher dodge skill steps further
+	// Dexterity makes the step a little longer and faster.
+	const float DurationS = FMath::Max(0.05f, D.duration_ms / 1000.f * C->GetStats().DodgeDurationFactor);
+	const float DistanceCm = D.distance_m * 100.f * C->GetStats().DodgeDistanceFactor;
 	if (IsServer())
 	{
 		C->ServerNoteDodge();

@@ -60,7 +60,7 @@ Controls (one button per hand):
 F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console:
 `Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`
 (AI opponent passive / active, on the host), `Hydra.LagCompensation [0|1]`, `HydraStats`,
-`HydraResetAll`, `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraPrecise 0|1`, `HydraFire 1`
+`HydraResetAll`, `HydraRefill` (full stamina and mana), `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraPrecise 0|1`, `HydraFire 1`
 (fire awakened without earning it: the slime's bolt carries fire, leaves a fire field and
 causes burning), `HydraWaves 1` (switch a practice session to waves), `HydraXp <n>` and
 `HydraImprintProgress <n>` (dev: give yourself nXP or imprint progress), `HydraChoose
@@ -68,15 +68,18 @@ evolve|imprint`. The humanoid's blade shows the telegraph: yellow in the wind-up
 towards red while a heavy attack charges. `Hydra.AI 0` makes every AI stand still.
 
 **Waves and progression.** Enemies come in waves (`data/values.json`: `waves`, `enemies`).
-Everyone starts at a fixed level (humanoid 9, slime 29 – one level before its cap). Defeated
-enemies give nXP; what you use in a wave (weapon, shield, dodge, bolt) earns skill XP, which
-is credited when the wave is cleared and turns into skill levels at your next level-up.
-Contact with fire – ember slimes cast fire bolts, leave fire fields and burn whoever hits
-them – builds the fire imprint. At a milestone (every 10 levels, and the level cap) the HUD
-offers what you earned: `K` starts or raises the imprint, `J` evolves the slime into the
-fire elemental slime (level and skills start again, with an instinct per skill). Every
-cleared wave writes a metrics row per player and enemy type to
-`Saved/Metrics/metrics_<time>.csv`.
+Everyone starts at a fixed level (humanoid 9, slime 29 – one level before its cap). A level
+raises the body attributes (HP, stamina, mana, handling, damage through strength and
+dexterity). Defeated enemies give nXP for the level and hXP for the skills: the hXP go to
+the skills you used, by the stamina and mana they spent since the last defeated enemy. At
+a level-up you get automatic skill points – more after hard enemies – split by those hXP;
+each skill shows a progress bar. Skills raise effect (damage, block arc, fire field), never
+lower costs: an attack costs what the weapon weighs against your body. Contact with fire –
+ember slimes cast fire bolts, leave fire fields and burn whoever hits them – builds the
+fire imprint. At a milestone (every 10 levels, and the level cap) the HUD offers what you
+earned: `K` starts or raises the imprint, `J` evolves the slime into the fire elemental
+slime (level and skills start again, with an instinct per skill). Every cleared wave writes
+a metrics row per player and enemy type to `Saved/Metrics/metrics_<time>.csv`.
 
 ## Where things are
 

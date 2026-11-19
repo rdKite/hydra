@@ -67,20 +67,20 @@ pure logic).
 Decisions 2026-11-17 and 2026-11-19: Phase 1 takes over the attribute model and the new
 skill growth before the playtest, so the playtest tests the rules that stay. Rules and formulas: `docs/design/phase-1.md` §26.
 
-- [ ] Body attributes per form, growing 2 % of the base per level; HP, stamina and mana
+- [x] Body attributes per form, growing 2 % of the base per level; HP, stamina and mana
       10 per point; no direct HP or damage bonus per level.
-- [ ] Costs only from weight ÷ body weight (× demand); regeneration as a share per form, none
+- [x] Costs only from weight ÷ body weight (× demand); regeneration as a share per form, none
       during an action; skills no longer lower costs.
-- [ ] Damage with added-up progress bonuses (skill, strength or dexterity, imprint) and
+- [x] Damage with added-up progress bonuses (skill, strength or dexterity, imprint) and
       multiplied situational factors; weak point by dexterity; resistances as points with a
       curve.
-- [ ] Block: holding cost per second, block cost and rebound as shares of the blocked damage;
+- [x] Block: holding cost per second, block cost and rebound as shares of the blocked damage;
       interrupt by a share of maximum HP.
-- [ ] Dodge and jump as capabilities: no dodge skill; dodge distance and speed by dexterity.
-- [ ] Skill growth (decision 2026-11-19): hXP per defeated enemy (stand-in factor per enemy
+- [x] Dodge and jump as capabilities: no dodge skill; dodge distance and speed by dexterity.
+- [x] Skill growth (decision 2026-11-19): hXP per defeated enemy (stand-in factor per enemy
       type), distributed by the stamina and mana each skill spent; automatic skill points at
       each level-up (1 + 2 × log₂ of the hardship rating) with progress bars per skill.
-- [ ] Numbers rescaled (values.json), all live runs green; tables in `phase-1.md` §23–§25
+- [x] Numbers rescaled (values.json), all live runs green; tables in `phase-1.md` §23–§25
       updated to what was built.
 
 ### M5 – Look and playtest (a few days)

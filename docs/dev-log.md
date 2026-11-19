@@ -35,6 +35,68 @@ entry below, in its order.
   ended a moment too early). The run's data copy now uses a first delay of 0.1 s and the run
   is 3 s longer.
 
+**Step 2 – M4b: align with the current design** (rules `docs/design/phase-1.md` §26, what was
+built: §23–§25, rows marked *(M4b)*; numbers `data/values.json` v7, `data/CHANGELOG.md`).
+
+- **Attributes.** Forms carry vitality, endurance, spirit, strength and dexterity; a level
+  adds 2 % of the base to each; HP, stamina and mana are 10 per point. No other level bonus.
+  `HydraCombatMath::BuildStats` works everything out from that, on server and client.
+- **Costs** come from weight ÷ body weight (× demand) only; the slam uses its cost ratio.
+  Skills and levels no longer lower a cost. **Regeneration** is a share of the bar per
+  second and pauses while an action runs (attack to the end of its recovery, dodge with
+  recovery, raised block; mana while a bolt is wound up or charged) – the regeneration delay
+  is gone.
+- **Damage:** base × (1 + skill bonus + strength / dexterity bonus by the weapon's fixed
+  share [+ imprint bonus for fire]) × charge × chain × weak point, then the resistance curve
+  (points). Weak point by dexterity. Base damage is stored per weapon and checked against
+  the cost formula by an automation test.
+- **Block:** a raised block costs stamina per second; a blocked hit costs the blocker a
+  share of the blocked damage and the attacker a share as rebound. **Interrupt** at a share
+  of the target's maximum HP.
+- **Dodge and jump are capabilities:** the dodge skill is gone; distance and speed of the
+  step grow a little with dexterity.
+- **Skill growth:** hXP per defeated enemy (factor per enemy type), split by the stamina and
+  mana each skill spent since the last defeated enemy; automatic skill points at each
+  level-up by the hardship rating, split by the hXP of the level, with a progress bar per
+  skill and the character level as the limit. The HUD shows the bars and the rating.
+- Verified: `Scripts/run_all.sh` green – 19 automation tests (rewritten for the new rules),
+  combat run 164 checks, slime run 83, waves run 125. The checkers work the expected numbers
+  out with the new formulas; expectations changed on purpose wherever a rule changed.
+  Examples from the runs: a light longsword strike costs 490 of 1,000 stamina and deals 200;
+  a blocked light hit lets 60 through, costs the blocker 140 and the attacker 56 extra;
+  holding the block costs 50 per second; a heavy hit (400) interrupts, a light one does not;
+  the slime at level 29 has 948 HP and its slam deals 130.5; a grunt worth hXP = 2 × nXP
+  gives three skill points, split 2.09 / 0.91 between slam and projectile by their use.
+
+**Assumptions in M4b (to be confirmed by the human):**
+- **A strike costs half the bar** (design target), so the scripted combat run refills the
+  host's stamina between steps that test something else (new dev command `HydraRefill`).
+- Dexterity base values: humanoid 100 (design), slime 80, fire elemental slime 90.
+- Strength and dexterity grow alike in Phase 1 (no training), so a weapon's strength share
+  changes nothing yet; it is in the data and the formula.
+- The slam has no weight any more (cost from its cost ratio); its base damage uses the
+  reference efficiency 0.41 (design: "about 95").
+- The mana cost of the bolt is the same for everyone (skills give effect, not lower costs).
+- A fire bolt's damage bonus adds projectile skill, fire magic skill and imprint; a bolt
+  without an element only the projectile skill.
+- Weak point and resistance are applied before the block, so "blocked damage" is what would
+  have arrived. A hit that lands in a block can interrupt if what gets through is enough.
+- Block at empty stamina: it stays raised (the holding cost just stops at 0) and the next
+  hit breaks it – the design's "the block breaks: you take the hit".
+- A blocked bolt costs the blocker by the same share rule as a strike; no rebound.
+- No use, no points: if no skill was used in a level, its skill points are not handed out
+  (the design says the hXP "go to no skill").
+- Several level-ups from one enemy each give the points of that level's hardship rating.
+- What a skill cannot take at its limit and nobody else can take waits on its bar (the bar
+  shows full) and is used at the next level-up.
+- Imprint thresholds 1,000 / 2,500: the v6 numbers × 10, because every damage number grew
+  tenfold and the threshold was meant as "about one wave of fire contact".
+- The live runs for combat and slime still run at level 0 without skill levels (their data
+  copy), so they measure the base rules; the waves run starts at the real start levels.
+
+**Problems in M4b.** The HUD bars ran off the screen with the tenfold numbers (seen on a
+screenshot of the waves run, not by a check) – the bar scale is 0.3 pixels per point now.
+
 ### 2026-11-19 – skill growth comes to Phase 1; plan for an unattended session (design session)
 
 **Next agent session – work through in this order without waiting for the human.** Commit

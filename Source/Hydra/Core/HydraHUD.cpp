@@ -21,7 +21,7 @@ namespace HydraHUDStyle
 	const FLinearColor Offer(1.f, 0.9f, 0.25f);
 	const FLinearColor Xp(0.75f, 0.6f, 0.95f);
 	constexpr float OverheadRangeCm = 2500.f;
-	constexpr float PixelsPerStaminaPoint = 3.f;
+	constexpr float PixelsPerStaminaPoint = 0.3f;   // a human at level 0 has 1,000 HP and stamina
 }
 
 void AHydraHUD::DrawHUD()
@@ -174,7 +174,7 @@ void AHydraHUD::DrawProgress()
 	}
 	UFont* Font = GEngine->GetSmallFont();
 	const float X = 40.f;
-	float Y = Canvas->ClipY - 190.f;
+	float Y = Canvas->ClipY - 198.f;
 	const FHydraFormDef* Form = Values->GetDefinitions().FindForm(Self->GetFormId());
 	const int32 Cap = Self->GetStats().LevelCap;
 
@@ -192,8 +192,10 @@ void AHydraHUD::DrawProgress()
 	DrawText(Line, FLinearColor::White, X, Y, Font);
 	Y += 26.f;
 
-	// Skills: level, and the skill XP waiting for the next character level-up.
-	FString Skills = TEXT("skills:");
+	// Skills: level and progress bar (the fraction of a skill point on the way to the next
+	// level), and the hardship rating of the current level (hXP / nXP: more skill points).
+	DrawText(FString::Printf(TEXT("skills (hardship %.1f):"), P->GetHardship()), FLinearColor(1.f, 1.f, 1.f, 0.85f), X, Y, Font);
+	float SkillX = X + 150.f;
 	for (const FHydraSkillState& S : P->GetSkills())
 	{
 		const FHydraSkillDef* Def = Values->GetDefinitions().FindSkill(S.Id);
@@ -202,15 +204,18 @@ void AHydraHUD::DrawProgress()
 		{
 			continue;
 		}
-		const float Need = HydraCombatMath::SkillXpForNextLevel(Values->GetValues().skills, S.Level);
-		Skills += FString::Printf(TEXT("   %s %d (%.0f/%.0f%s)"), Def ? *Def->name : *S.Id.ToString(), S.Level, S.Xp, Need, S.Xp >= Need ? TEXT(" ready") : TEXT(""));
+		FString Label = FString::Printf(TEXT("%s %d"), Def ? *Def->name : *S.Id.ToString(), S.Level);
 		if (S.InstinctRatio > 0.f)
 		{
-			Skills += FString::Printf(TEXT(" instinct %.0f%%"), S.InstinctRatio * 100.f);
+			Label += FString::Printf(TEXT(" (instinct %.0f%%)"), S.InstinctRatio * 100.f);
 		}
+		float W = 0.f, H = 0.f;
+		GetTextSize(Label, W, H, Font);
+		DrawText(Label, FLinearColor(1.f, 1.f, 1.f, 0.85f), SkillX, Y, Font);
+		DrawBar(SkillX, Y + 15.f, FMath::Max(W, 40.f), 3.f, S.Progress, HydraHUDStyle::Xp);
+		SkillX += FMath::Max(W, 40.f) + 24.f;
 	}
-	DrawText(Skills, FLinearColor(1.f, 1.f, 1.f, 0.85f), X, Y, Font);
-	Y += 16.f;
+	Y += 24.f;
 
 	// Imprint: level, and the progress from contact with the element.
 	const int32 MaxImprint = Values->GetValues().imprint.max_level;

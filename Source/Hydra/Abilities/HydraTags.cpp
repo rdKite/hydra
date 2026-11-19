@@ -2,7 +2,9 @@
 
 namespace HydraTags
 {
-	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_StaminaRegenBlocked, "State.StaminaRegenBlocked", "Stamina does not regenerate (regeneration delay after an action, or holding a block)");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_StaminaRegenBlocked, "State.StaminaRegenBlocked", "Stamina does not regenerate: an action runs (attack, dodge, held block)");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_ManaRegenBlocked, "State.ManaRegenBlocked", "Mana does not regenerate: a bolt is wound up or charged");
+	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Spell, "State.Spell", "The cast ability runs (wind-up to end of recovery)");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Attacking, "State.Attacking", "An attack is running (wind-up, strike or recovery)");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_AttackCommitted, "State.AttackCommitted", "Wind-up or strike: the attack binds, turning is slowed, no dodge");
 	UE_DEFINE_GAMEPLAY_TAG_COMMENT(State_Blocking, "State.Blocking", "Holding the directional block");

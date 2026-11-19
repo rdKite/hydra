@@ -3,6 +3,7 @@
 #include "Abilities/HydraGas.h"
 #include "AbilitySystemComponent.h"
 #include "Character/HydraCharacter.h"
+#include "Character/HydraProgressionComponent.h"
 #include "Data/HydraValuesSubsystem.h"
 #include "Engine/World.h"
 #include "TimerManager.h"
@@ -45,7 +46,9 @@ void UHydraGameplayAbility::ApplyCost(const FGameplayAbilitySpecHandle Handle, c
 	const AHydraCharacter* C = ActorInfo ? Cast<AHydraCharacter>(ActorInfo->AvatarActor.Get()) : nullptr;
 	if (C && C->HasAuthority())
 	{
-		HydraGas::SpendStamina(C->GetAbilitySystemComponent(), GetStaminaCost(C->GetStats()), UHydraValuesSubsystem::Get(C).stamina);
+		const float Cost = FMath::Min(GetStaminaCost(C->GetStats()), C->GetStamina());
+		HydraGas::SpendStamina(C->GetAbilitySystemComponent(), Cost);
+		C->GetProgression()->ServerAddUse(GetUseSkill(C->GetStats()), Cost);
 	}
 }
 
@@ -54,7 +57,9 @@ void UHydraGameplayAbility::SpendStamina(float Cost) const
 	const AHydraCharacter* C = GetHydraCharacter();
 	if (C && C->HasAuthority())
 	{
-		HydraGas::SpendStamina(C->GetAbilitySystemComponent(), Cost, GetValues().stamina);
+		const float Spent = FMath::Min(Cost, C->GetStamina());
+		HydraGas::SpendStamina(C->GetAbilitySystemComponent(), Spent);
+		C->GetProgression()->ServerAddUse(GetUseSkill(C->GetStats()), Spent);
 	}
 }
 

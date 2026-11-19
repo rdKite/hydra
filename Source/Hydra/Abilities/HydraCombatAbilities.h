@@ -36,6 +36,7 @@ public:
 
 protected:
 	virtual float GetStaminaCost(const FHydraCombatStats& Stats) const override;
+	virtual FName GetUseSkill(const FHydraCombatStats& Stats) const override;
 	virtual bool CanStart(const FHydraCombatStats& Stats) const override;
 
 private:
@@ -95,9 +96,10 @@ private:
 
 /**
  * Directional block: active while the shield hand's button is held. Protects only the block
- * arc of the shield (values.json shields.<id>); no stamina regeneration while holding; slower movement
- * and turning. What a hit does to a block is resolved in AHydraCharacter (block cost,
- * rebound, block break at empty stamina).
+ * arc of the shield (values.json shields.<id>); costs stamina every second while raised, no
+ * regeneration, slower movement and turning. What a hit does to a block is resolved in
+ * AHydraCharacter (block cost and rebound as shares of the blocked damage, block break at
+ * empty stamina).
  */
 UCLASS()
 class HYDRA_API UHydraGA_Block : public UHydraGameplayAbility
@@ -112,15 +114,14 @@ public:
 
 protected:
 	virtual bool CanStart(const FHydraCombatStats& Stats) const override;
-
-private:
-	bool bRegenBlockedTag = false;
+	virtual FName GetUseSkill(const FHydraCombatStats& Stats) const override;
 };
 
 /**
  * Dodge: pure movement, no invulnerability. A quick step of dodge.distance_m over
  * dodge.duration_ms in the input direction (backwards without input), then a short
- * recovery. Cost by weight / strength. Whether an attack still hits is decided by the hit
+ * recovery. A capability of the form: cost by total weight / body weight, distance and speed
+ * by dexterity. Whether an attack still hits is decided by the hit
  * area alone. Cancels a block and an attack in its recovery.
  */
 UCLASS()

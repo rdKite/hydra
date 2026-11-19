@@ -32,11 +32,5 @@ UHydraGE_ManaRegen::UHydraGE_ManaRegen()
 {
 	MakeInfinite(UHydraGE_StaminaRegen::TickS);
 	AddAmountTo(UHydraAttributeSet::GetManaAttribute());
-}
-
-UHydraGE_StaminaRegenDelay::UHydraGE_StaminaRegenDelay()
-{
-	MakeTimed();
-	GrantTag(HydraTags::State_StaminaRegenBlocked);
-	StackPerTarget(1);
+	PauseWhileTargetHas(HydraTags::State_ManaRegenBlocked);
 }

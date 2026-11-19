@@ -334,9 +334,11 @@ void AHydraCharacter::RebuildStats()
 		HydraGas::ApplyStaminaValues(AbilitySystem, Stats.StaminaMax, Stats.StaminaRegenPerS, StaminaRegenHandle, !bAttributesInitialized);
 		HydraGas::ApplyManaValues(AbilitySystem, Stats.ManaMax, Stats.ManaRegenPerS, ManaRegenHandle, !bAttributesInitialized);
 		bAttributesInitialized = true;
-		UE_LOG(LogHydra, Log, TEXT("HydraCombatStats who=%s level=%d form=%s ai=%d weight=%.2f strength=%.2f ratio=%.4f turn=%.1f hp=%.1f stamina=%.1f regen=%.1f mana=%.1f light_cost=%.2f heavy_cost=%.2f dodge_cost=%.2f radius=%.0f half_height=%.0f"),
+		UE_LOG(LogHydra, Log, TEXT("HydraCombatStats who=%s level=%d form=%s ai=%d weight=%.2f strength=%.2f ratio=%.4f turn=%.1f hp=%.1f stamina=%.1f regen=%.1f mana=%.1f light_cost=%.2f heavy_cost=%.2f dodge_cost=%.2f light_dmg=%.2f heavy_dmg=%.2f weak=%.3f interrupt=%.1f block_hold=%.2f blocker_share=%.3f block_arc=%.1f bolt_bonus=%.3f fire_bolt_bonus=%.3f radius=%.0f half_height=%.0f"),
 			*GetLogId(), Stats.Level, *FormId.ToString(), bAIControlled ? 1 : 0, Stats.TotalWeight, Stats.Strength, Stats.WeightRatio, Stats.TurnRateDegS, Stats.HpMax, Stats.StaminaMax,
-			Stats.StaminaRegenPerS, Stats.ManaMax, Stats.LightStaminaCost, Stats.HeavyStaminaCost, Stats.DodgeStaminaCost, Stats.BodyRadiusCm, Stats.BodyHalfHeightCm);
+			Stats.StaminaRegenPerS, Stats.ManaMax, Stats.LightStaminaCost, Stats.HeavyStaminaCost, Stats.DodgeStaminaCost, Stats.Weapon.light.damage, Stats.Weapon.heavy.damage,
+			Stats.WeakPointMultiplier, Stats.InterruptThreshold, Stats.BlockHoldStaminaPerS, Stats.BlockerShare, Stats.Shield.block_half_arc_deg, Stats.BoltBonus, Stats.FireBoltBonus,
+			Stats.BodyRadiusCm, Stats.BodyHalfHeightCm);
 	}
 }
 
@@ -672,6 +674,7 @@ void AHydraCharacter::Tick(float DeltaSeconds)
 		}
 		UpdateBurning();
 	}
+	UpdateRegenTags();
 	// Holding the block button blocks as soon as it is possible (after an attack, a dodge).
 	if (bBlockHeld && IsLocallyControlled() && !HasStateTag(HydraTags::State_Blocking))
 	{
@@ -680,6 +683,29 @@ void AHydraCharacter::Tick(float DeltaSeconds)
 	if (GetNetMode() != NM_DedicatedServer)
 	{
 		UpdatePose();
+	}
+}
+
+void AHydraCharacter::UpdateRegenTags()
+{
+	// No regeneration during an action: stamina not while an attack (press to end of
+	// recovery), a dodge (step and recovery) or a raised block runs; mana not while a bolt is
+	// wound up or charged. The server decides; the owning client knows its own actions too
+	// (predicted abilities) and shows the same.
+	if (!HasAuthority() && !IsLocallyControlled())
+	{
+		return;
+	}
+	const bool bWeaponAttack = HasStateTag(HydraTags::State_Attacking) && !HasStateTag(HydraTags::State_Spell);
+	const bool bStaminaBlocked = bWeaponAttack || HasStateTag(HydraTags::State_Dodging) || HasStateTag(HydraTags::State_Blocking);
+	const bool bManaBlocked = HasStateTag(HydraTags::State_Casting);
+	if (bStaminaBlocked != HasStateTag(HydraTags::State_StaminaRegenBlocked))
+	{
+		AbilitySystem->SetLooseGameplayTagCount(HydraTags::State_StaminaRegenBlocked, bStaminaBlocked ? 1 : 0);
+	}
+	if (bManaBlocked != HasStateTag(HydraTags::State_ManaRegenBlocked))
+	{
+		AbilitySystem->SetLooseGameplayTagCount(HydraTags::State_ManaRegenBlocked, bManaBlocked ? 1 : 0);
 	}
 }
 

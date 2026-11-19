@@ -58,8 +58,7 @@ bool FHydraValuesLoadTest::RunTest(const FString& Parameters)
 		return false;
 	}
 	TestTrue(TEXT("version > 0"), V.version > 0);
-	TestTrue(TEXT("stamina.regen_delay_after_action_ms >= 0"), V.stamina.regen_delay_after_action_ms >= 0.f);
-	TestTrue(TEXT("numbers per form are read (forms.humanoid)"), V.forms.Contains(TEXT("humanoid")) && V.forms[TEXT("humanoid")].stamina_max > 0.f);
+	TestTrue(TEXT("numbers per form are read (forms.humanoid)"), V.forms.Contains(TEXT("humanoid")) && V.forms[TEXT("humanoid")].endurance > 0.f);
 	TestTrue(TEXT("numbers per weapon are read (weapons.longsword)"), V.weapons.Contains(TEXT("longsword")) && V.weapons[TEXT("longsword")].heavy.max_charge_ms > 0.f);
 	TestTrue(TEXT("numbers per shield are read (shields.round_shield)"), V.shields.Contains(TEXT("round_shield")) && V.shields[TEXT("round_shield")].block_half_arc_deg > 0.f);
 	TestTrue(TEXT("heavy attacks cost more than light ones"), V.attack.heavy_stamina_per_weight_ratio > V.attack.light_stamina_per_weight_ratio);
@@ -125,7 +124,7 @@ bool FHydraKeyCheckTest::RunTest(const FString& Parameters)
 {
 	// The two checks above are only worth something if they really find stray and missing keys.
 	TSharedPtr<FJsonObject> Json;
-	const FString Text = TEXT("{ \"_note\": \"x\", \"stamina_cost\": 1, \"distance_m\": 2, \"duration_ms\": 3, \"typo_key\": 4 }");
+	const FString Text = TEXT("{ \"_note\": \"x\", \"distance_m\": 2, \"duration_ms\": 3, \"distance_per_dexterity_gain\": 0.2, \"speed_per_dexterity_gain\": 0.2, \"typo_key\": 4 }");
 	FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text), Json);
 	TArray<FString> Unmapped, Missing;
 	HydraDataLoader::FindUnmappedKeys(Json, FHydraDodgeValues::StaticStruct(), TEXT("dodge."), Unmapped);
@@ -146,7 +145,7 @@ bool FHydraKeyCheckTest::RunTest(const FString& Parameters)
 	TestTrue(TEXT("missing key inside a section keyed by ID named"), Missing.Contains(TEXT("shields.round_shield.block_damage_reduction")));
 
 	// Entries of arrays are checked too (definition files).
-	const FString ArrayText = TEXT("{ \"skills\": [ { \"id\": \"dodge\", \"name\": \"Dodge\", \"kind\": \"movement\", \"oops\": 1 } ] }");
+	const FString ArrayText = TEXT("{ \"skills\": [ { \"id\": \"slam\", \"name\": \"Slam\", \"kind\": \"body\", \"oops\": 1 } ] }");
 	FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(ArrayText), Json);
 	Unmapped.Reset();
 	HydraDataLoader::FindUnmappedKeys(Json, FHydraSkillsFile::StaticStruct(), FString(), Unmapped);
@@ -264,25 +263,25 @@ bool FHydraValuesReloadTest::RunTest(const FString& Parameters)
 	{
 		return false;
 	}
-	const float OldMax = Subsystem->GetValues().forms[TEXT("humanoid")].stamina_max;
+	const float OldMax = Subsystem->GetValues().forms[TEXT("humanoid")].endurance;
 
 	FString Text;
 	FFileHelper::LoadFileToString(Text, *(TempDir / TEXT("values.json")));
 	TSharedPtr<FJsonObject> Json;
 	FJsonSerializer::Deserialize(TJsonReaderFactory<>::Create(Text), Json);
-	Json->GetObjectField(TEXT("forms"))->GetObjectField(TEXT("humanoid"))->SetNumberField(TEXT("stamina_max"), OldMax + 23.0);
+	Json->GetObjectField(TEXT("forms"))->GetObjectField(TEXT("humanoid"))->SetNumberField(TEXT("endurance"), OldMax + 23.0);
 	FString NewText;
 	FJsonSerializer::Serialize(Json.ToSharedRef(), TJsonWriterFactory<>::Create(&NewText));
 	FFileHelper::SaveStringToFile(NewText, *(TempDir / TEXT("values.json")));
 
 	TestTrue(TEXT("reload after edit"), Subsystem->Reload());
-	TestEqual(TEXT("edited value is live"), Subsystem->GetValues().forms[TEXT("humanoid")].stamina_max, OldMax + 23.f);
+	TestEqual(TEXT("edited value is live"), Subsystem->GetValues().forms[TEXT("humanoid")].endurance, OldMax + 23.f);
 	TestEqual(TEXT("listeners were told twice"), Broadcasts, 2);
 
 	FFileHelper::SaveStringToFile(TEXT("{ this is not json"), *(TempDir / TEXT("values.json")));
 	AddExpectedError(TEXT("not valid JSON"), EAutomationExpectedErrorFlags::Contains, 1);
 	TestFalse(TEXT("broken file is rejected"), Subsystem->Reload());
-	TestEqual(TEXT("old values kept"), Subsystem->GetValues().forms[TEXT("humanoid")].stamina_max, OldMax + 23.f);
+	TestEqual(TEXT("old values kept"), Subsystem->GetValues().forms[TEXT("humanoid")].endurance, OldMax + 23.f);
 
 	Subsystem->OnReloaded.Clear();
 	FM.DeleteDirectory(*TempDir, false, true);

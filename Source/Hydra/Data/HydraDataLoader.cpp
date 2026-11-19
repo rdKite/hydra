@@ -182,19 +182,21 @@ void HydraDataLoader::ValidateValues(const FHydraValues& V, const FHydraDefiniti
 		{
 			OutProblems.Add(FString::Printf(TEXT("values.json: no numbers for form '%s' (section forms)"), *F.id.ToString()));
 		}
-		else if (N->body_weight <= 0.f || N->strength <= 0.f || N->hp_max <= 0.f || N->stamina_max <= 0.f || N->stamina_regen_per_s < 0.f
-			|| N->body_radius_m <= 0.f || N->body_height_m < 2.f * N->body_radius_m || N->mana_max < 0.f || N->mana_regen_per_s < 0.f
+		else if (N->body_weight <= 0.f || N->vitality <= 0.f || N->endurance <= 0.f || N->spirit < 0.f || N->strength <= 0.f || N->dexterity <= 0.f
+			|| N->stamina_regen_share_per_s < 0.f || N->mana_regen_share_per_s < 0.f || N->dodge_stamina_cost < 0.f
+			|| N->body_radius_m <= 0.f || N->body_height_m < 2.f * N->body_radius_m
 			|| N->level_cap <= 0 || N->start_level < 0 || N->start_level > N->level_cap || N->start_skill_level < 0 || N->start_skill_level > N->start_level || N->element_body_damage < 0.f)
 		{
-			OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has implausible numbers (weight, strength, hp, stamina, radius > 0; height >= 2 x radius; mana >= 0; start_skill_level <= start_level <= level_cap)"), *F.id.ToString()));
+			OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has implausible numbers (body weight, vitality, endurance, strength, dexterity, radius > 0; height >= 2 x radius; start_skill_level <= start_level <= level_cap)"), *F.id.ToString()));
 		}
-		else
+		else if (V.resistance.curve_constant > 0.f)
 		{
+			// A weakness of more than the curve constant would more than double the damage.
 			for (const float R : { N->resistance.slash, N->resistance.pierce, N->resistance.blunt, N->resistance.fire })
 			{
-				if (R < -1.f || R > 0.95f)
+				if (R < -V.resistance.curve_constant)
 				{
-					OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has a resistance outside -1 .. 0.95"), *F.id.ToString()));
+					OutProblems.Add(FString::Printf(TEXT("values.json: forms.%s has a weakness below -resistance.curve_constant"), *F.id.ToString()));
 				}
 			}
 		}
@@ -220,10 +222,11 @@ void HydraDataLoader::ValidateValues(const FHydraValues& V, const FHydraDefiniti
 			{
 				OutProblems.Add(FString::Printf(TEXT("values.json: no numbers for weapon '%s' (section weapons)"), *W.id.ToString()));
 			}
-			else if (N->weight <= 0.f || N->light.damage <= 0.f || N->heavy.damage <= 0.f || N->light.reach_m <= 0.f || N->heavy.reach_m <= 0.f
+			else if (N->weight < 0.f || (N->weight <= 0.f && N->cost_ratio <= 0.f) || N->demand <= 0.f || N->strength_share < 0.f || N->strength_share > 1.f
+				|| N->light.damage <= 0.f || N->heavy.damage <= 0.f || N->light.reach_m <= 0.f || N->heavy.reach_m <= 0.f
 				|| N->heavy.max_charge_ms < N->heavy.min_windup_ms || N->heavy.min_windup_ms < N->light.windup_ms)
 			{
-				OutProblems.Add(FString::Printf(TEXT("values.json: weapons.%s has implausible numbers (weight, damage, reach > 0; light windup <= heavy min_windup <= max_charge)"), *W.id.ToString()));
+				OutProblems.Add(FString::Printf(TEXT("values.json: weapons.%s has implausible numbers (a weight or a cost_ratio; demand, damage, reach > 0; strength_share in 0..1; light windup <= heavy min_windup <= max_charge)"), *W.id.ToString()));
 			}
 		}
 	}
@@ -258,10 +261,10 @@ void HydraDataLoader::ValidateValues(const FHydraValues& V, const FHydraDefiniti
 		{
 			OutProblems.Add(FString::Printf(TEXT("values.json: no numbers for enemy '%s' (section enemies)"), *E.id.ToString()));
 		}
-		else if (N->level < 0 || N->skill_level < 0 || N->nxp_base < 0.f || N->ai.error_rate < 0.f || N->ai.error_rate > 1.f
+		else if (N->level < 0 || N->skill_level < 0 || N->nxp_base < 0.f || N->hxp_factor < 1.f || N->ai.error_rate < 0.f || N->ai.error_rate > 1.f
 			|| N->ai.block_chance < 0.f || N->ai.dodge_chance < 0.f || N->ai.block_chance + N->ai.dodge_chance > 1.f || N->ai.reaction_time_ms < 0.f || N->ai.engage_range_m <= 0.f)
 		{
-			OutProblems.Add(FString::Printf(TEXT("values.json: enemies.%s has implausible numbers (level, nxp >= 0; chances in 0..1, block + dodge <= 1; engage range > 0)"), *E.id.ToString()));
+			OutProblems.Add(FString::Printf(TEXT("values.json: enemies.%s has implausible numbers (level, nxp >= 0; hxp_factor >= 1; chances in 0..1, block + dodge <= 1; engage range > 0)"), *E.id.ToString()));
 		}
 	}
 	for (const TPair<FName, FHydraEnemyValues>& Pair : V.enemies)
@@ -285,10 +288,12 @@ void HydraDataLoader::ValidateValues(const FHydraValues& V, const FHydraDefiniti
 			}
 		}
 	}
-	if (V.progression.xp_base <= 0.f || V.progression.milestone_every_levels <= 0 || V.skills.xp_base <= 0.f || V.skills.min_cost_factor <= 0.f || V.skills.min_cost_factor > 1.f
-		|| V.imprint.max_level <= 0 || V.imprint.progress_first_level <= 0.f || V.imprint.progress_per_further_level < V.imprint.progress_first_level)
+	if (V.progression.xp_base <= 0.f || V.progression.level_growth < 0.f || V.progression.milestone_every_levels <= 0 || V.skill_points.base < 0.f || V.skill_points.factor < 0.f
+		|| V.imprint.max_level <= 0 || V.imprint.progress_first_level <= 0.f || V.imprint.progress_per_further_level < V.imprint.progress_first_level
+		|| V.resistance.curve_constant <= 0.f || V.interrupt.threshold_share_of_max_hp <= 0.f || V.block.share_min > V.block.share_max || V.block.reference_shield_ratio <= 0.f
+		|| V.damage.efficiency_base <= 0.f || V.damage.efficiency_reference_kg <= 0.f)
 	{
-		OutProblems.Add(TEXT("values.json: progression, skills or imprint has implausible numbers (xp_base, milestone_every_levels, max_level > 0; min_cost_factor in 0..1; the first imprint level must be the easiest)"));
+		OutProblems.Add(TEXT("values.json: progression, skill_points, imprint, resistance, interrupt, block or damage has implausible numbers (xp_base, milestone_every_levels, max_level, curve_constant, interrupt share, efficiency > 0; share_min <= share_max; the first imprint level must be the easiest)"));
 	}
 }
 

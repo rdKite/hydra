@@ -6,7 +6,6 @@
 
 class UAbilitySystemComponent;
 class UGameplayEffect;
-struct FHydraStaminaValues;
 
 /**
  * Small helper layer over GAS (with HydraGameplayEffect.h, HydraTags.h and the
@@ -31,11 +30,8 @@ namespace HydraGas
 	/** An action may start only if the character has at least its cost (tech-test rule). */
 	HYDRA_API bool CanAfford(const UAbilitySystemComponent* Target, float StaminaCost);
 
-	/**
-	 * Takes Cost from the stamina (never below 0) and pauses regeneration for
-	 * stamina.regen_delay_after_action_ms. Does not check CanAfford.
-	 */
-	HYDRA_API void SpendStamina(UAbilitySystemComponent* Target, float Cost, const FHydraStaminaValues& Values);
+	/** Takes Cost from the stamina (never below 0). Does not check CanAfford. */
+	HYDRA_API void SpendStamina(UAbilitySystemComponent* Target, float Cost);
 
 	/**
 	 * Sets maximum and regeneration (numbers of the form in values.json). Call at spawn (bFill: start

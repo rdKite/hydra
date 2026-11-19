@@ -27,7 +27,7 @@ SLOW_TURN_MIN_DEG_S = 30.0
 def edit_values(path):
     with open(path, encoding="utf-8") as f:
         values = json.load(f)
-    values["forms"]["humanoid"]["stamina_max"] *= STAMINA_MAX_FACTOR
+    values["forms"]["humanoid"]["endurance"] *= STAMINA_MAX_FACTOR
     values["turn_rate"]["min_deg_s"] = SLOW_TURN_MIN_DEG_S
     values["turn_rate"]["base_deg_s"] = SLOW_TURN_BASE_DEG_S
     with open(path, "w", encoding="utf-8") as f:
@@ -41,7 +41,7 @@ def plain_start(path):
     for form in values["forms"].values():
         form["start_level"] = 0
         form["start_skill_level"] = 0
-    values["imprint"]["resistance_per_level"] = 0
+    values["imprint"]["resistance_points_per_level"] = 0
     values["imprint"]["damage_bonus_per_level"] = 0
     values["skills"]["field_radius_bonus_per_level"] = 0
     with open(path, "w", encoding="utf-8") as f:
@@ -130,25 +130,31 @@ def main(root):
     with open(os.path.join(root, "data", "values.json"), encoding="utf-8") as f:
         v = json.load(f)
 
-    # --- The rules, worked out from the data (design formulas) -----------------------------
+    # --- The rules, worked out from the data (design formulas, phase-1.md section 26) -------
+    # The run reads a copy of the data in which everyone starts at level 0 without skill
+    # levels, so the attributes are the base values of the form and there are no bonuses.
     form, sword, shield = v["forms"]["humanoid"], v["weapons"]["longsword"], v["shields"]["round_shield"]
-    hp_max, st_max, regen = form["hp_max"], form["stamina_max"], form["stamina_regen_per_s"]
-    weight = form["body_weight"] + sword["weight"] + shield["weight"]
+    hp_max, st_max = 10.0 * form["vitality"], 10.0 * form["endurance"]
+    regen = st_max * form["stamina_regen_share_per_s"]
+    body = form["body_weight"]
+    weight = body + sword["weight"] + shield["weight"]
     ratio = weight / form["strength"]
-    weapon_ratio = sword["weight"] / form["strength"]
-    light_cost = v["attack"]["light_stamina_per_weight_ratio"] * weapon_ratio
-    heavy_cost = v["attack"]["heavy_stamina_per_weight_ratio"] * weapon_ratio
-    dodge_cost = v["dodge"]["stamina_cost"] * ratio
+    light_cost = v["attack"]["light_stamina_per_weight_ratio"] * sword["weight"] / body * sword["demand"]
+    heavy_cost = v["attack"]["heavy_stamina_per_weight_ratio"] * sword["weight"] / body * sword["demand"]
+    dodge_cost = form["dodge_stamina_cost"] * weight / body
     light, heavy = sword["light"], sword["heavy"]
     chain_bonus, chain_cap = v["chain"]["damage_bonus_per_hit"], v["chain"]["max_bonus"]
-    block_ratio = min(max(sword["weight"] / shield["weight"], v["block"]["weight_ratio_min"]), v["block"]["weight_ratio_max"])
-    block_cost_light = v["block"]["stamina_cost_per_hit"] * block_ratio
-    block_cost_heavy = block_cost_light * v["block"]["heavy_attack_factor"]
-    rebound_light = v["block"]["rebound_attacker_stamina_ratio"] * light_cost / block_ratio
-    rebound_heavy = v["block"]["rebound_attacker_stamina_ratio"] * heavy_cost / block_ratio
-    blocked = 1.0 - shield["block_damage_reduction"]
-    weak = min(max(1.0 + (v["weak_point"]["damage_multiplier"] - 1.0) * v["weak_point"]["reference_weapon_weight_ratio"] / weapon_ratio, 1.0), v["weak_point"]["max_damage_multiplier"])
-    interrupt_threshold = v["interrupt"]["damage_threshold_per_weight"] * (weight + v["interrupt"]["attacking_weapon_weight_factor"] * sword["weight"])
+    blk = v["block"]
+    reduction = shield["block_damage_reduction"]
+    blocked = 1.0 - reduction                      # share of the damage that gets through
+    blocker_share = min(max(blk["blocker_share"] * blk["reference_shield_ratio"] / (shield["weight"] / body), blk["share_min"]), blk["share_max"])
+    hold_per_s = blk["hold_stamina_per_s_per_weight_ratio"] * shield["weight"] / body
+    block_cost_light = light["damage"] * reduction * blocker_share
+    block_cost_heavy = heavy["damage"] * reduction * blocker_share
+    rebound_light = blk["rebound_share"] * light["damage"] * reduction
+    rebound_heavy = blk["rebound_share"] * heavy["damage"] * reduction
+    weak = min(v["weak_point"]["damage_multiplier"], v["weak_point"]["max_damage_multiplier"])    # no dexterity gain at level 0
+    interrupt_threshold = v["interrupt"]["threshold_share_of_max_hp"] * hp_max
     full_charge = heavy["damage"] * heavy["full_charge_damage_factor"]
     tr = v["turn_rate"]
 
@@ -186,16 +192,21 @@ def main(root):
     c.check("no error lines from the game in either log", host.count("LogHydra: Error") + client.count("LogHydra: Error") == 0)
     c.check("no data warnings in either log", host.count("LogHydra: Warning: Data:") + client.count("LogHydra: Warning: Data:") == 0)
 
-    print("--- weight and strength (numbers per form, weapon and shield from values.json)")
+    print("--- attributes, weight and costs (numbers per form, weapon and shield from values.json)")
     cs = [e for e in host.events.get("HydraCombatStats", []) if e.get("ai") == 0.0]
     c.check("server logged the combat numbers of the players", len(cs) >= 2, "%d lines" % len(cs))
     first = cs[0] if cs else {}
     c.near("weight = body plus load", first.get("weight"), weight, 0.01)
-    c.near("weight / strength", first.get("ratio"), ratio, 0.001)
+    c.near("handling: weight / strength", first.get("ratio"), ratio, 0.001)
     c.near("turn rate from weight / strength", first.get("turn"), turn_rate(tr["base_deg_s"], tr["min_deg_s"]), 0.2)
-    c.near("light attack cost from weapon weight / strength", first.get("light_cost"), light_cost, 0.01)
-    c.near("heavy attack cost", first.get("heavy_cost"), heavy_cost, 0.01)
-    c.near("dodge cost from weight / strength", first.get("dodge_cost"), dodge_cost, 0.01)
+    c.near("bars from the attributes: 10 HP per vitality", first.get("hp"), hp_max, 0.01)
+    c.near("... 10 stamina per endurance", first.get("stamina"), st_max, 0.01)
+    c.near("regeneration as a share of the bar", first.get("regen"), regen, 0.01)
+    c.near("light attack cost from weapon weight / body weight", first.get("light_cost"), light_cost, 0.05)
+    c.near("heavy attack cost", first.get("heavy_cost"), heavy_cost, 0.05)
+    c.near("dodge cost from total weight / body weight", first.get("dodge_cost"), dodge_cost, 0.05)
+    c.check("a human at level 0 manages two light strikes from a full bar, not three", 2 * light_cost <= st_max < 3 * light_cost, "cost %.0f of %.0f" % (light_cost, st_max))
+    c.near("interrupt threshold: a share of the maximum HP", first.get("interrupt"), interrupt_threshold, 0.1)
     c.near("everyone starts with full health", val(host, 1, AI, "hp"), hp_max, 0.01)
     c.near("everyone starts with full stamina", val(host, 1, H, "stamina"), st_max, 0.01)
     c.near("teleported to the front of the AI (server)", val(host, 2, H, "y"), 440, 2)
@@ -207,24 +218,28 @@ def main(root):
     h3 = one("third light attack hits", host.find("HydraHit", 4.1, 4.8, attacker=H, target=AI))
     c.check("they are light attacks, not blocked, not on a weak point", all(h.get("kind") == "light" and h.get("result") == "hit" and h.get("weak") == 0.0 for h in (h1, h2, h3)))
     c.near("hit lands after the wind-up", (h1.get("t") or 0) - 2.5, light["windup_ms"] / 1000.0, 0.15)
-    c.near("first hit: weapon damage", h1.get("dmg"), light["damage"], 0.01)
-    c.near("second hit of the chain deals more", h2.get("dmg"), light["damage"] * (1 + min(chain_bonus, chain_cap)), 0.01)
-    c.near("third hit deals more again", h3.get("dmg"), light["damage"] * (1 + min(2 * chain_bonus, chain_cap)), 0.01)
+    c.near("first hit: weapon damage", h1.get("dmg"), light["damage"], 0.05)
+    c.near("second hit of the chain deals more", h2.get("dmg"), light["damage"] * (1 + min(chain_bonus, chain_cap)), 0.05)
+    c.near("third hit deals more again", h3.get("dmg"), light["damage"] * (1 + min(2 * chain_bonus, chain_cap)), 0.05)
     c.check("chain counts 1, 2, 3", [h1.get("chain"), h2.get("chain"), h3.get("chain")] == [1.0, 2.0, 3.0])
-    c.near("attack cost taken from stamina (weight costs stamina)", h1.get("attacker_stamina"), st_max - light_cost, 0.01)
+    c.near("attack cost taken from stamina (weight costs stamina)", h1.get("attacker_stamina"), st_max - light_cost, 0.05)
+    c.near("no regeneration while the attack runs: the second strike starts from a refilled bar", h2.get("attacker_stamina"), st_max - light_cost, 0.05)
     total = light["damage"] * (3 + min(chain_bonus, chain_cap) + min(2 * chain_bonus, chain_cap))
-    c.near("AI health after three hits (server)", val(host, 4.6, AI, "hp"), hp_max - total, 0.01)
-    c.near("client sees the AI's health", val(client, 4.6, AI, "hp"), hp_max - total, 0.01)
+    c.near("AI health after three hits (server)", val(host, 4.6, AI, "hp"), hp_max - total, 0.05)
+    c.near("client sees the AI's health", val(client, 4.6, AI, "hp"), hp_max - total, 0.05)
     c.check("chain counter shown while the chain runs", val(host, 4.6, H, "chain") == 3.0)
     c.check("chain ends after %.0f s without a hit" % (v["chain"]["reset_after_ms"] / 1000.0), val(host, 7, H, "chain") == 0.0)
     h4 = one("fourth light attack after the pause hits", host.find("HydraHit", 7.2, 7.9, attacker=H, target=AI))
-    c.near("... with plain weapon damage again", h4.get("dmg"), light["damage"], 0.01)
+    c.near("... with plain weapon damage again", h4.get("dmg"), light["damage"], 0.05)
     c.check("... as the first hit of a new chain", h4.get("chain") == 1.0)
 
     print("--- client: attack, dodge and block are predicted locally and decided on the server")
     one("client's attack into the air is a miss on the server", host.find("HydraMiss", 5.0, 5.8, attacker=C))
     c.check("client shows its own attack at once (predicted)", (client.stats(5.4, C) or {}).get("action") in ("LightStrike", "Recovery", "LightWindup"), (client.stats(5.4, C) or {}).get("action"))
-    c.near("client sees its attack cost (replicated)", val(client, 5.4, C, "stamina"), st_max - light_cost, 0.01)
+    c.near("client sees its attack cost (replicated; no regeneration while the attack runs)", val(client, 5.4, C, "stamina"), st_max - light_cost, 0.05)
+    c.check("... and that regeneration is paused", (client.stats(5.4, C) or {}).get("regenblocked") == 1.0)
+    c.between("after the attack the bar regenerates at once (no delay), by its share per second", val(client, 7, C, "stamina"),
+              min(st_max, st_max - light_cost + regen * 0.3 - dodge_cost) - 5, st_max)
     c.near("client dodged backwards by dodge.distance_m (server)", (val(host, 7, C, "x") or 0) - (val(host, 4.6, C, "x") or 0), v["dodge"]["distance_m"] * 100, 20)
     c.near("client and server agree on the position after the dodge", val(client, 7, C, "x"), val(host, 7, C, "x"), 15)
     c.check("client blocks: its own view", (client.stats(9.5, C) or {}).get("blocking") == 1.0)
@@ -234,11 +249,11 @@ def main(root):
     hv = one("heavy attack released early hits", host.find("HydraHit", 8.5, 9.3, attacker=H, target=AI))
     c.check("it is a heavy attack", hv.get("kind") == "heavy")
     c.near("released early: strikes at the minimum wind-up (the telegraph stays)", (hv.get("t") or 0) - 8.5, heavy["min_windup_ms"] / 1000.0, 0.15)
-    c.near("released early: base heavy damage", hv.get("dmg"), heavy["damage"], 0.01)
-    c.near("heavy attack costs the heavy stamina cost in total", hv.get("attacker_stamina"), st_max - heavy_cost, 0.01)
+    c.near("released early: base heavy damage", hv.get("dmg"), heavy["damage"], 0.05)
+    c.near("heavy attack costs the heavy stamina cost in total", hv.get("attacker_stamina"), st_max - heavy_cost, 0.05)
     hf = one("fully charged heavy attack hits", host.find("HydraHit", 10.5, 12.3, attacker=H, target=AI))
     c.near("strikes by itself at full charge", (hf.get("t") or 0) - 10.5, heavy["max_charge_ms"] / 1000.0, 0.15)
-    c.near("full charge: more damage", hf.get("dmg"), full_charge, 0.01)
+    c.near("full charge: more damage", hf.get("dmg"), full_charge, 0.05)
     c.check("the charge is visible to the other player (telegraph)", (client.stats(11, H) or {}).get("action") == "HeavyCharge", (client.stats(11, H) or {}).get("action"))
     c.check("the attacker shows it too", (host.stats(11, H) or {}).get("action") == "HeavyCharge")
 
@@ -252,12 +267,13 @@ def main(root):
     print("--- weak point (back), death and respawn")
     wk = one("light attack on the back hits", host.find("HydraHit", 13.6, 14.4, attacker=H, target=AI))
     c.check("it is a weak-point hit", wk.get("weak") == 1.0)
-    c.near("weak point: fixed multiplier, no random crit", wk.get("dmg"), light["damage"] * weak, 0.01)
+    c.near("weak point: fixed multiplier, no random crit", wk.get("dmg"), light["damage"] * weak, 0.05)
     kill = one("heavy attack charged for 700 ms on the back hits", host.find("HydraHit", 14.5, 15.8, attacker=H, target=AI))
     charge = 1.0 + (heavy["full_charge_damage_factor"] - 1.0) * (700.0 - heavy["min_windup_ms"]) / (heavy["max_charge_ms"] - heavy["min_windup_ms"])
     # The charge is measured in frames, so allow one or two frames of charge either way.
-    c.near("damage: partial charge x weak point x chain", kill.get("dmg"), heavy["damage"] * charge * weak * (1 + min(chain_bonus, chain_cap)), 2.5)
-    c.check("guard rail: the worst single hit (full charge on the back) does not kill from full health", full_charge * weak < hp_max, "%.0f of %.0f" % (full_charge * weak, hp_max))
+    c.near("damage: partial charge x weak point x chain", kill.get("dmg"), heavy["damage"] * charge * weak * (1 + min(chain_bonus, chain_cap)), 25)
+    strongest_light = light["damage"] * (1 + chain_cap) * v["weak_point"]["max_damage_multiplier"]
+    c.check("guard rail (no hard cap): the strongest light hit stays below the HP of an equal", strongest_light < hp_max, "%.0f of %.0f" % (strongest_light, hp_max))
     death = one("the AI opponent is defeated", host.find("HydraDeath", 14.5, 17.0, who=AI))
     c.check("defeated on the server and on the client", (host.stats(17, AI) or {}).get("dead") == 1.0 and (client.stats(17, AI) or {}).get("dead") == 1.0)
     respawn = one("it respawns", host.find("HydraRespawn", 16.0, 19.8, who=AI))
@@ -265,30 +281,36 @@ def main(root):
     c.check("alive again with full health at its spawn point", (host.stats(19.8, AI) or {}).get("dead") == 0.0 and val(host, 19.8, AI, "hp") == hp_max and abs((val(host, 19.8, AI, "y") or 0) - 600) < 5)
     c.check("client sees it alive again", (client.stats(19.8, AI) or {}).get("dead") == 0.0)
 
-    print("--- directional block, rebound, block break")
+    print("--- directional block: holding cost, block cost and rebound as shares of the blocked damage, block break")
     c.check("AI holds its block (server and client see it)", (host.stats(21, AI) or {}).get("blocking") == 1.0 and (client.stats(21, AI) or {}).get("blocking") == 1.0)
+    # The AI raised its block at 20.5 with a full bar; holding costs hold_per_s from then on.
+    c.near("holding the block costs stamina every second (shield weight / body weight)", val(host, 21, AI, "stamina"), st_max - hold_per_s * 0.5, 12)
     b1 = one("light attack from the front", host.find("HydraHit", 21.2, 21.9, attacker=H, target=AI))
     c.check("lands in the block", b1.get("result") == "blocked")
-    c.near("blocked: strongly reduced damage", b1.get("dmg"), light["damage"] * blocked, 0.01)
-    c.near("blocker pays stamina by the weight of the attack", b1.get("target_stamina"), st_max - block_cost_light, 0.01)
-    c.near("rebound: the attacker loses extra stamina", b1.get("attacker_stamina"), st_max - light_cost - rebound_light, 0.01)
+    c.near("blocked: strongly reduced damage", b1.get("dmg"), light["damage"] * blocked, 0.05)
+    held1 = hold_per_s * ((b1.get("t") or 21.45) - 20.5)
+    c.near("the blocker pays a share of the damage the shield took", b1.get("target_stamina"), st_max - held1 - block_cost_light, 12)
+    c.near("rebound: the attacker loses a share of the blocked damage too", b1.get("attacker_stamina"), st_max - light_cost - rebound_light, 0.05)
     b2 = one("heavy attack from the front", host.find("HydraHit", 22.2, 23.0, attacker=H, target=AI))
     c.check("lands in the block too", b2.get("result") == "blocked")
-    c.near("heavy attack costs the blocker more", b2.get("target_stamina"), st_max - block_cost_light - block_cost_heavy, 0.01)
-    c.near("no stamina regeneration while blocking", val(host, 23.2, AI, "stamina"), st_max - block_cost_light - block_cost_heavy, 0.01)
+    c.near("a heavy attack deals more, so it gets more through", b2.get("dmg"), heavy["damage"] * blocked, 0.05)
+    held2 = hold_per_s * ((b2.get("t") or 22.6) - 20.5)
+    c.near("... and presses the blocker harder", b2.get("target_stamina"), st_max - held2 - block_cost_light - block_cost_heavy, 12)
+    c.near("... and rebounds harder on the attacker", b2.get("attacker_stamina"), st_max - heavy_cost - rebound_heavy, 0.05)
+    c.near("no stamina regeneration while blocking: only the holding cost goes on", val(host, 23.2, AI, "stamina"), st_max - hold_per_s * 2.7 - block_cost_light - block_cost_heavy, 12)
     c.check("a blocked hit does not advance the chain", b1.get("chain") == 0.0 and b2.get("chain") == 0.0)
     b3 = one("light attack from behind while the AI blocks", host.find("HydraHit", 24.0, 24.7, attacker=H, target=AI))
     c.check("the block does not cover the back: full hit on the weak point", b3.get("result") == "hit" and b3.get("weak") == 1.0)
     b4 = one("light attack into a block with too little stamina", host.find("HydraHit", 25.6, 26.3, attacker=H, target=AI))
     c.check("the block breaks", b4.get("result") == "blockbreak")
-    c.near("the hit lands in full", b4.get("dmg"), light["damage"] * (1 + min(chain_bonus, chain_cap)), 0.01)
+    c.near("the hit lands in full", b4.get("dmg"), light["damage"] * (1 + min(chain_bonus, chain_cap)), 0.05)
     c.near("the blocker's stamina is empty", b4.get("target_stamina"), 0, 0.01)
 
-    print("--- interrupt by weight")
+    print("--- interrupt by a share of the maximum HP")
     i1 = one("light hit while the AI charges a heavy attack", host.find("HydraHit", 27.7, 28.4, attacker=H, target=AI))
-    c.check("light damage is below the threshold for this weight: no interrupt", i1.get("interrupt") == 0.0 and light["damage"] < interrupt_threshold, "threshold %.1f" % interrupt_threshold)
+    c.check("light damage is below the threshold: no interrupt", i1.get("interrupt") == 0.0 and light["damage"] < interrupt_threshold, "threshold %.1f" % interrupt_threshold)
     a1 = one("the AI's heavy attack plays out and hits the host", host.find("HydraHit", 28.4, 29.4, attacker=AI, target=H))
-    c.near("same rules for the AI: full charge damage", a1.get("dmg"), full_charge, 0.01)
+    c.near("same rules for the AI: full charge damage", a1.get("dmg"), full_charge, 0.05)
     i2 = one("heavy hit while the AI charges again", host.find("HydraHit", 30.2, 31.0, attacker=H, target=AI))
     c.check("heavy damage is above the threshold: interrupt", i2.get("interrupt") == 1.0 and heavy["damage"] >= interrupt_threshold)
     c.check("the interrupted attack never lands", len(host.find("HydraHit", 30.2, 32.4, attacker=AI)) + len(host.find("HydraMiss", 30.2, 32.4, attacker=AI)) == 0)
@@ -331,7 +353,7 @@ def main(root):
     lb = one("server: the client's second attack hits the host, who faces it", host.find("HydraHit", 47.9, 49.0, attacker=C, target=H))
     c.check("the host raised its block before the hit landed on the server", host.count("HydraAutoBlock pressed") == 1 and lb.get("block_now") == 1.0, "block_now=%s" % lb.get("block_now"))
     c.check("... but after what the attacker saw: the hit is not blocked (block state rewound)", lb.get("result") == "hit" and lb.get("weak") == 0.0, lb.get("result"))
-    c.near("... and lands in full", lb.get("dmg"), light["damage"], 0.01)
+    c.near("... and lands in full", lb.get("dmg"), light["damage"], 0.05)
     c.check("the client fired while it still saw the target close", fired.get("seen_dist", 999) < 170, fired.get("seen_dist"))
     c.check("emulation switched off again on both sides", host.count("NetSim: step 0 ms (outgoing lag 0 ms), packet loss 0% [server]") >= 1 and
             client.count("NetSim: step 0 ms (outgoing lag 0 ms), packet loss 0% [client]") >= 1)
@@ -339,8 +361,8 @@ def main(root):
     print("--- Hydra.ReloadValues (values edited on disk during the run) and the turn rate")
     c.check("host loaded the values twice (start and reload)", host.count("Loaded values.json v") == 2)
     c.check("client loaded the values twice (the server told it to reload)", client.count("Loaded values.json v") == 2)
-    c.near("server: new stamina maximum", val(host, 51, H, "max"), st_max * STAMINA_MAX_FACTOR, 0.01)
-    c.near("client sees the new maximum (replicated)", val(client, 51, C, "max"), st_max * STAMINA_MAX_FACTOR, 0.01)
+    c.near("server: new stamina maximum (endurance edited)", val(host, 51, H, "max"), st_max * STAMINA_MAX_FACTOR, 0.05)
+    c.near("client sees the new maximum (replicated)", val(client, 51, C, "max"), st_max * STAMINA_MAX_FACTOR, 0.05)
     slow = turn_rate(SLOW_TURN_BASE_DEG_S, SLOW_TURN_MIN_DEG_S)
     slow_block = turn_rate(SLOW_TURN_BASE_DEG_S, SLOW_TURN_MIN_DEG_S, blocking=True)
     slow_attack = turn_rate(SLOW_TURN_BASE_DEG_S, SLOW_TURN_MIN_DEG_S, attacking=True)

@@ -7,10 +7,12 @@
 namespace HydraTags
 {
 	// States on a character (granted by effects or abilities).
-	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_StaminaRegenBlocked);
+	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_StaminaRegenBlocked);   // an action runs: attack, dodge, held block
+	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_ManaRegenBlocked);      // a bolt is wound up or charged
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Attacking);          // attack ability running (wind-up to end of recovery)
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_AttackCommitted);    // wind-up and strike: the attack binds, slow turning
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Blocking);
+	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Spell);              // cast ability running (it also owns State_Attacking)
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Casting);            // bolt: from the press until it is out
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dodging);            // dodge step and its recovery
 	HYDRA_API UE_DECLARE_GAMEPLAY_TAG_EXTERN(State_Dead);

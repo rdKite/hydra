@@ -43,7 +43,7 @@ bool HydraGas::CanAfford(const UAbilitySystemComponent* Target, float StaminaCos
 	return StaminaCost <= 0.f || GetStamina(Target) >= StaminaCost - 0.001f;
 }
 
-void HydraGas::SpendStamina(UAbilitySystemComponent* Target, float Cost, const FHydraStaminaValues& Values)
+void HydraGas::SpendStamina(UAbilitySystemComponent* Target, float Cost)
 {
 	if (!Target || Cost <= 0.f)
 	{
@@ -54,11 +54,6 @@ void HydraGas::SpendStamina(UAbilitySystemComponent* Target, float Cost, const F
 		Character->Metrics.StaminaUsed += FMath::Min(Cost, GetStamina(Target));
 	}
 	Apply(Target, UHydraGE_StaminaChange::StaticClass(), -Cost);
-	const float DelayS = Values.regen_delay_after_action_ms / 1000.f;
-	if (DelayS > 0.f)
-	{
-		Apply(Target, UHydraGE_StaminaRegenDelay::StaticClass(), 0.f, DelayS);
-	}
 }
 
 void HydraGas::ApplyStaminaValues(UAbilitySystemComponent* Target, float Max, float RegenPerS, FActiveGameplayEffectHandle& InOutRegen, bool bFill)

@@ -1,9 +1,8 @@
 {
-  "_note": "Skills (grow by use). kind: weapon_family, movement, element or body (body skills of monsters). IDs are stable (lower snake_case). Numbers live in values.json.",
+  "_note": "Skills (grow by use). kind: weapon_family, element or body (body skills of monsters). IDs are stable (lower snake_case). Numbers live in values.json.",
   "skills": [
     { "id": "sword_fighting", "name": "Sword fighting", "kind": "weapon_family" },
     { "id": "shield_fighting", "name": "Shield fighting", "kind": "weapon_family" },
-    { "id": "dodge", "name": "Dodge", "kind": "movement" },
     { "id": "fire_magic", "name": "Fire magic", "kind": "element" },
     { "id": "slam", "name": "Slam", "kind": "body" },
     { "id": "projectile", "name": "Projectile", "kind": "body" }

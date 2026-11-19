@@ -606,12 +606,12 @@ void AHydraPlayerController::HydraStats()
 		const bool bMe = C == GetPawn();
 		const APlayerState* PS = C->GetPlayerState();
 
-		// Progress: skills as id:level:xp, what the milestone offers as imprint / evolve:<form>.
+		// Progress: skills as id:level:progress bar, what the milestone offers as imprint / evolve:<form>.
 		const UHydraProgressionComponent* Progress = C->GetProgression();
 		FString Skills;
 		for (const FHydraSkillState& S : Progress->GetSkills())
 		{
-			Skills += FString::Printf(TEXT("%s%s:%d:%.1f"), Skills.IsEmpty() ? TEXT("") : TEXT(","), *S.Id.ToString(), S.Level, S.Xp);
+			Skills += FString::Printf(TEXT("%s%s:%d:%.3f"), Skills.IsEmpty() ? TEXT("") : TEXT(","), *S.Id.ToString(), S.Level, S.Progress);
 		}
 		FString Offer = Progress->CanRaiseImprint() ? TEXT("imprint") : TEXT("");
 		if (!Progress->GetEvolutionOffer().IsNone())
@@ -635,11 +635,11 @@ void AHydraPlayerController::HydraStats()
 			const float ToTarget = (Target->GetActorLocation() - C->GetActorLocation()).Rotation().Yaw;
 			LockOff = FMath::Abs(FMath::FindDeltaAngleDegrees(GetControlRotation().Yaw, ToTarget));
 		}
-		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d form=%s hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f mana=%.2f maxmana=%.1f burning=%d fire=%d x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f precise=%d level=%d xp=%.1f imprint=%d imprintprogress=%.1f milestones=%d offer=%s skills=%s ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
+		UE_LOG(LogHydra, Log, TEXT("HydraStats t=%.2f who=%s id=%s me=%d form=%s hp=%.2f maxhp=%.1f stamina=%.2f max=%.1f mana=%.2f maxmana=%.1f burning=%d fire=%d x=%.0f y=%.0f z=%.0f yaw=%.1f ctrl=%.1f lock=%s lockoff=%.1f precise=%d level=%d xp=%.1f hardship=%.3f imprint=%d imprintprogress=%.1f milestones=%d offer=%s skills=%s ping=%.0f regenblocked=%d speed=%.0f action=%s chain=%d dead=%d blocking=%d"),
 			Clock, Who, *C->GetLogId(), bMe ? 1 : 0, *C->GetFormId().ToString(), C->GetHealth(), C->GetMaxHealth(), C->GetStamina(), C->GetMaxStamina(),
 			C->GetMana(), C->GetMaxMana(), C->GetBurningStacks(), C->HasFireImprint() ? 1 : 0,
 			C->GetActorLocation().X, C->GetActorLocation().Y, C->GetActorLocation().Z, C->GetActorRotation().Yaw, bMe ? GetControlRotation().Yaw : 0.f, *Lock, LockOff, C->IsPreciseMovement() ? 1 : 0,
-			Progress->GetLevel(), Progress->GetXp(), Progress->GetImprintLevel(), Progress->GetImprintProgress(), Progress->GetOpenMilestones(), *Offer, *Skills,
+			Progress->GetLevel(), Progress->GetXp(), Progress->GetHardship(), Progress->GetImprintLevel(), Progress->GetImprintProgress(), Progress->GetOpenMilestones(), *Offer, *Skills,
 			PS ? PS->GetPingInMilliseconds() : 0.f, C->HasStateTag(HydraTags::State_StaminaRegenBlocked) ? 1 : 0, C->GetVelocity().Size2D(),
 			*ActionEnum->GetNameStringByValue(static_cast<int64>(C->GetShownAction().Action)), C->GetChainCount(), C->IsAlive() ? 0 : 1,
 			C->GetShownAction().Action == EHydraAction::Block ? 1 : 0);
@@ -666,6 +666,11 @@ void AHydraPlayerController::HydraAITeleport(float X, float Y, float Yaw)
 void AHydraPlayerController::HydraAI(const FString& Verb, float Value)
 {
 	ServerDevCommand(FString::Printf(TEXT("ai %s %f"), *Verb, Value));
+}
+
+void AHydraPlayerController::HydraRefill()
+{
+	ServerDevCommand(TEXT("refill"));
 }
 
 void AHydraPlayerController::HydraResetAll()
@@ -699,7 +704,7 @@ void AHydraPlayerController::ServerDevCommand_Implementation(const FString& Comm
 		const bool bCanAfford = HydraGas::CanAfford(ASC, Number(1));
 		if (bCanAfford)
 		{
-			HydraGas::SpendStamina(ASC, Number(1), UHydraValuesSubsystem::Get(this).stamina);
+			HydraGas::SpendStamina(ASC, Number(1));
 		}
 		UE_LOG(LogHydra, Log, TEXT("HydraSpendStamina amount=%.1f %s stamina=%.1f"), Number(1), bCanAfford ? TEXT("spent") : TEXT("refused"), HydraGas::GetStamina(ASC));
 	}
@@ -728,7 +733,7 @@ void AHydraPlayerController::ServerDevCommand_Implementation(const FString& Comm
 	}
 	else if (Args[0] == TEXT("xp") && Self)
 	{
-		Self->GetProgression()->ServerAddXp(Number(1));
+		Self->GetProgression()->ServerEnemyDefeated(Number(1), Number(1));
 	}
 	else if (Args[0] == TEXT("imprintprogress") && Self)
 	{
@@ -743,6 +748,10 @@ void AHydraPlayerController::ServerDevCommand_Implementation(const FString& Comm
 				It->ServerTeleport(FVector(Number(2), Number(3), It->GetActorLocation().Z), Number(4));
 			}
 		}
+	}
+	else if (Args[0] == TEXT("refill") && Self)
+	{
+		Self->ServerRefill();
 	}
 	else if (Args[0] == TEXT("reset"))
 	{
