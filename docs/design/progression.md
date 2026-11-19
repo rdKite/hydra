@@ -188,14 +188,19 @@ damage = base damage (weapon or spell form: material, rarity, weight)
 - **Situational factors are multiplied:** charge, chain and weak point reward position and
   play in the moment; each is capped on its own and does not grow with the level. Dexterity
   raises only the weak-point factor.
-- **Base damage comes from equipment** (material, rarity, weight) – the lever for reinvesting
-  a bigger bar (see [items.md](items.md#what-makes-a-weapon-better)).
-- **Strength or dexterity, with a smooth transition:** weapon weight ÷ the wielder's body
-  weight gives a share "heavy" between 0 and 1. Bonus = share × strength bonus +
-  (1 − share) × dexterity bonus. Both bonuses count only what level and training added on
-  top of the species' base value – so a colossus' huge strength does not give absurd damage
-  by itself; its large body weapons do that through their base damage. For a giant, a
-  greatsword is a light weapon.
+- **Base damage comes from equipment** (schematic, material, rarity) – the lever for
+  reinvesting a bigger bar (see [items.md](items.md#what-makes-a-weapon-better)).
+- **Strength or dexterity – fixed per schematic:** each weapon schematic has a fixed share,
+  e.g. dagger 0/100, longsword 50/50, greatsword 100/0 (table in
+  [combat.md](combat.md#schematics-weight-and-stat)); short bow dexterity, longbow strength;
+  each **body skill** of a monster is tied to one of the two (e.g. slam, charge, stomp →
+  strength; bite, pounce, tail strike → dexterity). Bonus = strength share × strength bonus +
+  dexterity share × dexterity bonus. Both bonuses count only what level and training added
+  on top of the species' base value – so a colossus' huge strength does not give absurd
+  damage by itself. The grip (one- or two-handed) does not change the share or the damage.
+- **Guide values (guess):** 0.3 damage bonus per gain for strength and for dexterity (gain =
+  value ÷ base − 1); at level 100 without training that is +60 %, about a third of the
+  targeted pool.
 - Guard rail stays: against roughly equal opponents, no death from full health in one hit
   (see [combat.md](combat.md#high-damage-no-meat-shields)).
 

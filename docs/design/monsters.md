@@ -33,6 +33,9 @@ designed once and applies to every form with a matching body.
   stomp, threads/web. **Passive ones are capabilities** (pursuit, front shield, glide/fly,
   wall-walking): they do not level and sit in the form's list (see
   [Capabilities](#capabilities)).
+- **Each body skill is tied to one attribute** for its damage bonus: slam, charge, stomp →
+  strength; bite, pounce, tail strike → dexterity (set per skill in the data). The
+  projectile uses none, like spells.
 - **How a form gets its body skills:** some **base skills come with the form** – it feels
   different at once. Other skills are only **accessible**. They are learned by use or under
   a condition (e.g. a minimum value in an attribute). So there is still something to

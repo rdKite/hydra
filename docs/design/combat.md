@@ -374,7 +374,8 @@ weapons.
 
 | Property | Affects | Related to |
 |---|---|---|
-| **Weight** (for bows: draw weight) | Stamina per strike (weight ÷ body weight); base damage; whether strength or dexterity scales the damage; handling | Strength (handling), stamina |
+| **Weight** (per schematic, not per material; for bows also a draw weight) | Stamina per strike (weight ÷ body weight); strength requirement per grip; handling | Strength (requirement, handling), stamina |
+| **Strength / dexterity share** | Which attribute raises the damage – fixed per schematic | Strength, dexterity |
 | **Demand** | Factor on the stamina per strike on top of the weight – how much force and control the weapon asks for; rises with rarity; +100 % while the family's skill is still at level 0 (learning phase) | Rarity (see [items.md](items.md#what-makes-a-weapon-better)), skill unlocked or not |
 | **Reach** | Distance to the opponent | – |
 | **Damage type** | Slash, pierce, blunt | Subtypes of physical |
@@ -412,17 +413,60 @@ weapons.
 - **Arrowheads** set the damage type: broad for slash, narrow and armour-piercing for
   pierce, blunt for blunt.
 
+### Schematics: weight and stat
+
+Weights follow real historical weapons (fantasy ones exaggerated a little) and belong to the
+**schematic**, not to the material: a longsword weighs about 1.5 kg whether iron, steel,
+mithril or dragon bone. "Cost" is a light strike of a human at level 0 (body 70 kg, 1,000
+stamina), calibrated so that the longsword manages just under two strikes in a row.
+
+| Family | Schematic | Weight | Hands | Strength / dexterity | Damage (light / heavy) | Cost (strikes at level 0) |
+|---|---|---|---|---|---|---|
+| Daggers | knife | 0.2 kg | 1 | 0 / 100 | pierce / slash | 65 (15) |
+| | dagger | 0.4 kg | 1 | 0 / 100 | pierce / slash | 130 (7) |
+| | long dagger | 0.6 kg | 1 | 0 / 100 | pierce / slash | 195 (5) |
+| Swords | short sword | 1.0 kg | 1 | 30 / 70 | slash / pierce | 325 (3) |
+| | longsword | 1.5 kg | 1 or 2 | 50 / 50 | slash / pierce | 490 (2); two-handed 345 |
+| | greatsword | 3.0 kg | 2 | 100 / 0 | slash / pierce | 685 (1) |
+| Axes | hand axe | 0.8 kg | 1 | 30 / 70 | slash / blunt | 260 (3) |
+| | battle axe | 2.0 kg | 2 | 70 / 30 | slash / blunt | 455 (2) |
+| Blunt | mace | 1.5 kg | 1 | 50 / 50 | blunt | 490 (2) |
+| | war hammer (fantasy, two-handed) | 5.0 kg | 2 | 100 / 0 | blunt | 1,140 (0 – a goal weapon) |
+| Polearms | spear | 2.0 kg | 1 or 2 | 30 / 70 | pierce | 650 (1); two-handed 455 (2) |
+| | halberd | 3.0 kg | 2 | 70 / 30 | pierce / slash | 685 (1) |
+| Bows | short bow | 0.7 kg, draw 20 kg | 2 | 0 / 100 | by arrowhead | drawing per second |
+| | longbow | 1.2 kg, draw 55 kg | 2 | 100 / 0 | by arrowhead | drawing per second |
+| Shields | buckler / round shield / tower shield | 0.8 / 4 / 8 kg | 1 | – | – | holding per second; per blocked hit |
+
+- The stat share is fixed per schematic – no ratio to the body weight. For humanoids the
+  ratio hardly varies (size ±10 %), and giants fight with body skills, not weapons.
+- Bows: the **draw weight** sets (with strength) how fast you draw; the bow's own weight only
+  counts as load.
+- Base damage, wind-ups and reach per schematic come with balancing (when the families are
+  added in Phase 1b).
+
 ### Free choice of hands
 
-- Every weapon has a weight; the grip is free.
-  - **Two-handed:** less stamina per strike, more force, stronger weapon block – the off
-    hand is occupied.
-  - **One-handed:** more stamina per strike, slower – but the off hand is free for a
-    shield, focus or a second weapon.
-- **The limit follows by itself** from stamina cost ≈ weapon weight ÷ body weight × demand:
-  if a strike costs more stamina than someone has in total, it does not work. Strength sets
-  how well a heavy weapon can be handled (turning, drawing); with enormous strength and
-  endurance even two greatswords are possible – expensive, but a nice goal.
+- Every weapon has a weight; the grip is free – **any weapon can be held in one hand** if the
+  strength is there.
+  - **Two-handed:** stamina × 0.7 per strike, stronger weapon block – the off hand is
+    occupied. **No damage bonus.**
+  - **One-handed:** stamina × 1.0 per strike – but the off hand is free for a shield, a
+    spell or a second weapon.
+- **Strength requirement per grip:** weapon weight × **20 strength per kg two-handed**, ×
+  **40 one-handed** (one hand carries the whole load). Whoever meets it pays nothing extra.
+  Whoever is below can still wield the weapon, but its **demand rises** by requirement ÷
+  strength – a soft limit, not a lock. Strength never lowers costs; it only avoids this
+  malus.
+- **Stamina per strike** = constant × weapon weight ÷ body weight × demand × grip factor. The
+  limit follows by itself: if a strike costs more than the whole bar, it does not work.
+- **Example (human, strength 80 at level 0, 240 at level 100):** a greatsword (3 kg) needs 60
+  two-handed and 120 one-handed – one-handed without malus from about level 25. A war hammer
+  (5 kg) needs 100 and 200 – two-handed from about level 13, one-handed from about level 75.
+  With enough strength and endurance even two greatswords or two war hammers are possible –
+  expensive, but a nice goal.
+- **Mana** does not depend on weapon weight; but an augment binds mana per weapon hand, so
+  two augmented weapons bind twice.
 - **Speed** is not a stat of its own: light weapons are fast because their wind-up is
   short, and that wind-up stays fixed per weapon (telegraphs). Dexterity does not make
   attacks faster.

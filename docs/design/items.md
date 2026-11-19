@@ -18,12 +18,28 @@ components, like weapons (see [Crafting](#crafting-weapons-and-armor)).
   - protection against slash, pierce and blunt, as **resistance points** (they add to the
     wearer's points, see resistances in [progression.md](progression.md#resistances));
   - element properties (metal conducts lightning and heats up in heat or cools down in cold;
-    fur and cloth insulate against cold …);
-  - a **density** (weight per thickness).
+    fur and cloth insulate against cold …).
+- **Weight belongs to the schematic, not to the material** – for weapons and armor alike.
+  Every craft has its own schematics, so the difference comes by itself: a plate harness
+  (armor smithing) is heavy, a leather jerkin (leatherworking) light, a robe (tailoring)
+  very light. Within a craft the material changes protection and look, not weight: a mithril
+  harness weighs as much as an iron one but protects better. Fantasy materials therefore
+  need no invented weight.
 - **Thickness** sets how high the protection is and how much the armor weighs. It is part of
   the schematic (e.g. "light breastplate" and "heavy breastplate") and cannot be set freely.
-  Example: metal protects strongly against slash and pierce, but is heavy and weak against
-  blunt and lightning.
+
+  | Craft | Example schematic | Full set, light / heavy |
+  |---|---|---|
+  | Tailoring | robe, gambeson | 2 / 5 kg – little protection, very quiet |
+  | Leatherworking | leather jerkin | 5 / 8 kg – scouts |
+  | Armor carving | scale, bone, chitin armor | 8 / 14 kg |
+  | Armor smithing | mail / plate harness | 12 / 25 kg – much protection, heavy, loud |
+
+  Split over the slots: torso 50 %, legs 20 %, head 10 %, boots 10 %, hands 5 %, back 5 %.
+  Example: a human in heavy plate weighs 95 kg – dodging costs × 1.36, turning and sprinting
+  slow down, and they are noticed from further away.
+- Example: metal protects strongly against slash and pierce, but is weak against blunt and
+  lightning.
 - **Monster material inherits the being's affinity or imprint:** scales of a fire armored
   saurian protect against fire, gel of an ice slime protects against cold. This way humanoids
   "borrow" properties from monsters – the counterpart to evolution. Rare monsters provide rare
@@ -112,8 +128,8 @@ can be made in different ways.
 
 | Lever | Better through | Price |
 |---|---|---|
-| **Size** (schematic) | more damage, more reach | more weight: stamina, turning, being noticed |
-| **Material** | more base damage; affinity (monster material) | density sets the weight; rare deposits |
+| **Size** (schematic) | more damage, more reach | more weight: stamina, strength requirement, turning, being noticed |
+| **Material** | more base damage, its profile (slash, pierce, blunt); affinity (monster material) | rare deposits; a material strong in one damage type is weaker in another – weight does not change |
 | **Rarity** | **+12 % damage per level** | **+6 % demand per level**; effort in crafting |
 | **Hilt** | bonuses into the pool of progress bonuses (added up) | – |
 | **Masterwork** | one special property | from rare on only, high effort |

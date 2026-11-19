@@ -32,8 +32,8 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
 - [ ] Strikes in a row grow with the bar (a human at level 100 has about 3.5× the stamina):
       check in playtests whether this is too much, especially with light weapons. If so:
       absolute regeneration per species, or less level growth for endurance and spirit.
-- [ ] Exact formulas: dodge cost (weight, form), strength/dexterity share "heavy" and its
-      limits, size of each progress bonus, caps of the situational factors, resistance curve
+- [ ] Exact formulas: dodge cost (weight, form), size of each progress bonus (guess 0.3 per
+      gain for strength and dexterity), base damage, wind-ups and reach per schematic, caps of the situational factors, resistance curve
       constant, detection radius factors – in balancing.
 - [ ] Display of perceived enemies: minimap or compass? Decide with the user interface
       (Phase 2).

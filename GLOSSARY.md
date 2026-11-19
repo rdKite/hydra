@@ -150,7 +150,9 @@ crafting plans, because that is Unreal's visual scripting).
 | Klinge / Griff | **blade** / **hilt** | |
 | Grundschicht / Futter | **base layer** / **lining** | |
 | Bauplan | **schematic** | not "blueprint" (Unreal term) |
-| Anspruch (einer Waffe) | **demand** | factor on a weapon's stamina cost on top of weight ÷ body weight; +6 % per rarity level |
+| Anspruch (einer Waffe) | **demand** | factor on a weapon's stamina cost on top of weight ÷ body weight; +6 % per rarity level; rises below the strength requirement |
+| Stärke-Anforderung | **strength requirement** | weapon weight × 20 per kg two-handed, × 40 one-handed; below it demand rises by requirement ÷ strength |
+| Griff-Faktor | **grip factor** | stamina × 0.7 two-handed, × 1.0 one-handed; no damage difference |
 | Verarbeitungsart | **processing type** | metal, hard, soft or cloth – decides which craft works a material |
 | Waffenschmieden / Rüstungsschmieden | **weapon smithing** / **armor smithing** | crafting skills for metal |
 | Waffenschnitzen / Rüstungsschnitzen | **weapon carving** / **armor carving** | crafting skills for wood and hard monster materials |

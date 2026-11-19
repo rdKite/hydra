@@ -502,4 +502,16 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
 - **Mimicry** (capability) replaces "slimes from epic forms on pass as other races": NPCs do
   not treat them as Shifters, while they still look like Shifters with slime marking, so
   players recognise them. No extra models.
+- **Weapon weights from real weapons**, per schematic and not per material (dagger 0.4 kg,
+  longsword 1.5 kg, greatsword 3 kg, fantasy war hammer 5 kg …); trained adult about 70 kg.
+  Fantasy materials need no invented weight. The same for armor: weight comes from the
+  craft's schematic (robe light, plate heavy); the material density is dropped.
+- **Strength or dexterity fixed per schematic** (dagger 0/100 … greatsword 100/0; short bow
+  dexterity, longbow strength) and per body skill. The share "heavy" from weapon weight ÷
+  body weight is dropped. Reason: for humanoids the ratio hardly varies, giants use body
+  skills – a fixed table is simpler and readable.
+- **One-handed big weapons:** strength requirement = weight × 20 per kg two-handed, × 40
+  one-handed; below it demand rises by requirement ÷ strength (soft). Grip factor on stamina:
+  two-handed × 0.7, one-handed × 1.0; **no damage bonus** for two-handed. Mana is not affected
+  except that augments bind per weapon hand.
 
