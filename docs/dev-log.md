@@ -26,6 +26,18 @@ import, sockets, morph targets in game, bone-length test, dev commands.
   stand-in sword and shield live only in the `.blend`, not in the export.
 - No intervention.
 
+### 2026-11-19 – toon and ink variants removed (agent session, short)
+
+At the human's word, after the look decision below.
+- Removed: dev command `HydraLookVariant`, `AHydraArena::ApplyLook` with its palettes and
+  the post-process component, the stencil marking of characters, `r.CustomDepth=3`,
+  `Content/Looks/PP_Look`, `Scripts/create_look_material.*`, `Scripts/shots_look.sh`. The
+  arena keeps the colours and the sun it was built with (these were variant 1). Everything
+  is in the Git history up to commit `bd1da64`.
+- `docs/m5-preparation.md`, `README.md` and `docs/decisions.md` updated.
+- Verified: `Scripts/run_all.sh` all green (build, automation tests, live runs combat / slime 83 / waves 125 / debug 44); a screenshot of the debug run looked at – arena and characters as before.
+- No intervention.
+
 ### 2026-11-19 – look decided (agent session, short)
 
 - The human chose the **plain** look (variant 1). Recorded in `docs/decisions.md`,

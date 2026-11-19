@@ -3,33 +3,16 @@
 Prepared by the agent (roadmap M5, second item). **Nothing here is decided.** Each part says
 what it is, how to look at it and which question it puts to the human.
 
-## 1. Look variants
+## 1. Look
 
-> **Decided 2026-11-19: variant 1, plain.** Open from this part: how much texture detail
-> the models should get, and the questions on the humanoid base model below.
+**Decided 2026-11-19: plain** – standard lighting, no toon bands, no ink outlines
+(`docs/decisions.md`). The two other variants prepared for the comparison (toon, ink), their
+post-process material and the comparison script were removed after the decision; they are
+in the Git history up to commit `bd1da64`.
 
-Three variants, switchable while playing with the console command
-`HydraLookVariant 1|2|3` (no argument: the next one). They change only what a window shows.
-
-| | Characters | World | What it costs |
-|---|---|---|---|
-| **1 plain** | the procedural base texture, standard lighting | grey arena, standard lighting | nothing extra; needs the most texture and material work to look finished |
-| **2 toon** | lighting cut into three flat bands over the base colour, ink outline around and inside the body | a warmer palette, lighting in soft bands, faint ink on edges | one full-screen pass; flat colours carry the look, so textures can stay simple (colour areas, little detail) |
-| **3 ink** | standard lighting with an ink outline | a paler palette, ink on every edge | one full-screen pass; reads clearly at a distance, textures matter as in 1 |
-
-- **Side by side:** `Scripts/shots_look.sh` takes the same three shots with every variant
-  (characters with a block, a heavy attack charging – the telegraph –, the arena from a
-  corner) and writes `Saved/Screenshots/Look/index.html`.
-- **How it is built:** one post-process material (`Content/Looks/PP_Look`, written by
-  `Scripts/create_look_material.sh`; all logic is HLSL text in
-  `Scripts/create_look_material.py`). Characters are marked with a stencil value. The arena
-  palette and the sun per variant are in `AHydraArena::ApplyLook`.
-- **Limits:** the toon shading works on the finished picture (as in the tech test), not
-  per material: coloured light and reflections on characters are lost in variant 2; the
-  outline is as wide in the distance as up close. A per-material toon shading model would
-  need an engine change or a material graph made in the editor.
-- **Questions:** Toon or not? If toon: with a banded world (2) or only the outlines (3)?
-  How much texture detail should models get then – colour areas only, or painted detail?
+**Still open:** how much texture detail should the models get with the plain look –
+procedural only, or hand-painted detail as well? The plain look relies on textures and
+materials the most.
 
 ### The humanoid base model
 
@@ -79,7 +62,6 @@ get more than one clip (alternating sides in a chain)?
 | Debug panel | **F1** in the game: form, level, every skill, fire imprint, open a milestone, reset, spawn any enemy type at a level (active or passive), remove all enemies, waves on / off. Also as console commands (`README.md`) |
 | Numbers of a session | printed when the session ends, or `Scripts/summarize_metrics.sh` – hits, blocked hits, dodges, stamina use per player, enemy type and wave; the raw file is `Saved/Metrics/metrics_<time>.csv` |
 | Change a number | edit `data/values.json`, press **F5** in the game (the host reloads and tells the clients) |
-| Look variants | console `HydraLookVariant` (see 1.) |
 | Body presets and leg length of the humanoid base model | console `HydraBody neutral|male|female`, `HydraLegs 0.8` |
 
 **Things worth trying in the playtest** (each is an open guess in the numbers):

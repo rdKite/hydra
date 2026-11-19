@@ -421,9 +421,10 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
 - **Look: plain.** Of the three variants prepared for M5 (plain, toon, ink) the human chose
   variant 1: standard lighting, no toon bands, no ink outlines. It is what the game shows by
   default. Rejected: toon (2) and ink (3). Still open: how much texture work the plain look
-  needs (procedural only or hand-painted detail). The toon and ink variants stay reachable
-  by the dev command `HydraLookVariant` for now; removing them (post-process material,
-  stencil marking, `r.CustomDepth`) is a clean-up to be confirmed.
+  needs (procedural only or hand-painted detail). The toon and ink variants were
+  removed afterwards at the human's word (dev command `HydraLookVariant`, post-process
+  material `PP_Look`, stencil marking of characters, `r.CustomDepth=3`, the comparison
+  script); they are in the Git history up to commit `bd1da64`.
 - **Three kinds of XP:** nXP (defeated enemies → character level), hXP (defeated enemies,
   always at least as many as nXP, more against enemies with a higher threat rating) and
   **rXP** (deeds: quests, dynamic events, discoveries, dungeon floors …; at max level nXP flow

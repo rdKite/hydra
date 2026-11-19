@@ -115,9 +115,6 @@ AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
 		Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Part->SetGenerateOverlapEvents(false);
 		Part->SetCanEverAffectNavigation(false);
-		// Marked for the look variants (post-process material PP_Look: characters = stencil 1).
-		Part->SetRenderCustomDepth(true);
-		Part->SetCustomDepthStencilValue(1);
 		return Part;
 	};
 	// Engine shapes are 100 cm; the capsule centre is the origin (feet at -90).
@@ -133,9 +130,6 @@ AHydraCharacter::AHydraCharacter(const FObjectInitializer& ObjectInitializer)
 	SwordPivot->SetRelativeRotation(SwordRestRot);
 	ShieldPivot->SetRelativeLocation(ShieldRest);
 	ShieldPivot->SetRelativeRotation(ShieldRestRot);
-
-	GetMesh()->SetRenderCustomDepth(true);
-	GetMesh()->SetCustomDepthStencilValue(1);
 
 	// Third-person camera over the right shoulder, following the control rotation.
 	CameraBoom = CreateDefaultSubobject<USpringArmComponent>(TEXT("CameraBoom"));
