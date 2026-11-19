@@ -124,6 +124,33 @@ side of the game:
   eye (they depend on the bone axes of the final rig), the screenshots of every variant in
   idle, attack and block, and a check in a live run.
 
+**Step 3 – M5 preparation, playtest kit.**
+- **Debug panel** (`docs/design/phase-1.md` §27, F1): form, level, every skill, fire imprint,
+  open a milestone, reset, spawn an enemy type at a level (active or passive), remove all
+  enemies, waves on / off. Drawn by the HUD class in C++, usable with keys, gamepad and
+  mouse; the own character's input is paused while it is open. It only sends requests –
+  the server applies them, also for the client window. Every action is a console command
+  too (`HydraSetForm`, `HydraSetLevel`, `HydraSetSkill`, `HydraSetImprint`, `HydraMilestone`,
+  `HydraReset`, `HydraSpawn`, `HydraClearEnemies`, `HydraWaves 0|1`). Compiled out of
+  shipping builds with the dev RPC.
+- **`Scripts/playtest.sh humanoid|slime [duo]`** starts a session against the waves and
+  prints the metrics summary when the window is closed; **`Scripts/summarize_metrics.sh`**
+  summarises a metrics CSV (per player, per enemy type, per wave).
+- Verified: `Scripts/run_live_debug.sh` (40 checks) drives the commands on host and client
+  and checks the result on both – set form, level (bars follow), skills (cut to the level),
+  imprint, milestone and its offer, clear, spawn at a level in front of the caller (also
+  from the client), reset, the panel driven like keys doing the same as the commands, an
+  attack ignored while the panel is open, waves on and off. `Scripts/run_all.sh` green:
+  19 tests, live runs 164 / 83 / 125 / 40. The summary was run on the metrics of the waves
+  live run.
+- Assumptions: enemies spawned by the panel do not count for a wave (they give nXP and hXP);
+  "remove all enemies" in wave mode lets the next wave come after the usual break; the
+  panel sets a skill's level, its progress bar only through the console command.
+- Not verified by a human: mouse and gamepad in the panel (the live run drives it through
+  the same functions as the keys, not through real input devices).
+- Seen in the summary: a player who has already left when the session ends gets no last
+  row (the client window of a live run closes at the same moment as the host).
+
 ### 2026-11-19 – skill growth comes to Phase 1; plan for an unattended session (design session)
 
 **Next agent session – work through in this order without waiting for the human.** Commit

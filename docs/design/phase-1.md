@@ -804,3 +804,13 @@ growth.
 - **Development builds only:** compiled out of shipping builds (`UE_BUILD_SHIPPING`).
 - Verified by a live run that drives the commands on host and client and checks the
   result on both.
+
+**As built (M5 preparation).** Drawn by the HUD class, state and requests in the player
+controller, everything through the one dev RPC. Rows: form, level, one row per skill of the
+form (level; the bar is set by the console command), fire imprint, open a milestone, reset,
+enemy type / level / active or passive, spawn, remove all enemies, waves on / off. Keys:
+F1 or gamepad Back / View; arrow keys or D-pad; Enter or A; mouse clicks on a row or its
+arrows. Commands as listed above plus `HydraMilestone`, `HydraReset`, `HydraWaves 0|1`,
+`HydraPanel 0|1`, `HydraPanelKey up|down|left|right|enter` (drives the open panel in the
+live run); `HydraForm` stays as an alias of `HydraSetForm`. Enemies spawned by the panel do
+not count for a wave but give nXP and hXP. Live run: `Scripts/run_live_debug.sh`.

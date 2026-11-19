@@ -28,6 +28,8 @@ class AHydraCharacter;
  *   Precise movement (toggle)   X                     left stick click
  *   Milestone: evolve           J                     D-pad up
  *   Milestone: raise imprint    K                     D-pad right
+ *   Debug panel (dev builds)    F1                    Back / View
+ *     in the panel: arrow keys / D-pad choose and change, Enter / A applies, mouse clicks
  *   Reload values               F5                    -
  *   Latency step                F6                    -
  *   Packet loss                 F8 (toggle)           -
@@ -178,9 +180,65 @@ public:
 	UFUNCTION(Exec)
 	void HydraChoose(const FString& Choice);
 
-	/** Dev: waves on (1) - the practice opponent leaves and the first wave comes. */
+	/** Dev: waves on (1) - the practice opponent leaves and the first wave comes - or off (0). */
 	UFUNCTION(Exec)
 	void HydraWaves(int32 On);
+
+	// --- Test tools: every action of the debug panel is also a console command (phase-1.md section 27) ---
+
+	/** Own form: any id from forms.json (same as HydraForm). Starts at the form's start levels. */
+	UFUNCTION(Exec)
+	void HydraSetForm(const FString& FormId);
+
+	/** Own character level; attributes, bars and the skill limit follow at once. */
+	UFUNCTION(Exec)
+	void HydraSetLevel(int32 Level);
+
+	/** One skill of the own form to a level (at most the character level) and its progress bar (0..1). */
+	UFUNCTION(Exec)
+	void HydraSetSkill(const FString& SkillId, int32 Level, float Progress = 0.f);
+
+	/** Own fire imprint level (0 = none). */
+	UFUNCTION(Exec)
+	void HydraSetImprint(int32 Level);
+
+	/** Opens a milestone for the own character. */
+	UFUNCTION(Exec)
+	void HydraMilestone();
+
+	/** Own character: alive, full bars, debuffs removed. */
+	UFUNCTION(Exec)
+	void HydraReset();
+
+	/** An enemy of a type from enemies.json a few metres in front of the own character. Passive: 1 = it stands still. */
+	UFUNCTION(Exec)
+	void HydraSpawn(const FString& EnemyId, int32 Level, int32 Passive = 0);
+
+	/** Removes every AI character. */
+	UFUNCTION(Exec)
+	void HydraClearEnemies();
+
+	/** Opens (1) or closes (0) the debug panel. */
+	UFUNCTION(Exec)
+	void HydraPanel(int32 Open);
+
+	/** Drives the open panel like the keys do: up | down | left | right | enter. */
+	UFUNCTION(Exec)
+	void HydraPanelKey(const FString& Key);
+
+	/** One line of the debug panel as the HUD draws it. */
+	struct FPanelRow
+	{
+		FString Label;
+		FString Value;
+		/** Left / right change the value. */
+		bool bAdjustable = false;
+	};
+	bool IsDebugPanelOpen() const { return bDebugPanelOpen; }
+	int32 GetDebugPanelSelection() const { return PanelSelection; }
+	TArray<FPanelRow> GetDebugPanelRows() const;
+	/** Mouse: a click on a row (Direction -1 / +1 = its arrows, 0 = the row itself). */
+	void DebugPanelClick(int32 Row, int32 Direction);
 
 	/** Dev: give the own character nXP / fire imprint progress. */
 	UFUNCTION(Exec)
@@ -216,6 +274,25 @@ private:
 	void OnPreciseToggle(const FInputActionValue& Value);
 	void OnChooseEvolve(const FInputActionValue& Value);
 	void OnChooseImprint(const FInputActionValue& Value);
+	void OnPanelToggle(const FInputActionValue& Value);
+	void OnPanelUp(const FInputActionValue& Value);
+	void OnPanelDown(const FInputActionValue& Value);
+	void OnPanelLeft(const FInputActionValue& Value);
+	void OnPanelRight(const FInputActionValue& Value);
+	void OnPanelApply(const FInputActionValue& Value);
+
+	// Debug panel.
+	enum class EPanelItem : uint8 { Form, Level, Skill, Imprint, Milestone, Reset, EnemyType, EnemyLevel, EnemyPassive, Spawn, Clear, Waves };
+	struct FPanelItem
+	{
+		EPanelItem Kind;
+		FName Name;
+	};
+	TArray<FPanelItem> BuildPanelItems() const;
+	void SetDebugPanelOpen(bool bOpen);
+	void PanelMove(int32 Direction);
+	void PanelAdjust(int32 Row, int32 Direction);
+	void PanelActivate(int32 Row);
 	void OnReloadValues(const FInputActionValue& Value);
 	void OnLatencyStep(const FInputActionValue& Value);
 	void OnPacketLossToggle(const FInputActionValue& Value);
@@ -237,6 +314,19 @@ private:
 	UPROPERTY(Transient) TObjectPtr<UInputAction> PreciseAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> EvolveAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> ImprintAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> PanelToggleAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> PanelUpAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> PanelDownAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> PanelLeftAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> PanelRightAction;
+	UPROPERTY(Transient) TObjectPtr<UInputAction> PanelApplyAction;
+
+	bool bDebugPanelOpen = false;
+	int32 PanelSelection = 0;
+	/** What the panel's spawn row will spawn. */
+	FName PanelEnemyId;
+	int32 PanelEnemyLevel = 5;
+	bool bPanelEnemyPassive = true;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> ReloadValuesAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> LatencyStepAction;
 	UPROPERTY(Transient) TObjectPtr<UInputAction> PacketLossAction;

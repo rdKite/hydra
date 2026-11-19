@@ -3,6 +3,7 @@
 #include "Character/HydraCharacter.h"
 #include "Character/HydraProgressionComponent.h"
 #include "Core/HydraGameState.h"
+#include "Core/HydraPlayerController.h"
 #include "Data/HydraValuesSubsystem.h"
 #include "Engine/Canvas.h"
 #include "Engine/Engine.h"
@@ -37,6 +38,7 @@ void AHydraHUD::DrawHUD()
 	DrawProgress();
 	DrawWaves();
 	DrawNetInfo();
+	DrawDebugPanel();
 }
 
 void AHydraHUD::DrawBar(float X, float Y, float W, float H, float Fraction, const FLinearColor& Color)
@@ -269,6 +271,59 @@ void AHydraHUD::DrawWaves()
 	float W = 0.f, H = 0.f;
 	GetTextSize(Text, W, H, GEngine->GetMediumFont());
 	DrawText(Text, FLinearColor::White, (Canvas->ClipX - W) * 0.5f, 60.f, GEngine->GetMediumFont());
+}
+
+void AHydraHUD::DrawDebugPanel()
+{
+	// A test tool, not a game menu: a list drawn here, driven by keys, gamepad or mouse. The
+	// controller owns its state and sends the requests; this only draws it.
+	const AHydraPlayerController* PC = Cast<AHydraPlayerController>(PlayerOwner);
+	if (!PC || !PC->IsDebugPanelOpen())
+	{
+		return;
+	}
+	const TArray<AHydraPlayerController::FPanelRow> Rows = PC->GetDebugPanelRows();
+	UFont* Font = GEngine->GetSmallFont();
+	const float W = 470.f, RowH = 22.f, Pad = 10.f;
+	const float X = Canvas->ClipX - W - 30.f;
+	const float Y = 90.f;
+	DrawRect(FLinearColor(0.f, 0.f, 0.f, 0.75f), X, Y, W, (Rows.Num() + 2) * RowH + Pad);
+	DrawText(TEXT("DEBUG PANEL (F1)   up / down: choose   left / right: change   Enter: apply"), HydraHUDStyle::Offer, X + Pad, Y + 6.f, Font);
+	for (int32 i = 0; i < Rows.Num(); ++i)
+	{
+		const float RowY = Y + (i + 1.5f) * RowH;
+		const bool bSelected = i == PC->GetDebugPanelSelection();
+		if (bSelected)
+		{
+			DrawRect(FLinearColor(1.f, 0.9f, 0.25f, 0.18f), X + 4.f, RowY - 2.f, W - 8.f, RowH - 2.f);
+		}
+		const FLinearColor Color = bSelected ? FLinearColor::White : FLinearColor(1.f, 1.f, 1.f, 0.8f);
+		DrawText(Rows[i].Label, Color, X + Pad, RowY, Font);
+		if (Rows[i].bAdjustable)
+		{
+			DrawText(FString::Printf(TEXT("<  %s  >"), *Rows[i].Value), Color, X + 250.f, RowY, Font);
+			AddHitBox(FVector2D(X + 240.f, RowY - 2.f), FVector2D(40.f, RowH), FName(*FString::Printf(TEXT("Panel_%d_L"), i)), true);
+			AddHitBox(FVector2D(X + 280.f, RowY - 2.f), FVector2D(W - 284.f, RowH), FName(*FString::Printf(TEXT("Panel_%d_R"), i)), true);
+		}
+		else
+		{
+			DrawText(Rows[i].Value, Color, X + 250.f, RowY, Font);
+			AddHitBox(FVector2D(X + 4.f, RowY - 2.f), FVector2D(W - 8.f, RowH), FName(*FString::Printf(TEXT("Panel_%d_A"), i)), true);
+		}
+	}
+}
+
+void AHydraHUD::NotifyHitBoxClick(FName BoxName)
+{
+	Super::NotifyHitBoxClick(BoxName);
+	// Panel_<row>_<L|R|A>
+	TArray<FString> Parts;
+	BoxName.ToString().ParseIntoArray(Parts, TEXT("_"));
+	AHydraPlayerController* PC = Cast<AHydraPlayerController>(PlayerOwner);
+	if (PC && Parts.Num() == 3 && Parts[0] == TEXT("Panel"))
+	{
+		PC->DebugPanelClick(FCString::Atoi(*Parts[1]), Parts[2] == TEXT("L") ? -1 : (Parts[2] == TEXT("R") ? 1 : 0));
+	}
 }
 
 void AHydraHUD::DrawLockOn()

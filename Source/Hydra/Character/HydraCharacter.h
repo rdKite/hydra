@@ -125,6 +125,10 @@ public:
 	void SetEnemyType(FName InEnemyId, int32 InSerial, int32 InLevelBonus);
 	FName GetEnemyId() const { return EnemyId; }
 
+	/** Server: an enemy of the running wave (the wave is cleared when all of these are defeated). Enemies spawned by the debug panel are not. */
+	void SetCountsForWave(bool bCounts) { bCountsForWave = bCounts; }
+	bool CountsForWave() const { return bCountsForWave; }
+
 	/** Server: false = it does not come back after a defeat (wave enemies); it is removed instead. */
 	void SetRespawns(bool bInRespawns) { bRespawns = bInRespawns; }
 
@@ -431,6 +435,7 @@ protected:
 	double NextBurningTick = 0.0;
 	TWeakObjectPtr<AHydraCharacter> BurningSource;
 	bool bRespawns = true;
+	bool bCountsForWave = false;
 	int32 EnemyLevelBonus = 0;
 	/** Who dealt the last damage (gets the kill). */
 	TWeakObjectPtr<AHydraCharacter> LastDamager;

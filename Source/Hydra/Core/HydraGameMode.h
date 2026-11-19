@@ -40,7 +40,15 @@ public:
 
 	/** Switch to wave mode: the practice opponent leaves, the first wave comes after waves.first_delay_ms. */
 	void StartWaves();
+	/** Back out of wave mode: no further waves come (enemies that are there stay). */
+	void StopWaves();
 	bool IsWaveMode() const { return bWaves; }
+
+	// Test tools (debug panel, phase-1.md section 27).
+	/** An enemy of a type from enemies.json a few metres in front of Near, at Level (negative = the level of its type). */
+	AHydraCharacter* SpawnDebugEnemy(FName EnemyId, int32 Level, bool bPassive, const AHydraCharacter* Near);
+	/** Removes every AI character. In wave mode the next wave comes after the usual break. */
+	void ClearEnemies();
 
 protected:
 	AHydraArena* FindArena() const;

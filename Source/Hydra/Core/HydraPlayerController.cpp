@@ -78,6 +78,12 @@ void AHydraPlayerController::BuildInput()
 	PreciseAction = MakeAction(TEXT("IA_Precise"), EInputActionValueType::Boolean);
 	EvolveAction = MakeAction(TEXT("IA_Evolve"), EInputActionValueType::Boolean);
 	ImprintAction = MakeAction(TEXT("IA_Imprint"), EInputActionValueType::Boolean);
+	PanelToggleAction = MakeAction(TEXT("IA_PanelToggle"), EInputActionValueType::Boolean);
+	PanelUpAction = MakeAction(TEXT("IA_PanelUp"), EInputActionValueType::Boolean);
+	PanelDownAction = MakeAction(TEXT("IA_PanelDown"), EInputActionValueType::Boolean);
+	PanelLeftAction = MakeAction(TEXT("IA_PanelLeft"), EInputActionValueType::Boolean);
+	PanelRightAction = MakeAction(TEXT("IA_PanelRight"), EInputActionValueType::Boolean);
+	PanelApplyAction = MakeAction(TEXT("IA_PanelApply"), EInputActionValueType::Boolean);
 	ReloadValuesAction = MakeAction(TEXT("IA_ReloadValues"), EInputActionValueType::Boolean);
 	LatencyStepAction = MakeAction(TEXT("IA_LatencyStep"), EInputActionValueType::Boolean);
 	PacketLossAction = MakeAction(TEXT("IA_PacketLoss"), EInputActionValueType::Boolean);
@@ -122,6 +128,19 @@ void AHydraPlayerController::BuildInput()
 	Ctx->MapKey(EvolveAction, EKeys::Gamepad_DPad_Up);
 	Ctx->MapKey(ImprintAction, EKeys::K);
 	Ctx->MapKey(ImprintAction, EKeys::Gamepad_DPad_Right);
+	// Debug panel: its keys only act while it is open (and the game keys only while it is closed).
+	Ctx->MapKey(PanelToggleAction, EKeys::F1);
+	Ctx->MapKey(PanelToggleAction, EKeys::Gamepad_Special_Left);
+	Ctx->MapKey(PanelUpAction, EKeys::Up);
+	Ctx->MapKey(PanelUpAction, EKeys::Gamepad_DPad_Up);
+	Ctx->MapKey(PanelDownAction, EKeys::Down);
+	Ctx->MapKey(PanelDownAction, EKeys::Gamepad_DPad_Down);
+	Ctx->MapKey(PanelLeftAction, EKeys::Left);
+	Ctx->MapKey(PanelLeftAction, EKeys::Gamepad_DPad_Left);
+	Ctx->MapKey(PanelRightAction, EKeys::Right);
+	Ctx->MapKey(PanelRightAction, EKeys::Gamepad_DPad_Right);
+	Ctx->MapKey(PanelApplyAction, EKeys::Enter);
+	Ctx->MapKey(PanelApplyAction, EKeys::Gamepad_FaceButton_Bottom);
 	Ctx->MapKey(ReloadValuesAction, EKeys::F5);
 	Ctx->MapKey(LatencyStepAction, EKeys::F6);
 	Ctx->MapKey(PacketLossAction, EKeys::F8);
@@ -154,6 +173,12 @@ void AHydraPlayerController::SetupInputComponent()
 	EIC->BindAction(PreciseAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPreciseToggle);
 	EIC->BindAction(EvolveAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnChooseEvolve);
 	EIC->BindAction(ImprintAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnChooseImprint);
+	EIC->BindAction(PanelToggleAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPanelToggle);
+	EIC->BindAction(PanelUpAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPanelUp);
+	EIC->BindAction(PanelDownAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPanelDown);
+	EIC->BindAction(PanelLeftAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPanelLeft);
+	EIC->BindAction(PanelRightAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPanelRight);
+	EIC->BindAction(PanelApplyAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPanelApply);
 	EIC->BindAction(ReloadValuesAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnReloadValues);
 	EIC->BindAction(LatencyStepAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnLatencyStep);
 	EIC->BindAction(PacketLossAction, ETriggerEvent::Started, this, &AHydraPlayerController::OnPacketLossToggle);
@@ -161,6 +186,10 @@ void AHydraPlayerController::SetupInputComponent()
 
 void AHydraPlayerController::OnMove(const FInputActionValue& Value)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	APawn* P = GetPawn();
 	if (!P)
 	{
@@ -174,6 +203,10 @@ void AHydraPlayerController::OnMove(const FInputActionValue& Value)
 
 void AHydraPlayerController::OnLookMouse(const FInputActionValue& Value)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	const AHydraCharacter* C = GetHydraCharacter();
 	if (C && C->GetLockOnTarget())
 	{
@@ -186,6 +219,10 @@ void AHydraPlayerController::OnLookMouse(const FInputActionValue& Value)
 
 void AHydraPlayerController::OnLookStick(const FInputActionValue& Value)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	const AHydraCharacter* C = GetHydraCharacter();
 	if (C && C->GetLockOnTarget())
 	{
@@ -215,6 +252,10 @@ void AHydraPlayerController::OnWalkReleased(const FInputActionValue&)
 
 void AHydraPlayerController::OnAttackPressed(const FInputActionValue&)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	if (AHydraCharacter* C = GetHydraCharacter())
 	{
 		C->InputAttackPressed();
@@ -231,6 +272,10 @@ void AHydraPlayerController::OnAttackReleased(const FInputActionValue&)
 
 void AHydraPlayerController::OnBlockPressed(const FInputActionValue&)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	// The off-hand button: block with a shield, cast for the slime. A cast is aimed where the camera looks.
 	if (AHydraCharacter* C = GetHydraCharacter())
 	{
@@ -248,6 +293,10 @@ void AHydraPlayerController::OnBlockReleased(const FInputActionValue&)
 
 void AHydraPlayerController::OnDodge(const FInputActionValue&)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	if (AHydraCharacter* C = GetHydraCharacter())
 	{
 		C->InputDodge();
@@ -256,6 +305,10 @@ void AHydraPlayerController::OnDodge(const FInputActionValue&)
 
 void AHydraPlayerController::OnJumpPressed(const FInputActionValue&)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	if (AHydraCharacter* C = GetHydraCharacter())
 	{
 		C->InputJump(true);
@@ -272,6 +325,10 @@ void AHydraPlayerController::OnJumpReleased(const FInputActionValue&)
 
 void AHydraPlayerController::OnLockOn(const FInputActionValue&)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	AHydraCharacter* C = GetHydraCharacter();
 	if (!C || !C->IsAlive())
 	{
@@ -292,6 +349,10 @@ void AHydraPlayerController::OnLockOn(const FInputActionValue&)
 
 void AHydraPlayerController::OnPreciseToggle(const FInputActionValue&)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	if (AHydraCharacter* C = GetHydraCharacter())
 	{
 		C->SetPreciseMovement(!C->IsPreciseMovement());
@@ -300,11 +361,19 @@ void AHydraPlayerController::OnPreciseToggle(const FInputActionValue&)
 
 void AHydraPlayerController::OnChooseEvolve(const FInputActionValue&)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	ServerChooseMilestone(TEXT("evolve"));
 }
 
 void AHydraPlayerController::OnChooseImprint(const FInputActionValue&)
 {
+	if (bDebugPanelOpen)
+	{
+		return; // the debug panel has the input
+	}
 	ServerChooseMilestone(TEXT("imprint"));
 }
 
@@ -319,6 +388,271 @@ void AHydraPlayerController::ServerChooseMilestone_Implementation(FName Choice)
 	{
 		const bool bTaken = C->GetProgression()->ServerChoose(Choice);
 		UE_LOG(LogHydra, Log, TEXT("HydraChoose who=%s choice=%s %s"), *C->GetLogId(), *Choice.ToString(), bTaken ? TEXT("taken") : TEXT("refused"));
+	}
+}
+
+// --- Test tools: console commands and the debug panel --------------------------------------
+
+void AHydraPlayerController::HydraSetForm(const FString& FormId)
+{
+	ServerDevCommand(FString::Printf(TEXT("form %s"), *FormId));
+}
+
+void AHydraPlayerController::HydraSetLevel(int32 Level)
+{
+	ServerDevCommand(FString::Printf(TEXT("setlevel %d"), Level));
+}
+
+void AHydraPlayerController::HydraSetSkill(const FString& SkillId, int32 Level, float Progress)
+{
+	ServerDevCommand(FString::Printf(TEXT("setskill %s %d %f"), *SkillId, Level, Progress));
+}
+
+void AHydraPlayerController::HydraSetImprint(int32 Level)
+{
+	ServerDevCommand(FString::Printf(TEXT("setimprint %d"), Level));
+}
+
+void AHydraPlayerController::HydraMilestone()
+{
+	ServerDevCommand(TEXT("milestone"));
+}
+
+void AHydraPlayerController::HydraReset()
+{
+	ServerDevCommand(TEXT("resetself"));
+}
+
+void AHydraPlayerController::HydraSpawn(const FString& EnemyId, int32 Level, int32 Passive)
+{
+	ServerDevCommand(FString::Printf(TEXT("spawn %s %d %d"), *EnemyId, Level, Passive));
+}
+
+void AHydraPlayerController::HydraClearEnemies()
+{
+	ServerDevCommand(TEXT("clearenemies"));
+}
+
+void AHydraPlayerController::HydraPanel(int32 Open)
+{
+	SetDebugPanelOpen(Open != 0);
+}
+
+void AHydraPlayerController::HydraPanelKey(const FString& Key)
+{
+	if (!bDebugPanelOpen)
+	{
+		return;
+	}
+	if (Key == TEXT("up")) { PanelMove(-1); }
+	else if (Key == TEXT("down")) { PanelMove(1); }
+	else if (Key == TEXT("left")) { PanelAdjust(PanelSelection, -1); }
+	else if (Key == TEXT("right")) { PanelAdjust(PanelSelection, 1); }
+	else if (Key == TEXT("enter")) { PanelActivate(PanelSelection); }
+}
+
+void AHydraPlayerController::OnPanelToggle(const FInputActionValue&) { SetDebugPanelOpen(!bDebugPanelOpen); }
+void AHydraPlayerController::OnPanelUp(const FInputActionValue&) { if (bDebugPanelOpen) { PanelMove(-1); } }
+void AHydraPlayerController::OnPanelDown(const FInputActionValue&) { if (bDebugPanelOpen) { PanelMove(1); } }
+void AHydraPlayerController::OnPanelLeft(const FInputActionValue&) { if (bDebugPanelOpen) { PanelAdjust(PanelSelection, -1); } }
+void AHydraPlayerController::OnPanelRight(const FInputActionValue&) { if (bDebugPanelOpen) { PanelAdjust(PanelSelection, 1); } }
+void AHydraPlayerController::OnPanelApply(const FInputActionValue&) { if (bDebugPanelOpen) { PanelActivate(PanelSelection); } }
+
+void AHydraPlayerController::SetDebugPanelOpen(bool bOpen)
+{
+#if UE_BUILD_SHIPPING
+	bOpen = false; // a test tool: not in shipping builds
+#endif
+	if (bOpen == bDebugPanelOpen)
+	{
+		return;
+	}
+	bDebugPanelOpen = bOpen;
+	// While it is open the game input is paused for the own character only; the game runs on.
+	if (bOpen)
+	{
+		OnWalkReleased(FInputActionValue());
+		if (AHydraCharacter* C = GetHydraCharacter())
+		{
+			C->InputAttackReleased();
+			C->InputOffHand(false, GetControlRotation().Yaw);
+		}
+	}
+	bShowMouseCursor = bOpen;
+	bEnableClickEvents = bOpen;
+	if (IsLocalController())
+	{
+		if (bOpen)
+		{
+			SetInputMode(FInputModeGameAndUI().SetHideCursorDuringCapture(false));
+		}
+		else
+		{
+			SetInputMode(FInputModeGameOnly());
+		}
+	}
+	UE_LOG(LogHydra, Log, TEXT("HydraPanel %s"), bOpen ? TEXT("open") : TEXT("closed"));
+}
+
+TArray<AHydraPlayerController::FPanelItem> AHydraPlayerController::BuildPanelItems() const
+{
+	TArray<FPanelItem> Items;
+	Items.Add({ EPanelItem::Form, NAME_None });
+	Items.Add({ EPanelItem::Level, NAME_None });
+	if (const AHydraCharacter* C = GetHydraCharacter())
+	{
+		// The skills of the form (and the element skill once it is awake); new forms and skills appear by themselves.
+		const UHydraValuesSubsystem* Values = UHydraValuesSubsystem::GetSubsystem(this);
+		const FHydraFormDef* Form = Values ? Values->GetDefinitions().FindForm(C->GetFormId()) : nullptr;
+		for (const FHydraSkillState& S : C->GetProgression()->GetSkills())
+		{
+			if ((Form && Form->skills.Contains(S.Id)) || S.Level > 0)
+			{
+				Items.Add({ EPanelItem::Skill, S.Id });
+			}
+		}
+	}
+	for (const EPanelItem Kind : { EPanelItem::Imprint, EPanelItem::Milestone, EPanelItem::Reset, EPanelItem::EnemyType, EPanelItem::EnemyLevel,
+		EPanelItem::EnemyPassive, EPanelItem::Spawn, EPanelItem::Clear, EPanelItem::Waves })
+	{
+		Items.Add({ Kind, NAME_None });
+	}
+	return Items;
+}
+
+TArray<AHydraPlayerController::FPanelRow> AHydraPlayerController::GetDebugPanelRows() const
+{
+	TArray<FPanelRow> Rows;
+	const AHydraCharacter* C = GetHydraCharacter();
+	const UHydraValuesSubsystem* Values = UHydraValuesSubsystem::GetSubsystem(this);
+	if (!C || !Values)
+	{
+		return Rows;
+	}
+	const UHydraProgressionComponent* P = C->GetProgression();
+	const AHydraGameState* GS = GetWorld()->GetGameState<AHydraGameState>();
+	const TArray<FHydraEnemyDef>& Enemies = Values->GetDefinitions().enemies.enemies;
+	const FName EnemyId = PanelEnemyId.IsNone() && Enemies.Num() > 0 ? Enemies[0].id : PanelEnemyId;
+	for (const FPanelItem& Item : BuildPanelItems())
+	{
+		FPanelRow Row;
+		switch (Item.Kind)
+		{
+		case EPanelItem::Form: Row = { TEXT("Form"), C->GetFormId().ToString(), true }; break;
+		case EPanelItem::Level: Row = { TEXT("Level"), FString::Printf(TEXT("%d / %d"), P->GetLevel(), C->GetStats().LevelCap), true }; break;
+		case EPanelItem::Skill:
+		{
+			const FHydraSkillDef* Def = Values->GetDefinitions().FindSkill(Item.Name);
+			const FHydraSkillState* S = P->FindSkill(Item.Name);
+			Row = { FString::Printf(TEXT("Skill: %s"), Def ? *Def->name : *Item.Name.ToString()), S ? FString::Printf(TEXT("%d  (bar %.0f %%)"), S->Level, S->Progress * 100.f) : FString(TEXT("-")), true };
+			break;
+		}
+		case EPanelItem::Imprint: Row = { TEXT("Fire imprint"), FString::FromInt(P->GetImprintLevel()), true }; break;
+		case EPanelItem::Milestone: Row = { TEXT("Open a milestone"), FString::Printf(TEXT("open: %d"), P->GetOpenMilestones()), false }; break;
+		case EPanelItem::Reset: Row = { TEXT("Reset: full bars, debuffs removed"), FString(), false }; break;
+		case EPanelItem::EnemyType: Row = { TEXT("Enemy type"), EnemyId.ToString(), true }; break;
+		case EPanelItem::EnemyLevel: Row = { TEXT("Enemy level"), FString::FromInt(PanelEnemyLevel), true }; break;
+		case EPanelItem::EnemyPassive: Row = { TEXT("Enemy is"), bPanelEnemyPassive ? TEXT("passive") : TEXT("active"), true }; break;
+		case EPanelItem::Spawn: Row = { TEXT("Spawn this enemy in front of me"), FString(), false }; break;
+		case EPanelItem::Clear: Row = { TEXT("Remove all enemies"), FString(), false }; break;
+		case EPanelItem::Waves: Row = { TEXT("Waves"), GS && GS->IsWaveMode() ? TEXT("on") : TEXT("off"), true }; break;
+		}
+		Rows.Add(Row);
+	}
+	return Rows;
+}
+
+void AHydraPlayerController::PanelMove(int32 Direction)
+{
+	const int32 Num = BuildPanelItems().Num();
+	PanelSelection = Num > 0 ? (PanelSelection + Direction + Num) % Num : 0;
+}
+
+void AHydraPlayerController::DebugPanelClick(int32 Row, int32 Direction)
+{
+	if (!bDebugPanelOpen || !BuildPanelItems().IsValidIndex(Row))
+	{
+		return;
+	}
+	PanelSelection = Row;
+	Direction == 0 ? PanelActivate(Row) : PanelAdjust(Row, Direction);
+}
+
+void AHydraPlayerController::PanelAdjust(int32 Row, int32 Direction)
+{
+	// The panel only sends requests; the server applies them (the same commands as the console).
+	const TArray<FPanelItem> Items = BuildPanelItems();
+	const AHydraCharacter* C = GetHydraCharacter();
+	const UHydraValuesSubsystem* Values = UHydraValuesSubsystem::GetSubsystem(this);
+	if (!Items.IsValidIndex(Row) || !C || !Values || Direction == 0)
+	{
+		return;
+	}
+	const UHydraProgressionComponent* P = C->GetProgression();
+	const FPanelItem& Item = Items[Row];
+	switch (Item.Kind)
+	{
+	case EPanelItem::Form:
+	{
+		const TArray<FHydraFormDef>& Forms = Values->GetDefinitions().forms.forms;
+		const int32 Index = Forms.IndexOfByPredicate([C](const FHydraFormDef& F) { return F.id == C->GetFormId(); });
+		if (Forms.Num() > 0)
+		{
+			HydraSetForm(Forms[(FMath::Max(0, Index) + Direction + Forms.Num()) % Forms.Num()].id.ToString());
+		}
+		break;
+	}
+	case EPanelItem::Level: HydraSetLevel(P->GetLevel() + Direction); break;
+	case EPanelItem::Skill:
+		if (const FHydraSkillState* S = P->FindSkill(Item.Name))
+		{
+			HydraSetSkill(Item.Name.ToString(), S->Level + Direction, S->Progress);
+		}
+		break;
+	case EPanelItem::Imprint: HydraSetImprint(P->GetImprintLevel() + Direction); break;
+	case EPanelItem::EnemyType:
+	{
+		const TArray<FHydraEnemyDef>& Enemies = Values->GetDefinitions().enemies.enemies;
+		const int32 Index = Enemies.IndexOfByPredicate([this](const FHydraEnemyDef& E) { return E.id == PanelEnemyId; });
+		if (Enemies.Num() > 0)
+		{
+			PanelEnemyId = Enemies[(FMath::Max(0, Index) + Direction + Enemies.Num()) % Enemies.Num()].id;
+		}
+		break;
+	}
+	case EPanelItem::EnemyLevel: PanelEnemyLevel = FMath::Max(0, PanelEnemyLevel + Direction); break;
+	case EPanelItem::EnemyPassive: bPanelEnemyPassive = !bPanelEnemyPassive; break;
+	case EPanelItem::Waves:
+	{
+		const AHydraGameState* GS = GetWorld()->GetGameState<AHydraGameState>();
+		HydraWaves(GS && GS->IsWaveMode() ? 0 : 1);
+		break;
+	}
+	default: break;
+	}
+}
+
+void AHydraPlayerController::PanelActivate(int32 Row)
+{
+	const TArray<FPanelItem> Items = BuildPanelItems();
+	const UHydraValuesSubsystem* Values = UHydraValuesSubsystem::GetSubsystem(this);
+	if (!Items.IsValidIndex(Row) || !Values)
+	{
+		return;
+	}
+	switch (Items[Row].Kind)
+	{
+	case EPanelItem::Milestone: HydraMilestone(); break;
+	case EPanelItem::Reset: HydraReset(); break;
+	case EPanelItem::Spawn:
+	{
+		const TArray<FHydraEnemyDef>& Enemies = Values->GetDefinitions().enemies.enemies;
+		const FName EnemyId = PanelEnemyId.IsNone() && Enemies.Num() > 0 ? Enemies[0].id : PanelEnemyId;
+		HydraSpawn(EnemyId.ToString(), PanelEnemyLevel, bPanelEnemyPassive ? 1 : 0);
+		break;
+	}
+	case EPanelItem::Clear: HydraClearEnemies(); break;
+	default: PanelAdjust(Row, 1); break;   // Enter on a value steps it forward
 	}
 }
 
@@ -736,9 +1070,43 @@ void AHydraPlayerController::ServerDevCommand_Implementation(const FString& Comm
 	}
 	else if (Args[0] == TEXT("waves"))
 	{
-		if (AHydraGameMode* GameMode = GetWorld()->GetAuthGameMode<AHydraGameMode>(); GameMode && Number(1) != 0.f)
+		if (AHydraGameMode* GameMode = GetWorld()->GetAuthGameMode<AHydraGameMode>())
 		{
-			GameMode->StartWaves();
+			Number(1) != 0.f ? GameMode->StartWaves() : GameMode->StopWaves();
+		}
+	}
+	else if (Args[0] == TEXT("setlevel") && Self)
+	{
+		Self->GetProgression()->ServerSetLevel(FMath::RoundToInt(Number(1)));
+	}
+	else if (Args[0] == TEXT("setskill") && Self && Args.Num() >= 3)
+	{
+		Self->GetProgression()->ServerSetSkill(FName(*Args[1]), FMath::RoundToInt(Number(2)), Number(3));
+	}
+	else if (Args[0] == TEXT("setimprint") && Self)
+	{
+		Self->GetProgression()->ServerSetImprintLevel(FMath::RoundToInt(Number(1)));
+	}
+	else if (Args[0] == TEXT("milestone") && Self)
+	{
+		Self->GetProgression()->ServerOpenMilestone();
+	}
+	else if (Args[0] == TEXT("resetself") && Self)
+	{
+		Self->ServerResetState();
+	}
+	else if (Args[0] == TEXT("spawn") && Self && Args.Num() >= 2)
+	{
+		if (AHydraGameMode* GameMode = GetWorld()->GetAuthGameMode<AHydraGameMode>())
+		{
+			GameMode->SpawnDebugEnemy(FName(*Args[1]), Args.Num() >= 3 ? FMath::RoundToInt(Number(2)) : -1, Number(3) != 0.f, Self);
+		}
+	}
+	else if (Args[0] == TEXT("clearenemies"))
+	{
+		if (AHydraGameMode* GameMode = GetWorld()->GetAuthGameMode<AHydraGameMode>())
+		{
+			GameMode->ClearEnemies();
 		}
 	}
 	else if (Args[0] == TEXT("xp") && Self)

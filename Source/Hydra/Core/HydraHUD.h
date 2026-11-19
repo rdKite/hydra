@@ -16,6 +16,8 @@ class HYDRA_API AHydraHUD : public AHUD
 
 public:
 	virtual void DrawHUD() override;
+	/** Mouse clicks on the rows of the debug panel. */
+	virtual void NotifyHitBoxClick(FName BoxName) override;
 
 protected:
 	void DrawNetInfo();
@@ -24,6 +26,7 @@ protected:
 	void DrawLockOn();
 	void DrawProgress();
 	void DrawWaves();
+	void DrawDebugPanel();
 	void DrawBar(float X, float Y, float W, float H, float Fraction, const FLinearColor& Color);
 
 	float SmoothedFps = 0.f;

@@ -172,6 +172,71 @@ void AHydraGameMode::StartWaves()
 	UE_LOG(LogHydra, Log, TEXT("HydraWaves t=%.2f started first_in=%.1f"), UHydraDevSubsystem::ClockOf(this), DelayS);
 }
 
+void AHydraGameMode::StopWaves()
+{
+	if (!bWaves)
+	{
+		return;
+	}
+	bWaves = false;
+	GetWorldTimerManager().ClearTimer(NextWaveTimer);
+	UpdateWaveState(0.f);
+	UE_LOG(LogHydra, Log, TEXT("HydraWaves t=%.2f stopped"), UHydraDevSubsystem::ClockOf(this));
+}
+
+AHydraCharacter* AHydraGameMode::SpawnDebugEnemy(FName EnemyId, int32 Level, bool bPassive, const AHydraCharacter* Near)
+{
+	const FHydraEnemyValues* Enemy = UHydraValuesSubsystem::Get(this).enemies.Find(EnemyId);
+	if (!Enemy || !Near)
+	{
+		return nullptr;
+	}
+	// A few metres in front of the character, facing it.
+	const FVector Forward = Near->GetActorForwardVector().GetSafeNormal2D();
+	const FTransform Spot(FRotator(0.f, (-Forward).Rotation().Yaw, 0.f), Near->GetActorLocation() + Forward * 400.f + FVector(0.f, 0.f, 60.f));
+	AHydraCharacter* Character = SpawnAI(Spot, EnemyId, NextEnemySerial++, Level < 0 ? 0 : Level - Enemy->level);
+	if (Character)
+	{
+		if (AHydraAIController* AI = Cast<AHydraAIController>(Character->GetController()))
+		{
+			AI->SetPassive(bPassive);
+		}
+		UE_LOG(LogHydra, Log, TEXT("HydraSpawn t=%.2f who=%s level=%d passive=%d near=%s"), UHydraDevSubsystem::ClockOf(this), *Character->GetLogId(),
+			Character->GetStats().Level, bPassive ? 1 : 0, *Near->GetLogId());
+	}
+	return Character;
+}
+
+void AHydraGameMode::ClearEnemies()
+{
+	TArray<AHydraCharacter*> Enemies;
+	for (TActorIterator<AHydraCharacter> It(GetWorld()); It; ++It)
+	{
+		if (It->IsAIControlledCharacter())
+		{
+			Enemies.Add(*It);
+		}
+	}
+	for (AHydraCharacter* Enemy : Enemies)
+	{
+		if (AController* Controller = Enemy->GetController())
+		{
+			Controller->Destroy();
+		}
+		Enemy->Destroy();
+	}
+	AIOpponent = nullptr;
+	EnemiesAlive = 0;
+	DefeatedEnemies.Reset();
+	UE_LOG(LogHydra, Log, TEXT("HydraClearEnemies t=%.2f removed=%d"), UHydraDevSubsystem::ClockOf(this), Enemies.Num());
+	if (bWaves)
+	{
+		const float BreakS = FMath::Max(0.1f, UHydraValuesSubsystem::Get(this).waves.break_ms / 1000.f);
+		GetWorldTimerManager().SetTimer(NextWaveTimer, this, &AHydraGameMode::SpawnNextWave, BreakS, false);
+		UpdateWaveState(BreakS);
+	}
+}
+
 void AHydraGameMode::UpdateWaveState(float NextWaveInS)
 {
 	if (AHydraGameState* GS = GetGameState<AHydraGameState>())
@@ -202,8 +267,9 @@ void AHydraGameMode::SpawnNextWave()
 		{
 			// Spread over the spots, starting at another one every wave.
 			const FTransform& Spot = Spots[(WaveCount * 3 + Spawned) % Spots.Num()];
-			if (const AHydraCharacter* Enemy = SpawnAI(Spot, Group.enemy, NextEnemySerial++, Loop * W.level_bonus_per_loop))
+			if (AHydraCharacter* Enemy = SpawnAI(Spot, Group.enemy, NextEnemySerial++, Loop * W.level_bonus_per_loop))
 			{
+				Enemy->SetCountsForWave(true);
 				++Spawned;
 				Names += FString::Printf(TEXT("%s%s"), Names.IsEmpty() ? TEXT("") : TEXT(","), *Enemy->GetLogId());
 			}
@@ -235,8 +301,12 @@ void AHydraGameMode::OnCharacterDied(AHydraCharacter* Victim, AHydraCharacter* K
 		}
 		return;
 	}
-	EnemiesAlive = FMath::Max(0, EnemiesAlive - 1);
-	const bool bCleared = bWaves && EnemiesAlive == 0;
+	const bool bOfWave = Victim->CountsForWave();
+	if (bOfWave)
+	{
+		EnemiesAlive = FMath::Max(0, EnemiesAlive - 1);
+	}
+	const bool bCleared = bWaves && bOfWave && EnemiesAlive == 0;
 	// nXP depends only on the enemy's type and level; hXP = nXP x the stand-in factor of its
 	// type. Everyone in the arena gets both in full. Each player's hXP go to its skills by the
 	// stamina and mana they spent since the last defeated enemy.

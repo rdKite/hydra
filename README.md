@@ -33,7 +33,10 @@ Git Bash from the repository root.
 | `Scripts/run_live.sh` | scripted live run, combat: host + client, automated input, screenshots, checks |
 | `Scripts/run_live_slime.sh` | scripted live run, slime and magic |
 | `Scripts/run_live_waves.sh` | scripted live run, progression and waves |
-| `Scripts/run_all.sh` | tests and the three live runs |
+| `Scripts/run_live_debug.sh` | scripted live run, test tools (debug panel and its commands) |
+| `Scripts/playtest.sh humanoid` / `slime` | **playtest:** one window against the waves (add `duo` for a second player window), then the metrics summary |
+| `Scripts/summarize_metrics.sh` | summary of the newest metrics CSV: hits, blocked hits, dodges, stamina use per player, enemy type and wave |
+| `Scripts/run_all.sh` | tests and the four live runs |
 | `Scripts/build_art.sh` | Blender builds models, rigs and textures, Unreal imports them (needs Blender) |
 
 Without the script, from any shell (after a build):
@@ -56,6 +59,15 @@ Controls (one button per hand):
 | Precise movement on / off: the character keeps facing where the camera looks | X | left stick click |
 | Walk | Left Ctrl | – |
 | At a milestone: evolve / start or raise the fire imprint (only what the HUD offers) | J / K | D-pad up / right |
+
+**F1 opens the debug panel** (a test tool, not in shipping builds): set your form, level,
+every skill and the fire imprint, open a milestone, reset your bars, spawn any enemy type
+at a level (active or passive), remove all enemies, switch the waves on or off. Arrow keys
+or D-pad choose and change, Enter applies, the mouse works too; your character's input is
+paused while it is open. Every action is also a console command: `HydraSetForm <form>`,
+`HydraSetLevel <n>`, `HydraSetSkill <skill id> <level> [bar 0..1]`, `HydraSetImprint <n>`,
+`HydraMilestone`, `HydraReset`, `HydraSpawn <enemy id> <level> [1 = passive]`,
+`HydraClearEnemies`, `HydraWaves 0|1`.
 
 F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` console:
 `Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`
