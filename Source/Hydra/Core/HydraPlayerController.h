@@ -153,6 +153,10 @@ public:
 	UFUNCTION(Exec)
 	void HydraAI(const FString& Verb, float Value);
 
+	/** Look variant in this window: 1 plain, 2 toon, 3 ink (no argument or 0: the next one). For the M5 look decision. */
+	UFUNCTION(Exec)
+	void HydraLookVariant(int32 Look = 0);
+
 	/** Dev, looks only: body preset of every character with the humanoid base model - neutral | male | female. */
 	UFUNCTION(Exec)
 	void HydraBody(const FString& Preset);

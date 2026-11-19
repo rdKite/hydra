@@ -166,6 +166,24 @@ side of the game:
 - Seen in the summary: a player who has already left when the session ends gets no last
   row (the client window of a live run closes at the same moment as the host).
 
+**Step 3 – M5 preparation, look variants and animation proposal** (`docs/m5-preparation.md`).
+- **Three look variants**, switchable per window with `HydraLookVariant 1|2|3`: plain, toon
+  (flat bands and ink outlines on characters, banded world, warmer arena palette), ink
+  (normal shading, ink outlines, paler palette). One post-process material built by
+  `Scripts/create_look_material.sh` (HLSL as text in the script); characters are marked
+  with custom stencil 1 (`r.CustomDepth=3`). `Scripts/shots_look.sh` takes the same three
+  shots per variant and writes a comparison page.
+- **Animation proposal:** which placeholder clips to replace first, ranked by the
+  telegraphs they carry (heavy charge and thrust, light wind-up and strike, block,
+  recovery, dodge, stance and run, the rest).
+- Verified: the three variants switch in the game (log and screenshots looked at: toon
+  bands and outlines on slime and humanoid placeholder, sky left alone after a fix, ink
+  outlines on arena edges); `Scripts/shots_look.sh` wrote all nine shots and the page;
+  `Scripts/run_all.sh` green (19 / 164 / 83 / 125 / 40).
+- Open: the shots show the humanoid as the placeholder body until the base model is in;
+  the script only needs to be run again then. Not checked in a packaged build.
+- Naming: the command is `HydraLookVariant` because `HydraLook` already points the camera.
+
 ### 2026-11-19 – skill growth comes to Phase 1; plan for an unattended session (design session)
 
 **Next agent session – work through in this order without waiting for the human.** Commit

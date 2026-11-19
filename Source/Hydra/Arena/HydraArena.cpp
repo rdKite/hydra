@@ -1,5 +1,8 @@
 #include "Arena/HydraArena.h"
 
+#include "Components/PostProcessComponent.h"
+#include "Hydra.h"
+#include "Materials/MaterialInstanceDynamic.h"
 #include "Components/DirectionalLightComponent.h"
 #include "Components/ExponentialHeightFogComponent.h"
 #include "Components/SkyAtmosphereComponent.h"
@@ -23,6 +26,21 @@ namespace HydraArenaLayout
 	const FLinearColor WallColor(0.22f, 0.22f, 0.25f);
 	const FLinearColor PillarColor(0.55f, 0.50f, 0.42f);
 	const FLinearColor CoverColor(0.45f, 0.30f, 0.20f);
+
+	// Look variants: colours of floor, wall, pillar and cover, and the sun (looks, not gameplay).
+	struct FLookPreset
+	{
+		FLinearColor Floor, Wall, Pillar, Cover;
+		float SunIntensity;
+		float CharBands, WorldBands, WorldInk, InkAmount, OutlinePx;
+	};
+	const FLookPreset Looks[] = {
+		{ FloorColor, WallColor, PillarColor, CoverColor, 8.f, 0.f, 0.f, 0.f, 0.f, 1.5f },                                              // 1 plain
+		{ FLinearColor(0.52f, 0.42f, 0.26f), FLinearColor(0.20f, 0.26f, 0.40f), FLinearColor(0.74f, 0.56f, 0.30f), FLinearColor(0.62f, 0.26f, 0.14f),
+		  9.f, 3.f, 5.f, 0.35f, 1.f, 1.6f },                                                                                         // 2 toon
+		{ FLinearColor(0.58f, 0.56f, 0.50f), FLinearColor(0.36f, 0.36f, 0.38f), FLinearColor(0.66f, 0.62f, 0.54f), FLinearColor(0.50f, 0.40f, 0.32f),
+		  7.f, 0.f, 0.f, 1.f, 1.f, 1.3f },                                                                                           // 3 ink
+	};
 }
 
 AHydraArena::AHydraArena()
@@ -73,6 +91,11 @@ AHydraArena::AHydraArena()
 	HeightFog = CreateDefaultSubobject<UExponentialHeightFogComponent>(TEXT("HeightFog"));
 	HeightFog->SetupAttachment(RootComponent);
 	HeightFog->SetFogDensity(0.005f);
+
+	// The look variants are one post-process material over the whole view (see ApplyLook).
+	LookPostProcess = CreateDefaultSubobject<UPostProcessComponent>(TEXT("LookPostProcess"));
+	LookPostProcess->SetupAttachment(RootComponent);
+	LookPostProcess->bUnbound = true;
 }
 
 void AHydraArena::PostInitializeComponents()
@@ -124,6 +147,41 @@ UStaticMeshComponent* AHydraArena::AddCylinder(FName Name, const FVector& Locati
 	Comp->SetRelativeLocation(Location + FVector(0.f, 0.f, HeightCm * 0.5f));
 	Comp->SetRelativeScale3D(FVector(RadiusCm / 50.f, RadiusCm / 50.f, HeightCm / 100.f));
 	return Comp;
+}
+
+void AHydraArena::ApplyLook(int32 InLook)
+{
+	using namespace HydraArenaLayout;
+	Look = FMath::Clamp(InLook, 1, NumLooks);
+	const FLookPreset& Preset = Looks[Look - 1];
+	// The palette of the arena: every shape knows which of the four colours it was built with.
+	for (int32 i = 0; i < Shapes.Num() && i < ShapeColors.Num(); ++i)
+	{
+		const FLinearColor& Built = ShapeColors[i];
+		const FLinearColor& Wanted = Built.Equals(FloorColor) ? Preset.Floor : (Built.Equals(WallColor) ? Preset.Wall : (Built.Equals(PillarColor) ? Preset.Pillar : Preset.Cover));
+		if (UMaterialInstanceDynamic* Material = Shapes[i] ? Cast<UMaterialInstanceDynamic>(Shapes[i]->GetMaterial(0)) : nullptr)
+		{
+			Material->SetVectorParameterValue(TEXT("Color"), Wanted);
+		}
+	}
+	Sun->SetIntensity(Preset.SunIntensity);
+	if (!LookMaterial)
+	{
+		if (UMaterialInterface* Base = LoadObject<UMaterialInterface>(nullptr, TEXT("/Game/Looks/PP_Look.PP_Look"), nullptr, LOAD_NoWarn | LOAD_Quiet))
+		{
+			LookMaterial = UMaterialInstanceDynamic::Create(Base, this);
+			LookPostProcess->Settings.WeightedBlendables.Array.Add(FWeightedBlendable(1.f, LookMaterial));
+		}
+	}
+	if (LookMaterial)
+	{
+		LookMaterial->SetScalarParameterValue(TEXT("CharBands"), Preset.CharBands);
+		LookMaterial->SetScalarParameterValue(TEXT("WorldBands"), Preset.WorldBands);
+		LookMaterial->SetScalarParameterValue(TEXT("WorldInk"), Preset.WorldInk);
+		LookMaterial->SetScalarParameterValue(TEXT("InkAmount"), Preset.InkAmount);
+		LookMaterial->SetScalarParameterValue(TEXT("OutlinePx"), Preset.OutlinePx);
+	}
+	UE_LOG(LogHydra, Log, TEXT("HydraLook look=%d material=%d"), Look, LookMaterial ? 1 : 0);
 }
 
 TArray<FTransform> AHydraArena::GetSpawnTransforms() const

@@ -9,6 +9,8 @@ class UDirectionalLightComponent;
 class USkyLightComponent;
 class USkyAtmosphereComponent;
 class UExponentialHeightFogComponent;
+class UPostProcessComponent;
+class UMaterialInstanceDynamic;
 
 /**
  * The Phase 1 arena: a flat square with a low border wall and a few obstacles for
@@ -32,6 +34,16 @@ public:
 
 	/** Where wave enemies appear: spots near the border, clear of the obstacles, facing the centre. */
 	TArray<FTransform> GetWaveSpawnTransforms() const;
+
+	/**
+	 * Look variants for the M5 decision (looks only, per window; dev command HydraLookVariant):
+	 * 1 = plain (the lit scene as it is), 2 = toon (flat bands and ink outlines on characters,
+	 * soft bands and a warmer palette in the world), 3 = ink (normal shading with ink outlines,
+	 * a paler palette). The post-process material comes from Scripts/create_look_material.py.
+	 */
+	void ApplyLook(int32 InLook);
+	int32 GetLook() const { return Look; }
+	static constexpr int32 NumLooks = 3;
 
 	/** Where the AI opponent starts. */
 	FTransform GetDummySpawnTransform() const;
@@ -59,4 +71,12 @@ private:
 
 	UPROPERTY(VisibleAnywhere, Category = "Arena|Lighting")
 	TObjectPtr<UExponentialHeightFogComponent> HeightFog;
+
+	UPROPERTY(VisibleAnywhere, Category = "Arena|Look")
+	TObjectPtr<UPostProcessComponent> LookPostProcess;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> LookMaterial;
+
+	int32 Look = 1;
 };

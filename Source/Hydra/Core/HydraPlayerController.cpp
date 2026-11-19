@@ -1,6 +1,7 @@
 #include "Core/HydraPlayerController.h"
 
 #include "AI/HydraAIController.h"
+#include "Arena/HydraArena.h"
 #include "Abilities/HydraGas.h"
 #include "Abilities/HydraTags.h"
 #include "AbilitySystemComponent.h"
@@ -1000,6 +1001,15 @@ void AHydraPlayerController::HydraAITeleport(float X, float Y, float Yaw)
 void AHydraPlayerController::HydraAI(const FString& Verb, float Value)
 {
 	ServerDevCommand(FString::Printf(TEXT("ai %s %f"), *Verb, Value));
+}
+
+void AHydraPlayerController::HydraLookVariant(int32 Look)
+{
+	// Looks only and per window: nothing is sent to the server.
+	for (TActorIterator<AHydraArena> It(GetWorld()); It; ++It)
+	{
+		It->ApplyLook(Look > 0 ? Look : It->GetLook() % AHydraArena::NumLooks + 1);
+	}
 }
 
 void AHydraPlayerController::HydraBody(const FString& Preset)

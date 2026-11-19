@@ -35,6 +35,7 @@ Git Bash from the repository root.
 | `Scripts/run_live_waves.sh` | scripted live run, progression and waves |
 | `Scripts/run_live_debug.sh` | scripted live run, test tools (debug panel and its commands) |
 | `Scripts/playtest.sh humanoid` / `slime` | **playtest:** one window against the waves (add `duo` for a second player window), then the metrics summary |
+| `Scripts/shots_look.sh` | the three look variants side by side: same shots, one page (`Saved/Screenshots/Look/index.html`) |
 | `Scripts/summarize_metrics.sh` | summary of the newest metrics CSV: hits, blocked hits, dodges, stamina use per player, enemy type and wave |
 | `Scripts/run_all.sh` | tests and the four live runs |
 | `Scripts/build_art.sh` | Blender builds models, rigs and textures, Unreal imports them (needs Blender) |
@@ -73,7 +74,7 @@ F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` conso
 `Hydra.ReloadValues`, `Hydra.LatencyStep [ms]`, `Hydra.PacketLoss [0|1]`, `Hydra.AI [0|1]`
 (AI opponent passive / active, on the host), `Hydra.LagCompensation [0|1]`, `HydraStats`,
 `HydraResetAll`, `HydraRefill` (full stamina and mana), `HydraBody neutral|male|female` and `HydraLegs 0.8`
-(looks of the humanoid base model: body preset and leg length), `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraPrecise 0|1`, `HydraFire 1`
+(looks of the humanoid base model: body preset and leg length), `HydraLookVariant 1|2|3` (look variants: plain, toon, ink), `HydraTeleport x y yaw`, `HydraForm slime|humanoid`, `HydraPrecise 0|1`, `HydraFire 1`
 (fire awakened without earning it: the slime's bolt carries fire, leaves a fire field and
 causes burning), `HydraWaves 1` (switch a practice session to waves), `HydraXp <n>` and
 `HydraImprintProgress <n>` (dev: give yourself nXP or imprint progress), `HydraChoose
@@ -114,6 +115,7 @@ a metrics row per player and enemy type to `Saved/Metrics/metrics_<time>.csv`.
 - [`Scripts/`](Scripts) – build, test, map, art and run scripts.
 - [`Art/`](Art) – Blender scripts and the .blend files they write (models, rigs, textures).
 - [`docs/tech/`](docs/tech) – tech-test findings, Blender pipeline.
+- [`docs/m5-preparation.md`](docs/m5-preparation.md) – what is ready for the look decision and the playtest: look variants, animation proposal, playtest kit.
 - [`docs/dev-log.md`](docs/dev-log.md) – sessions, interventions, assumptions.
 
 The engine choice was made with a tech test (Unreal vs. Unity) in the separate repository
