@@ -514,4 +514,7 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   one-handed; below it demand rises by requirement ÷ strength (soft). Grip factor on stamina:
   two-handed × 0.7, one-handed × 1.0; **no damage bonus** for two-handed. Mana is not affected
   except that augments bind per weapon hand.
+- **Body skills that use stamina** get a strength / dexterity share (with steps in between,
+  e.g. stomp 100/0, slam 70/30, bite 40/60, stinger 10/90) and a cost ratio (charge and pounce
+  use the whole body like a dodge); mana body skills (projectile, threads/web) need neither.
 

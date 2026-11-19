@@ -33,9 +33,28 @@ designed once and applies to every form with a matching body.
   stomp, threads/web. **Passive ones are capabilities** (pursuit, front shield, glide/fly,
   wall-walking): they do not level and sit in the form's list (see
   [Capabilities](#capabilities)).
-- **Each body skill is tied to one attribute** for its damage bonus: slam, charge, stomp →
-  strength; bite, pounce, tail strike → dexterity (set per skill in the data). The
-  projectile uses none, like spells.
+- **Every body skill that uses stamina needs two values** (set per skill, or per variant, in
+  the data): a **strength / dexterity share** for its damage bonus – with steps in between,
+  as for weapon schematics – and a **cost ratio**, the counterpart of weapon weight ÷ body
+  weight. Body skills that use **mana** (projectile, threads/web) need neither; they work like
+  spells.
+
+  | Body skill | Strength / dexterity | Cost ratio (guess) | Why |
+  |---|---|---|---|
+  | stomp | 100 / 0 | ~0.06 (like a greatsword), area attack | pure weight |
+  | charge | 80 / 20 | **whole body** (like a dodge: total weight ÷ body weight × base cost) | mass and momentum, a little aiming |
+  | tail strike: club (saurian) | 80 / 20 | ~0.03 | heavy blow to the rear |
+  | slam (slime) | 70 / 30 | 0.038 (0.3 ÷ 8) | the body as mass, but a gel body also snaps |
+  | bite (wolf) | 40 / 60 | ~0.02 (like a short sword) | jaw force, above all a fast snap |
+  | claws (if they become a skill) | 40 / 60 | ~0.02 | like a short sword |
+  | pounce | 30 / 70 | **whole body**, like charge | leaping power, above all body control |
+  | tail strike: whip (long reach) | 30 / 70 | ~0.03 | speed at the tip, little mass |
+  | tail strike: stinger | 10 / 90 | ~0.02 | an aimed stab, like a dagger |
+  | howl / roar | – | fixed cost | no damage |
+  | projectile, threads/web | – | mana | like a spell |
+
+  This gives the lines a direction by itself: saurians reward strength, wolves rather
+  dexterity, the slime lies in between.
 - **How a form gets its body skills:** some **base skills come with the form** – it feels
   different at once. Other skills are only **accessible**. They are learned by use or under
   a condition (e.g. a minimum value in an attribute). So there is still something to
