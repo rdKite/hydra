@@ -1,727 +1,357 @@
-"""Builds the humanoid base model: one skeleton for all humanoids, a stylised human body with
-a simple outfit, the three body presets as shape keys, hand sockets, placeholder animations,
-FBX export.
+"""Humanoid base model: one skeleton and one mesh for every humanoid (hero and humanoid enemies).
 
-  blender -b --python Art/scripts/build_humanoid.py            (add "-- nopreview" to skip the renders)
+Run:  blender -b --python Art/scripts/build_humanoid.py [-- nopreview]
+Needs the MPFB2 extension (MakeHuman for Blender) and the MakeHuman system assets in Blender:
+Scripts/setup_mpfb.sh installs both once per machine.
 
-What it is (roadmap M5, first item; decisions of 2026-11-19: one shared humanoid base model
-for all races, gender-fluid sliders). Detail level: a stylised game character (simplified
-muscle masses, a modelled face, five fingers), not a final character design.
+Output
+  Art/humanoid/humanoid.blend          the working file (stand-in sword and shield included)
+  Art/humanoid/T_humanoid_<slot>.png   one texture per material slot (see materials.json)
+  Art/export/humanoid/SK_humanoid.fbx  mesh (morph targets male, female) and skeleton
+  Art/export/humanoid/A_humanoid_*.fbx the placeholder animations
+  Saved/ArtPreview/humanoid_*.png      renders to judge shape, deformation and poses
 
 How the body is made
-- Cage: quads written out ring by ring – trunk, neck and head as one stack of half rings
-  (24 points round), 10-sided arms out of a hole in the side of the chest, a flat palm with
-  four fingers and a thumb (4-sided), 16-sided legs out of the groin, 8-sided feet. Mirrored,
-  then two Catmull-Clark levels.
-- Sculpt: muscle masses, face (eye sockets, nose, lips, chin, cheeks, ears) and the outfit
-  (hair volume, shirt, belt, boots) are pushed along the vertex normals by smooth ellipsoid
-  bumps and region masks. Eyeballs are separate quad spheres in the same mesh.
-- Weights are set per cage ring (each ring knows its bones) and smoothed by the
-  subdivision; at most 4 bones per vertex.
-- Body presets: the cage measures and the sculpt gains differ; "male" and "female" are shape
-  keys (morph targets), the neutral preset is the base shape. Joints never move, so one
-  skeleton and one set of animations fits all presets.
-- Texture: the object position of every texel is baked once (float image), the colours are
-  computed from it in numpy (skin, hair, brows, eyes, lips, shirt, trousers, belt, boots).
-  The alpha channel is the tint mask: 1 where the side colour may tint (the shirt).
-
-Skeleton: bone names of the Unreal mannequin (root, pelvis, spine_01..03, neck_01, head,
-clavicle / upperarm / lowerarm / hand, thumb / index / middle / ring / pinky _01.._03,
-thigh / calf / foot / ball; _l and _r), A-pose. Bone axes are Blender's (Y along the bone).
-Socket bones: weapon_r (child of hand_r, in the fist, +Y along the blade) and shield_l (child
-of lowerarm_l, +Y out of the shield's face).
-
-Writes Art/humanoid/humanoid.blend (with a stand-in longsword and round shield on the
-sockets, for animating; they are not exported), T_humanoid_color.png,
-Art/export/humanoid/*.fbx and preview renders Saved/ArtPreview/humanoid_*.png.
+- MPFB builds a realistic human from the MakeHuman base mesh (CC0) with its macro sliders
+  (gender, muscle, weight, proportions ...) and fits its "game engine" rig to it (bone names
+  of the Unreal mannequin, with fingers). Skin, eyes, eyebrows and eyelashes are MakeHuman
+  assets (CC0). No clothes and no hair on the body: those come as equipment and hair styles.
+- A plain shirt and trousers are cut from the body by script: the same vertices and bone
+  weights as the skin under them, smoothed (no anatomy shows through), pushed out loosely,
+  given cloth thickness. They are their own material slots, so the game can tint them.
+- Body presets: the neutral body is the base, `male` and `female` are shape keys (morph
+  targets in Unreal). They are built with other macro values and scaled to the neutral
+  height, so one skeleton fits all three; the game sets the height by scaling.
 """
 import math
 import os
+import shutil
 import sys
 
+import addon_utils
 import bmesh
 import bpy
 import numpy as np
-import mathutils.kdtree
 from mathutils import Matrix, Vector
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 import hydra_blender as hb  # noqa: E402
 
 NAME = "humanoid"
-SUBDIVISION = 2
-TEXTURE_SIZE = 2048
-PRESET_KEYS = ("male", "female")     # the neutral preset is the base shape
+OUT_DIR = os.path.join(hb.ART_DIR, NAME)
+MPFB = "bl_ext.user_default.mpfb"
 
-
-def ramp(x, a, b):
-    """0 at a, 1 at b, linear in between (a may be larger than b)."""
-    return max(0.0, min(1.0, (x - a) / (b - a)))
-
-
-def np_smooth(x, a, b):
-    t = np.clip((x - a) / (b - a), 0.0, 1.0)
-    return t * t * (3.0 - 2.0 * t)
-
-
-def side_vector(v, sign):
-    return Vector((v.x * sign, v.y, v.z))
-
-
-def arm_frame(direction):
-    """Axes of a limb ring: along the limb, across it in the arm plane (up and out), to the back."""
-    d = direction.normalized()
-    u = Vector((-d.z, 0.0, d.x)).normalized()
-    return d, u, u.cross(d)
-
-
-# --- Joints (centimetres, facing -Y, the character's left is +X; only the left side) --------
-ARM_DIR = Vector((math.sin(math.radians(40.0)), 0.0, -math.cos(math.radians(40.0))))   # A-pose
-FOREARM_DIR = Vector((0.62, -0.10, -0.78)).normalized()
-SHOULDER = Vector((17.2, 0.4, 141.5))
-ELBOW = SHOULDER + ARM_DIR * 28.5
-WRIST = ELBOW + FOREARM_DIR * 25.5
-HIP = Vector((10.2, 0.6, 92.0))
-KNEE = Vector((11.0, -0.8, 50.5))
-ANKLE = Vector((11.1, 1.6, 8.5))
-BALL = Vector((11.5, -14.5, 2.6))
-TOE = Vector((11.8, -21.5, 2.6))
-EYE = Vector((3.25, -7.35, 168.6))
-EYE_RADIUS = 1.25
-# Points under the foot that may touch the floor: (bone, rest position).
-SOLE_POINTS = (("foot", Vector((11.1, 6.0, 0.0))), ("foot", Vector((11.5, -14.5, 0.0))), ("ball", Vector((11.8, -20.0, 0.0))))
-
-# Hand axes: along the hand, out of the back of the hand, towards the pinky side (back).
-HD, HU, HV = arm_frame(FOREARM_DIR)
-
-
-def hand_point(t, across, out):
-    return WRIST + HD * t + HV * across + HU * out
-
-
-def palm_rows(t, half_width, back, palm, arc=0.0, drop=0.0):
-    """Two rows of 5 points across the hand (thumb side first): back of the hand, palm."""
-    back_row, palm_row = [], []
-    for i in range(5):
-        s = -1.0 + 0.5 * i
-        along = t - arc * s * s - drop * max(0.0, s)
-        f = 1.0 - 0.3 * s * s
-        back_row.append(hand_point(along, half_width * s, back * f))
-        palm_row.append(hand_point(along, half_width * s, -palm * f))
-    return back_row, palm_row
-
-
-# Palm rings: near the wrist, middle of the palm, knuckles.
-PALM = [palm_rows(1.5, 3.7, 2.0, 2.1), palm_rows(5.3, 4.4, 2.0, 2.4), palm_rows(9.5, 4.5, 1.7, 1.8, arc=0.8, drop=0.4)]
-FINGERS = (("index", 7.6, -4.0), ("middle", 8.4, 0.0), ("ring", 7.9, 3.5), ("pinky", 6.4, 8.0))   # name, length, spread (deg)
-THUMB_DIR = (-HV * 0.78 + HD * 0.5 - HU * 0.38).normalized()
-THUMB_LENGTH = 8.4
-GRIP = hand_point(9.0, 0.0, -2.6)      # inside the fist: where a sword's grip sits
-
-
-def palm_ring(index):
-    back, palm = PALM[index]
-    return back + palm[::-1]          # 0..4 back of the hand, 5..9 palm; 9 -> 0 is the thumb side
-
-
-def finger_frame(i):
-    name, length, spread = FINGERS[i]
-    back, palm = PALM[2]
-    base = (back[i] + back[i + 1] + palm[i] + palm[i + 1]) / 4.0
-    a = math.radians(spread)
-    along = (HD * math.cos(a) + HV * math.sin(a)).normalized()
-    side = (HV * math.cos(a) - HD * math.sin(a)).normalized()
-    up = (HU - along * HU.dot(along)).normalized()
-    return name, length, base, along, side, up
-
-
-def finger_joints(i):
-    name, length, base, along, _, _ = finger_frame(i)
-    l1, l2 = 0.45 * length, 0.30 * length
-    return name, [base, base + along * l1, base + along * (l1 + l2), base + along * (length - 0.2)]
-
-
-def thumb_frame():
-    r1, r2 = palm_ring(0), palm_ring(1)
-    loop = [r1[9], r1[0], r2[0], r2[9]]
-    base = sum(loop, Vector()) / 4.0
-    a1 = (HU - THUMB_DIR * HU.dot(THUMB_DIR)).normalized()
-    a2 = THUMB_DIR.cross(a1)
-    if a2.dot(HD) < 0.0:
-        a2 = -a2
-    return base, a1, a2
-
-
-def thumb_joints():
-    base, _, _ = thumb_frame()
-    return [base - THUMB_DIR * 1.6, base + THUMB_DIR * 3.0, base + THUMB_DIR * 5.9, base + THUMB_DIR * (THUMB_LENGTH - 0.2)]
-
-
-# --- Measures of the body -------------------------------------------------------------------
-# Trunk, neck and head: half rings of 13 points from the front centre (j=0) round the left
-# side to the back centre (j=12). z, half width, depth to the front, depth to the back,
-# centre y, squareness (2 = ellipse, more = boxier).
-TRUNK = [
-    (86.0, 17.6, 8.8, 10.6, 0.6, 2.6),      # 0 groin: the legs start here
-    (93.0, 18.2, 9.2, 11.8, 0.8, 2.6),      # 1 hips, seat
-    (100.0, 17.0, 9.4, 10.8, 0.6, 2.6),     # 2 hip bones
-    (106.0, 15.2, 9.4, 9.6, 0.3, 2.6),
-    (112.0, 14.6, 9.6, 9.0, 0.1, 2.6),      # 4 waist
-    (119.0, 15.4, 10.2, 9.4, 0.0, 2.6),
-    (128.0, 16.9, 11.4, 10.3, 0.0, 2.6),    # 6 armpit: lower edge of the arm hole
-    (134.0, 17.4, 11.6, 10.5, 0.0, 2.6),    # 7 chest
-    (140.0, 17.6, 10.6, 10.2, 0.0, 2.6),
-    (145.5, 16.6, 8.6, 8.8, 0.2, 2.6),      # 9 top of the shoulder: upper edge of the arm hole
-    (149.5, 12.0, 6.8, 7.6, 0.6, 2.4),      # 10 trapezius
-    (152.5, 6.6, 5.6, 6.0, 0.6, 2.2),       # 11 base of the neck
-    (155.5, 5.6, 5.2, 5.6, 0.8, 2.1),       # 12 neck
-    (157.8, 6.6, 8.2, 5.8, 0.4, 2.2),       # 13 under the jaw (chin in front)
-    (160.5, 7.4, 9.4, 7.6, 0.2, 2.2),       # 14 mouth, jaw
-    (164.5, 8.2, 9.8, 9.4, 0.0, 2.2),       # 15 nose base, cheeks
-    (168.5, 8.6, 9.5, 10.2, 0.0, 2.2),      # 16 eyes
-    (172.5, 8.5, 9.3, 10.4, 0.2, 2.2),      # 17 brows
-    (176.0, 7.9, 8.4, 9.8, 0.4, 2.2),
-    (179.0, 6.5, 6.6, 8.0, 0.6, 2.2),
-]
-CROWN = Vector((0.0, 1.0, 181.3))
-TRUNK_ANGLES = (0, 15, 30, 44, 56, 66, 90, 114, 124, 136, 150, 165, 180)   # wider at the side, for the arm hole
-HEAD_ANGLES = tuple(15 * j for j in range(13))
-NECK_LAYERS = (11, 12)
-# The arm hole: faces of rows 6..8 between the columns 5..7 are left out.
-HOLE_ROWS, HOLE_COLUMNS = (6, 9), (5, 7)
-CROTCH = (Vector((0.0, 7.0, 82.5)), Vector((0.0, 0.8, 80.5)), Vector((0.0, -5.5, 82.0)))   # back, middle, front
-
-# Upper arm rings: distance from the shoulder joint, radius across (u), radius front-back
-# (v), how far the ring still faces the side (1 = the plane of the arm hole), shift outwards.
-UPPER_ARM = [(7.0, 6.3, 6.2, 0.55, 1.2), (12.5, 5.7, 5.7, 0.0, 0.0), (18.5, 5.3, 5.4, 0.0, 0.0), (24.0, 4.9, 4.9, 0.0, 0.0), (28.5, 4.5, 4.6, 0.0, 0.0)]
-DELTOID_RING = (Vector((19.9, 0.4, 137.2)), 8.0, 6.4)       # first ring, in the plane of the arm hole
-FOREARM = [(3.5, 4.8, 4.6), (9.0, 4.6, 4.3), (15.5, 3.9, 3.6), (21.0, 3.0, 3.1), (25.5, 2.4, 3.2)]
-# Leg rings: z, centre x, centre y, radius out/in, radius to the front, radius to the back.
-LEG = [
-    (76.0, 10.3, 0.6, 9.2, 8.4, 9.4),
-    (68.0, 10.8, 0.1, 8.6, 8.2, 8.4),
-    (60.5, 11.0, -0.4, 7.4, 7.4, 7.0),
-    (55.0, 11.0, -0.7, 6.5, 6.8, 6.1),
-    (50.5, 11.0, -0.8, 6.0, 6.4, 5.8),      # knee
-    (46.5, 11.0, -0.4, 5.9, 5.8, 6.0),
-    (40.5, 11.1, 0.4, 5.9, 5.0, 7.0),       # calf
-    (33.5, 11.1, 0.8, 5.5, 4.6, 6.5),
-    (27.0, 11.1, 1.0, 5.1, 4.5, 5.6),       # top of the boot
-    (19.0, 11.1, 1.2, 4.7, 4.5, 4.9),
-    (13.0, 11.1, 1.4, 4.5, 4.5, 4.8),
-    (8.5, 11.1, 1.6, 4.7, 4.8, 5.2),        # ankle
-    (0.0, 11.1, 1.8, 4.9, 5.4, 5.0),        # sole under the heel
-]
-# Foot rings in front of the ankle: y, height, half width, centre x.
-FOOT = [(-6.5, 7.2, 4.9, 11.2), (-11.0, 5.6, 5.3, 11.4), (-15.0, 4.5, 5.4, 11.6), (-18.8, 3.7, 5.0, 11.8), (-21.6, 2.9, 4.0, 11.9)]
-
-# How much a ring with n points shrinks under subdivision (the limit surface lies inside).
-def k_ring(n):
-    return 3.0 / (2.0 + math.cos(2.0 * math.pi / n))
-
-
-# Body presets: what differs from the neutral body. trunk: per layer (half width, depth front,
-# depth back) in centimetres; arm / thigh / calf / neck: factors on the ring radii; gain:
-# factors on the sculpt groups (see sculpt_features).
-PRESETS = {
-    "neutral": {},
-    "male": {
-        "trunk": {1: (-0.6, 0.0, -0.6), 2: (-0.4, 0.0, 0.0), 3: (0.8, 0.4, 0.4), 4: (1.4, 0.6, 0.5), 5: (1.8, 0.8, 0.7),
-                  6: (1.6, 0.9, 0.9), 7: (1.6, 1.0, 0.9), 8: (1.0, 0.8, 0.8), 9: (0.8, 0.5, 0.6), 10: (1.2, 0.3, 0.4),
-                  13: (0.4, 0.2, 0.2), 14: (0.5, 0.2, 0.2)},
-        "arm": 1.08, "thigh": 1.04, "calf": 1.07, "neck": 1.12,
-        "gain": {"muscle": 1.4, "pec": 1.7, "abs": 1.4, "trap": 1.6, "lat": 1.5, "glute": 0.85, "male": 1.0,
-                 "brow": 1.4, "jaw": 1.6, "cheek": 0.9, "lips": 0.85},
-    },
-    "female": {
-        "trunk": {0: (1.0, 0.0, 0.8), 1: (2.0, 0.2, 1.6), 2: (1.2, 0.1, 0.6), 3: (-1.0, -0.6, -0.3), 4: (-2.0, -0.8, -0.5),
-                  5: (-1.6, -0.4, -0.4), 6: (-1.4, 0.0, -0.4), 7: (-1.2, 0.0, -0.3), 8: (-1.1, -0.2, -0.3), 9: (-1.0, -0.1, 0.0),
-                  10: (-0.6, 0.0, 0.0), 13: (-0.4, -0.2, 0.0), 14: (-0.4, -0.1, 0.0)},
-        "arm": 0.92, "thigh": 1.06, "calf": 0.95, "neck": 0.9,
-        "gain": {"muscle": 0.55, "pec": 0.3, "abs": 0.4, "trap": 0.6, "lat": 0.6, "glute": 1.4, "bust": 1.0,
-                 "brow": 0.7, "jaw": 0.6, "cheek": 1.15, "lips": 1.25},
-    },
+# Macro sliders of MakeHuman (0..1). Gender per preset; the rest is shared.
+PRESETS = {"neutral": 0.5, "male": 1.0, "female": 0.0}
+PRESET_KEYS = ("male", "female")
+MACRO = {"age": 0.5, "muscle": 0.62, "weight": 0.45, "proportions": 0.85, "height": 0.6,
+         "cupsize": 0.5, "firmness": 0.6, "race": {"asian": 0.33, "caucasian": 0.34, "african": 0.33}}
+SCALE = 10.0                     # MPFB's scale factor: 0.1 gives metres, 10 centimetres
+SKIN = ("skins/young_caucasian_male", "young_lightskinned_male_diffuse.png")
+PROXIES = {   # slot: (MPFB asset type, .mhclo, texture)
+    "eyes": ("Eyes", "eyes/low-poly/low-poly.mhclo", "eyes/materials/brown_eye.png"),
+    "eyebrows": ("Eyebrows", "eyebrows/eyebrow001/eyebrow001.mhclo", "eyebrows/eyebrow001/eyebrow001.png"),
+    "eyelashes": ("Eyelashes", "eyelashes/eyelashes01/eyelashes01.mhclo", "eyelashes/eyelashes01/eyelashes01.png"),
 }
-
-# --- Skin weights ---------------------------------------------------------------------------
-SPINE = [(103.5, "pelvis", "spine_01", 4.0), (117.5, "spine_01", "spine_02", 4.0), (131.0, "spine_02", "spine_03", 4.0),
-         (151.5, "spine_03", "neck_01", 2.0), (157.0, "neck_01", "head", 2.0)]
-
-
-def spine_weights(z):
-    for boundary, lower, upper, half in SPINE:
-        if z < boundary + half:
-            if z <= boundary - half:
-                return {lower: 1.0}
-            t = (z - (boundary - half)) / (2.0 * half)
-            return {lower: 1.0 - t, upper: t}
-    return {"head": 1.0}
+MASKED = ("eyebrows", "eyelashes")        # alpha-tested cards
+CLOTH_TEXTURE_SIZE = 1024
+SHIRT_COLOR = (0.84, 0.80, 0.72)          # undyed linen: light, so the side colour reads well
+TROUSERS_COLOR = (0.42, 0.37, 0.31)
+FINGER_NAMES = ("index", "middle", "ring", "pinky")
 
 
-def trunk_weights(k, j, co, angles):
-    s = math.sin(math.radians(angles[j]))     # 0 at the centre line, 1 at the side
-    c = math.cos(math.radians(angles[j]))     # 1 in front, -1 at the back
-    if k == 13 and c > 0.0:
-        return {"head": 1.0}                  # chin
-    weights = {}
-    if k == 0:
-        weights["thigh_l"] = (0.42 if c > -0.3 else 0.16) * (0.35 + 0.65 * s)   # less on the seat: no ridge in a squat
-    elif k == 1:
-        weights["thigh_l"] = 0.14 * s * (1.0 if c > -0.3 else 0.5)
-    if 6 <= k <= 9:
-        weights["upperarm_l"] = 0.32 * hb.smoothstep(0.6, 1.0, s) * ramp(co.z, 126.0, 140.0)
-    if 9 <= k <= 11:
-        weights["clavicle_l"] = 0.55 * ramp(co.x, 3.5, 12.0) * (1.0 if k < 11 else 0.5)
-    rest = 1.0 - sum(weights.values())
-    for bone, share in spine_weights(co.z).items():
-        weights[bone] = weights.get(bone, 0.0) + share * rest
-    return weights
+# --- MPFB ----------------------------------------------------------------------------------
+
+def mpfb():
+    """The MPFB services; a clear message if the extension or its assets are missing."""
+    try:
+        addon_utils.enable(MPFB, default_set=True)
+        from bl_ext.user_default.mpfb.services.humanservice import HumanService
+        from bl_ext.user_default.mpfb.services.locationservice import LocationService
+        from bl_ext.user_default.mpfb.services.targetservice import TargetService
+        from bl_ext.user_default.mpfb.services.assetservice import AssetService
+    except Exception as error:   # noqa: BLE001
+        raise RuntimeError("MPFB2 is not installed in Blender - run Scripts/setup_mpfb.sh (%s)" % error)
+    if not AssetService.system_assets_pack_is_installed():
+        raise RuntimeError("The MakeHuman system assets are missing - run Scripts/setup_mpfb.sh")
+    return HumanService, LocationService, TargetService
 
 
-def leg_weights(z):
-    if z >= 72.0:
-        return {"thigh_l": 0.85, "pelvis": 0.15} if z > 74.0 else {"thigh_l": 1.0}
-    knee = ramp(z, 56.0, 45.0)
-    if knee < 1.0:
-        return {"thigh_l": 1.0 - knee, "calf_l": knee}
-    foot = ramp(z, 13.5, 5.0)
-    return {"calf_l": 1.0 - foot, "foot_l": foot}
+def build_human(gender):
+    """Body, rig and the face proxies of one preset. Helper geometry removed, shape keys baked."""
+    HumanService, LocationService, TargetService = mpfb()
+    data = LocationService.get_user_data()
+    macro = dict(MACRO, gender=gender)
+    body = HumanService.create_human(macro_detail_dict=macro, scale=SCALE)
+    rig = HumanService.add_builtin_rig(body, "game_engine")
+    proxies = {}
+    for slot, (kind, path, _) in PROXIES.items():
+        before = set(bpy.data.objects)
+        HumanService.add_mhclo_asset(os.path.join(data, path), body, asset_type=kind, subdiv_levels=0, material_type="MAKESKIN")
+        new = [o for o in bpy.data.objects if o not in before and o.type == 'MESH']
+        proxies[slot] = new[0]
+    TargetService.bake_targets(body)
+    remove_helpers(body)
+    return body, rig, proxies
 
 
-# --- Cage -----------------------------------------------------------------------------------
-
-class Cage:
-    """Left half of the body as quads with weights per vertex; mirror() adds the right half."""
-
-    def __init__(self):
-        self.verts, self.weights, self.faces = [], [], []
-
-    def vert(self, co, weights):
-        self.verts.append(Vector(co))
-        self.weights.append({b: w for b, w in weights.items() if w > 1e-4})
-        return len(self.verts) - 1
-
-    def quad(self, a, b, c, d):
-        self.faces.append((a, b, c, d))
-
-    def aligned(self, lower, upper):
-        """upper re-ordered so that it runs like lower (best offset and direction)."""
-        n = len(lower)
-        a = [self.verts[i] for i in lower]
-        b = [self.verts[i] for i in upper]
-        ca, cb = sum(a, Vector()) / n, sum(b, Vector()) / n
-        sa = max((p - ca).length for p in a) or 1.0
-        sb = max((p - cb).length for p in b) or 1.0
-        best = None
-        for direction in (1, -1):
-            for offset in range(n):
-                cost = sum(((a[m] - ca) / sa - (b[(offset + direction * m) % n] - cb) / sb).length_squared for m in range(n))
-                if best is None or cost < best[0]:
-                    best = (cost, offset, direction)
-        _, offset, direction = best
-        return [upper[(offset + direction * m) % n] for m in range(n)]
-
-    def bridge(self, lower, upper, align=True, skip=()):
-        if align:
-            upper = self.aligned(lower, upper)
-        n = len(lower)
-        for m in range(n):
-            if m not in skip:
-                self.quad(lower[m], lower[(m + 1) % n], upper[(m + 1) % n], upper[m])
-        return upper
-
-    def ring(self, points, weights):
-        return [self.vert(p, weights) for p in points]
-
-    def cap(self, ring, centre, weights):
-        middle = self.vert(centre, weights)
-        for m in range(0, len(ring), 2):
-            self.quad(ring[m - 1], ring[m], ring[(m + 1) % len(ring)], middle)
-
-    def mirror(self):
-        mapping = {}
-        for index in range(len(self.verts)):
-            co = self.verts[index]
-            if abs(co.x) < 1e-4:
-                co.x = 0.0
-                mapping[index] = index
-                shared = {}                   # on the centre line: a left weight is split between both sides
-                for bone, weight in self.weights[index].items():
-                    if bone.endswith("_l"):
-                        for name in (bone, bone[:-2] + "_r"):
-                            shared[name] = shared.get(name, 0.0) + weight * 0.5
-                    else:
-                        shared[bone] = shared.get(bone, 0.0) + weight
-                self.weights[index] = shared
-            else:
-                swapped = {(b[:-2] + "_r" if b.endswith("_l") else b): w for b, w in self.weights[index].items()}
-                mapping[index] = self.vert((-co.x, co.y, co.z), swapped)
-        self.faces += [tuple(mapping[i] for i in reversed(face)) for face in self.faces]
+def remove_helpers(body):
+    """The base mesh carries helper geometry (for fitting clothes); only the group 'body' is skin."""
+    for modifier in list(body.modifiers):
+        if modifier.type == 'MASK':
+            body.modifiers.remove(modifier)
+    group = body.vertex_groups["body"].index
+    keep = {v.index for v in body.data.vertices if any(g.group == group and g.weight > 0.5 for g in v.groups)}
+    bm = bmesh.new()
+    bm.from_mesh(body.data)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if v.index not in keep], context='VERTS')
+    bm.to_mesh(body.data)
+    bm.free()
 
 
-def ellipse(centre, a, b, ra, rb, count, start_deg=0.0):
-    k = k_ring(count)
-    return [centre + (a * (math.cos(t) * ra) + b * (math.sin(t) * rb)) * k
-            for t in (math.radians(start_deg + m * 360.0 / count) for m in range(count))]
+def vertex_weights(obj):
+    names = {g.index: g.name for g in obj.vertex_groups}
+    return [{names[g.group]: g.weight for g in v.groups} for v in obj.data.vertices]
 
 
-def square(centre, a, b, ha, hb_):
-    """4 corners: (-a,-b), (+a,-b), (+a,+b), (-a,+b), sized so that the subdivided tube has about these half sizes."""
-    k = 1.08
-    return [centre + a * (sa * ha * k) + b * (sb * hb_ * k) for sa, sb in ((-1, -1), (1, -1), (1, 1), (-1, 1))]
+def total(weights, prefixes):
+    return sum(value for name, value in weights.items() if name.startswith(prefixes))
 
 
-def trunk_point(k, j, spec, angles):
-    z, w, df, db, cy, p = TRUNK[k]
-    dw, ddf, ddb = spec.get("trunk", {}).get(k, (0.0, 0.0, 0.0))
-    w, df, db = w + dw, df + ddf, db + ddb
-    if k in NECK_LAYERS:
-        f = spec.get("neck", 1.0)
-        w, df, db = w * f, df * f, db * f
-    phi = math.radians(angles[j])
-    s, c = math.sin(phi), math.cos(phi)
-    e = 2.0 / p
-    x = w * abs(s) ** e
-    y = cy - (df if c >= 0.0 else db) * math.copysign(abs(c) ** e, c)
-    return Vector((x, y, z))
+# --- Shirt and trousers --------------------------------------------------------------------
+
+def garment_plan(body, rig):
+    """Which body vertices each garment covers and how far the cloth stands off there (cm).
+    Worked out once on the neutral body; the presets reuse it (same vertex indices)."""
+    bones = rig.data.bones
+    hip_z = bones["thigh_l"].head_local.z
+    knee_z = bones["calf_l"].head_local.z
+    waist_z = hip_z + 11.0          # top of the trousers
+    hem_z = hip_z + 3.5             # bottom of the shirt (above the crotch, over the trousers)
+    ankle_z = bones["foot_l"].head_local.z + 5.0
+    plan = {"shirt": ([], []), "trousers": ([], [])}
+    for v, w in zip(body.data.vertices, vertex_weights(body)):
+        co = v.co
+        side = "_l" if co.x > 0 else "_r"
+        shirt = trousers = False
+        shirt_off = trousers_off = 0.0
+        if total(w, ("upperarm", "lowerarm", "hand") + ("thumb",) + FINGER_NAMES) > 0.5:
+            shoulder = bones["upperarm" + side].head_local
+            a, b = bones["lowerarm" + side].head_local, bones["hand" + side].head_local
+            t = (co - a).dot(b - a) / (b - a).length_squared
+            if t < 0.86 and total(w, ("hand", "thumb") + FINGER_NAMES) < 0.05:
+                shirt = True
+                along = min(1.0, (co - shoulder).length / ((b - shoulder).length * 0.95))
+                shirt_off = 1.4 + 1.3 * along * along              # sleeves widen towards the cuff
+        else:
+            if co.z > hem_z and total(w, ("neck", "head")) < 0.3:
+                shirt = True
+                shirt_off = 1.7 + 2.2 * max(0.0, min(1.0, (hip_z + 16.0 - co.z) / 12.5))   # falls loose over the hips
+            if ankle_z < co.z < waist_z and total(w, ("foot", "ball")) < 0.2:
+                trousers = True
+                trousers_off = 1.1 + 1.6 * max(0.0, min(1.0, (knee_z - co.z) / (knee_z - ankle_z)))   # wider towards the ankle
+        plan["shirt"][0].append(shirt)
+        plan["shirt"][1].append(shirt_off)
+        plan["trousers"][0].append(trousers)
+        plan["trousers"][1].append(trousers_off)
+    return plan
 
 
-def build_cage(preset):
-    spec = PRESETS[preset]
-    cage = Cage()
-
-    # Trunk, neck and head.
-    layers = []
-    for k in range(len(TRUNK)):
-        angles = TRUNK_ANGLES if k <= 10 else HEAD_ANGLES
-        layer = {}
-        for j in range(13):
-            if HOLE_ROWS[0] < k < HOLE_ROWS[1] and j == 6:
-                continue                                         # inside the arm hole
-            co = trunk_point(k, j, spec, angles)
-            layer[j] = cage.vert(co, trunk_weights(k, j, co, angles))
-        layers.append(layer)
-    for k in range(len(TRUNK) - 1):
-        for j in range(12):
-            if HOLE_ROWS[0] <= k < HOLE_ROWS[1] and HOLE_COLUMNS[0] <= j < HOLE_COLUMNS[1]:
-                continue
-            cage.quad(layers[k][j], layers[k][j + 1], layers[k + 1][j + 1], layers[k + 1][j])
-    crown = cage.vert(CROWN, {"head": 1.0})
-    top = layers[-1]
-    for j in range(1, 12, 2):
-        cage.quad(top[j - 1], top[j], top[j + 1], crown)
-
-    # Arm, out of the hole in the side of the chest.
-    r0, r1 = HOLE_ROWS
-    c0, c1 = HOLE_COLUMNS
-    hole = [layers[r0][c0], layers[r0][6], layers[r0][c1]] + [layers[k][c1] for k in range(r0 + 1, r1 + 1)] \
-        + [layers[r1][6], layers[r1][c0]] + [layers[k][c0] for k in range(r1 - 1, r0, -1)]
-    arm_scale = spec.get("arm", 1.0)
-    centre, ru, rv = DELTOID_RING
-    below = cage.ring(ellipse(centre, Vector((0, 0, 1)), Vector((0, 1, 0)), ru * arm_scale, rv * arm_scale, 10),
-                      {"upperarm_l": 0.55, "clavicle_l": 0.3, "spine_03": 0.15})
-    below = cage.bridge(hole, below)
-    upper_weights = [{"upperarm_l": 0.85, "clavicle_l": 0.15}, {"upperarm_l": 1.0}, {"upperarm_l": 1.0},
-                     {"upperarm_l": 0.85, "lowerarm_l": 0.15}, {"upperarm_l": 0.5, "lowerarm_l": 0.5}]
-    for (t, ru, rv, side, out), weights in zip(UPPER_ARM, upper_weights):
-        d, u, v = arm_frame(ARM_DIR * (1.0 - side) + Vector((side, 0.0, 0.0)))
-        centre = SHOULDER + ARM_DIR * t + Vector((out, 0.0, 0.0))
-        ring = cage.ring(ellipse(centre, u, v, ru * arm_scale, rv * arm_scale, 10), weights)
-        below = cage.bridge(below, ring)
-    d, u, v = arm_frame(FOREARM_DIR)
-    fore_weights = [{"upperarm_l": 0.2, "lowerarm_l": 0.8}, {"lowerarm_l": 1.0}, {"lowerarm_l": 1.0},
-                    {"lowerarm_l": 0.9, "hand_l": 0.1}, {"lowerarm_l": 0.5, "hand_l": 0.5}]
-    for (t, ru, rv), weights in zip(FOREARM, fore_weights):
-        scale = arm_scale if t < 20.0 else 1.0
-        ring = cage.ring(ellipse(ELBOW + d * t, u, v, ru * scale, rv * scale, 10), weights)
-        below = cage.bridge(below, ring)
-
-    # Hand: palm rings, thumb out of the side, fingers out of the knuckle ring.
-    palm1 = cage.ring(palm_ring(0), {"hand_l": 0.85, "lowerarm_l": 0.15})
-    cage.bridge(below, palm1)
-    palm2 = cage.ring(palm_ring(1), {"hand_l": 1.0})
-    cage.bridge(palm1, palm2, align=False, skip=(9,))
-    knuckle_points = palm_ring(2)
-    knuckles = []
-    for index, point in enumerate(knuckle_points):
-        column = index if index < 5 else 9 - index               # 0..4 from the thumb side
-        touching = [f for f in (column - 1, column) if 0 <= f < 4]
-        weights = {"hand_l": 0.5}
-        for f in touching:
-            weights[FINGERS[f][0] + "_01_l"] = 0.5 / len(touching)
-        knuckles.append(cage.vert(point, weights))
-    cage.bridge(palm2, knuckles, align=False)
-
-    base, a1, a2 = thumb_frame()
-    below = [palm1[9], palm1[0], palm2[0], palm2[9]]
-    thumb = [(1.4, 1.5, 1.6, {"hand_l": 0.3, "thumb_01_l": 0.7}), (2.6, 1.35, 1.4, {"thumb_01_l": 0.7, "thumb_02_l": 0.3}),
-             (3.5, 1.3, 1.35, {"thumb_01_l": 0.3, "thumb_02_l": 0.7}), (5.5, 1.15, 1.2, {"thumb_02_l": 0.7, "thumb_03_l": 0.3}),
-             (6.4, 1.1, 1.15, {"thumb_02_l": 0.3, "thumb_03_l": 0.7}), (7.8, 0.95, 1.0, {"thumb_03_l": 1.0})]
-    for t, h1, h2, weights in thumb:
-        ring = cage.ring(square(base + THUMB_DIR * t, a1, a2, h1, h2), weights)
-        below = cage.bridge(below, ring)
-    cage.quad(*below)
-
-    for i in range(4):
-        name, length, fbase, along, side, up = finger_frame(i)
-        l1, l2 = 0.45 * length, 0.30 * length
-        bones = [name + "_0%d_l" % n for n in (1, 2, 3)]
-        stations = [(l1 * 0.5, 0.95, 1.0, {bones[0]: 1.0}),
-                    (l1 - 0.55, 0.88, 0.95, {bones[0]: 0.7, bones[1]: 0.3}), (l1 + 0.55, 0.85, 0.92, {bones[0]: 0.3, bones[1]: 0.7}),
-                    (l1 + l2 - 0.45, 0.8, 0.86, {bones[1]: 0.7, bones[2]: 0.3}), (l1 + l2 + 0.45, 0.78, 0.84, {bones[1]: 0.3, bones[2]: 0.7}),
-                    (length - 0.5, 0.7, 0.76, {bones[2]: 1.0})]
-        below = [knuckles[i], knuckles[i + 1], knuckles[8 - i], knuckles[9 - i]]
-        for t, hu, hv, weights in stations:
-            ring = cage.ring(square(fbase + along * t, up, side, hu, hv), weights)
-            below = cage.bridge(below, ring)
-        cage.quad(*below)
-
-    # Leg, out of the groin layer and the crotch.
-    crotch = [cage.vert(co, {"pelvis": 0.5, "thigh_l": 0.5}) for co in CROTCH]
-    below = [layers[0][j] for j in range(13)] + crotch
-    rings = []
-    for z, cx, cy, rs, rf, rb in LEG:
-        scale = spec.get("thigh", 1.0) if z >= 57.0 else spec.get("calf", 1.0) if 30.0 <= z < 47.0 else 1.0
-        points = []
-        for m in range(16):
-            a = math.radians(-33.75 + 22.5 * m)              # 0 = to the front, then to the outside
-            radius = rf if math.cos(a) >= 0.0 else rb
-            points.append(Vector((cx + math.sin(a) * rs * scale * k_ring(16), cy - math.cos(a) * radius * scale * k_ring(16), z)))
-        rings.append(cage.ring(points, leg_weights(z) if z > 0.0 else {"foot_l": 1.0}))
-    below = cage.bridge(below, rings[0])
-    for previous, ring in zip(rings[:-2], rings[1:-1]):
-        cage.bridge(previous, ring, align=False)
-    ankle, sole = rings[-2], rings[-1]
-    cage.bridge(ankle, sole, align=False, skip=(0, 1, 2))     # the front stays open for the foot
-    cage.cap(sole, Vector((LEG[-1][1], LEG[-1][2], 0.0)), {"foot_l": 1.0})
-
-    # Foot: 8-sided rings to the toe.
-    below = ankle[0:4] + sole[3::-1]
-    for y, h, w, cx in FOOT:
-        ball = ramp(-y, 12.0, 17.0)
-        weights = {"foot_l": 1.0 - ball, "ball_l": ball}
-        w *= 1.06
-        points = [(cx - 0.72 * w, y, 0.9 * h), (cx, y, h), (cx + 0.72 * w, y, 0.9 * h), (cx + w, y, 0.45 * h),
-                  (cx + 0.8 * w, y, 0.0), (cx, y, 0.0), (cx - 0.8 * w, y, 0.0), (cx - w, y, 0.45 * h)]
-        ring = cage.ring([Vector(p) for p in points], weights)
-        below = cage.bridge(below, ring)
-    y, h, _, cx = FOOT[-1]
-    cage.cap(below, Vector((cx, y - 1.2, 0.42 * h)), {"ball_l": 1.0})
-
-    cage.mirror()
-    return cage
+def taubin(bm, verts, iterations, lam=0.5, mu=-0.53):
+    """Smoothing without shrinking (Taubin): removes small bumps, keeps the volume of limbs."""
+    links = {v: [e.other_vert(v) for e in v.link_edges] for v in verts}
+    for _ in range(iterations):
+        for factor in (lam, mu):
+            moved = {v: v.co + (sum((n.co for n in ns), Vector()) / len(ns) - v.co) * factor for v, ns in links.items()}
+            for v, co in moved.items():
+                v.co = co
 
 
-# --- Sculpt: muscle masses, face, outfit ----------------------------------------------------
-
-def bump(center, radii, amp, group="body", axes=None):
-    return (Vector(center), Vector(radii), amp, group, axes)
-
-
-def sculpt_features():
-    """Smooth ellipsoid bumps (left side; mirrored). amp in cm along the normal, - = inwards."""
-    ud, uu, uv = arm_frame(ARM_DIR)
-    fd, fu, fv = arm_frame(FOREARM_DIR)
-    upper = (uu, uv, ud)        # radii: across, front-back, along the arm
-    fore = (fu, fv, fd)
-    crease = (Vector((0.67, 0.0, 0.74)), Vector((0, 1, 0)), Vector((-0.74, 0.0, 0.67)))    # groin crease, diagonal
-    neck = (Vector((1, 0, 0)), Vector((0, 0.86, -0.51)).normalized(), Vector((-0.27, -0.42, -0.87)).normalized())
-    features = [
-        # chest and belly
-        bump((7.2, -11.2, 133.5), (6.4, 3.0, 4.6), 1.0, "pec"),
-        bump((7.6, -11.4, 128.8), (6.0, 3.0, 1.3), -0.35, "pec"),
-        bump((0.0, -11.8, 133.0), (1.3, 3.0, 6.5), -0.35, "muscle"),         # breastbone
-        bump((7.4, -12.0, 129.5), (5.0, 4.0, 4.6), 2.6, "bust"),
-        bump((2.7, -10.2, 122.0), (2.3, 3.0, 2.4), 0.35, "abs"),
-        bump((2.7, -10.0, 116.6), (2.3, 3.0, 2.4), 0.35, "abs"),
-        bump((2.7, -9.8, 111.2), (2.3, 3.0, 2.4), 0.3, "abs"),
-        bump((0.0, -10.2, 116.0), (0.8, 3.0, 9.0), -0.3, "abs"),
-        bump((0.0, -9.9, 108.6), (0.6, 1.6, 0.7), -0.6),                      # navel
-        bump((12.4, -5.5, 106.0), (4.0, 5.0, 5.0), 0.35, "muscle"),           # obliques
-        bump((7.5, -8.0, 89.0), (6.0, 3.0, 1.0), -0.4, "body", crease),       # groin crease
-        bump((0.0, -9.4, 104.5), (7.0, 3.0, 5.5), 0.25),                      # lower belly
-        # back
-        bump((13.4, 4.5, 127.0), (4.0, 5.0, 8.0), 0.8, "lat"),
-        bump((8.0, 10.6, 137.0), (4.6, 3.0, 5.0), 0.55, "muscle"),            # shoulder blades
-        bump((0.0, 10.8, 124.0), (1.4, 3.0, 16.0), -0.6),                     # spine furrow
-        bump((7.0, 3.5, 149.5), (5.0, 5.0, 3.0), 0.7, "trap"),
-        bump((9.0, -6.6, 148.0), (6.5, 1.6, 1.0), 0.35),                      # collarbone
-        bump((8.0, -4.0, 150.5), (2.8, 3.0, 1.6), -0.4),                      # hollow above it
-        bump((8.2, 11.6, 90.0), (7.5, 5.0, 7.0), 1.5, "glute"),
-        bump((8.4, 9.6, 80.5), (6.0, 4.0, 1.3), -0.6, "glute"),               # fold under the seat
-        # arms
-        bump(SHOULDER + ud * 3.5 + uu * 2.5, (5.5, 6.0, 6.5), 0.8, "muscle", upper),     # deltoid
-        bump(SHOULDER + ud * 17.0 - uv * 3.0, (3.2, 2.6, 6.0), 0.9, "muscle", upper),    # biceps
-        bump(SHOULDER + ud * 15.0 + uv * 3.4, (3.4, 2.6, 7.0), 0.7, "muscle", upper),    # triceps
-        bump(ELBOW + fd * 6.5 + fu * 1.8, (2.6, 3.2, 6.0), 0.6, "muscle", fore),          # forearm
-        bump(ELBOW + uv * 4.3, (1.4, 1.4, 1.4), 0.35),                                   # point of the elbow
-        bump(ELBOW - uv * 3.6, (2.4, 1.4, 1.2), -0.35),                                  # inside of the elbow
-        # legs
-        bump((14.6, -2.0, 68.0), (3.4, 4.0, 11.0), 0.6, "muscle"),
-        bump((10.4, -7.0, 70.0), (3.6, 3.0, 10.0), 0.5, "muscle"),
-        bump((7.6, -4.5, 57.5), (3.0, 3.0, 4.2), 0.7, "muscle"),              # teardrop above the knee
-        bump((10.6, 5.6, 71.0), (4.0, 3.0, 10.0), 0.4, "muscle"),             # hamstrings
-        bump((11.0, -6.6, 51.5), (2.2, 1.6, 2.5), 0.45),                      # kneecap
-        bump((11.0, 5.3, 50.0), (3.0, 2.0, 2.4), -0.45),                      # back of the knee
-        # neck
-        bump((4.4, -2.8, 155.5), (1.3, 1.3, 5.0), 0.35, "body", neck),        # neck tendon
-        bump((0.0, -5.4, 154.3), (1.0, 1.2, 1.3), 0.55, "male"),              # Adam's apple
-        # face
-        bump(EYE + Vector((0.0, -0.85, 0.0)), (2.0, 2.0, 1.5), -0.95, "face"),   # eye sockets
-        bump(EYE + Vector((0.05, -1.45, 1.35)), (1.9, 1.3, 0.75), 0.45, "face"),  # upper lid
-        bump(EYE + Vector((0.05, -1.35, -1.35)), (1.7, 1.2, 0.5), 0.2, "face"),   # lower lid
-        bump((3.4, -9.3, 171.9), (2.7, 1.6, 0.9), 0.45, "brow"),
-        bump((0.0, -10.0, 166.3), (1.15, 2.0, 3.0), 1.7, "face"),             # nose
-        bump((0.0, -10.8, 165.0), (1.25, 1.6, 1.15), 0.9, "face"),            # tip of the nose
-        bump((1.4, -9.5, 164.7), (0.9, 1.4, 0.8), 0.55, "face"),              # nostril wings
-        bump((0.0, -9.6, 161.9), (2.4, 1.5, 0.75), 0.5, "lips"),              # upper lip
-        bump((0.0, -9.4, 160.7), (2.2, 1.5, 0.75), 0.55, "lips"),             # lower lip
-        bump((0.0, -9.8, 161.3), (2.4, 1.5, 0.22), -0.4, "lips"),             # mouth line
-        bump((2.6, -9.3, 161.3), (0.7, 1.4, 0.7), -0.25, "lips"),             # mouth corners
-        bump((0.0, -9.0, 158.6), (2.2, 2.0, 1.5), 0.45, "jaw"),               # chin
-        bump((5.6, -7.0, 166.8), (2.0, 2.4, 1.6), 0.45, "cheek"),
-        bump((6.6, -3.0, 159.5), (1.8, 3.0, 1.8), 0.4, "jaw"),                # angle of the jaw
-        bump((8.8, 1.0, 167.5), (1.4, 2.0, 3.0), 1.5, "face"),                # ear
-        bump((9.6, 0.8, 167.6), (0.9, 1.2, 1.6), -0.6, "face"),               # ear bowl
-        bump((0.0, 9.5, 166.0), (5.0, 3.0, 3.0), 0.4, "face"),                # back of the skull
-    ]
-    back, _ = PALM[2]
-    for i in range(4):                                                        # knuckles
-        features.append(bump((back[i] + back[i + 1]) / 2.0 + HU * 0.5, (0.9, 0.9, 0.9), 0.25))
-    mirrored = []
-    for center, radii, amp, group, axes in features:
-        if abs(center.x) > 0.01:
-            flipped = tuple(side_vector(a, -1.0) for a in axes) if axes else None
-            mirrored.append((side_vector(center, -1.0), radii, amp, group, flipped))
-    return features + mirrored
-
-
-ARM_CHAIN = (SHOULDER, ELBOW, WRIST, WRIST + HD * 25.0)     # to beyond the fingertips
-HAIRLINE = ([0, 30, 60, 90, 115, 140, 180], [174.8, 174.3, 172.3, 170.6, 164.0, 158.6, 157.4])   # degrees round the head, height
-
-
-def regions(P):
-    """Masks of the outfit and the hair for points of the neutral body in the rest pose."""
-    ax, y, z = np.abs(P[:, 0]), P[:, 1], P[:, 2]
-    Q = np.stack([ax, y, z], axis=1)
-    best_t = np.zeros(len(P))
-    best_d = np.full(len(P), 1e9)
-    offset = 0.0
-    for a, b in zip(ARM_CHAIN[:-1], ARM_CHAIN[1:]):
-        A, B = np.array(a), np.array(b)
-        AB = B - A
-        length = float(np.linalg.norm(AB))
-        t = np.clip((Q - A) @ AB / (length * length), 0.0, 1.0)
-        dist = np.linalg.norm(Q - (A + t[:, None] * AB), axis=1)
-        better = dist < best_d
-        best_t = np.where(better, offset + t * length, best_t)
-        best_d = np.minimum(best_d, dist)
-        offset += length
-    arm = (best_d < 13.0) & (ax > 16.0) & (z > 60.0)     # 13 cm: the thumb tip is ~10 cm off the axis
-    psi = np.degrees(np.arctan2(ax, -(y - 0.8)))
-    hairline = np.interp(psi, *HAIRLINE)
-    ear = (ax > 8.3) & (np.abs(y - 1.0) < 2.6) & (z > 163.5) & (z < 171.5)
-    hair = np.clip((z - hairline) / 0.8 + 0.25, 0.0, 1.0) * (z > 156.0) * ~ear * ~arm
-    collar = 148.6 + 2.0 * psi / 180.0
-    shirt = (~arm & (z >= 104.2) & ((z < collar) | ((ax > 6.8) & (z < 151.5)))) | (arm & (best_t < 12.8))
-    belt = ~arm & (z >= 100.8) & (z < 104.2)
-    trousers = ~arm & (z < 100.8) & (z >= 27.0)
-    boots = ~arm & (z < 27.0)
-    return dict(arm=arm, t=best_t, hair=hair, collar=collar, shirt=shirt, belt=belt, trousers=trousers, boots=boots)
-
-
-def outfit_offset(P):
-    r = regions(P)
-    z, ax = P[:, 2], np.abs(P[:, 0])
-    offset = 0.15 * r["shirt"] + 0.45 * r["belt"] + 0.12 * r["trousers"] + 0.35 * r["boots"]
-    offset += 0.3 * (r["arm"] & (r["t"] > 11.8) & (r["t"] < 12.8))                       # sleeve hem
-    offset += 0.25 * (r["shirt"] & ~r["arm"] & (z > r["collar"] - 0.9) & (ax < 7.5))      # collar
-    offset += 0.35 * (r["boots"] & (z > 24.5))                                            # cuff of the boot
-    offset += r["hair"] * (1.0 + 0.7 * np_smooth(z, 174.0, 181.0))
-    return offset
-
-
-def sculpt(obj, preset):
-    mesh = obj.data
-    n = len(mesh.vertices)
-    co = np.empty(n * 3)
-    mesh.vertices.foreach_get("co", co)
-    co = co.reshape(n, 3)
-    normals = np.array([v.normal[:] for v in mesh.vertices])
-    gains = PRESETS[preset].get("gain", {})
-    offset = np.zeros(n)
-    for center, radii, amp, group, axes in sculpt_features():
-        gain = gains.get(group, 0.0 if group in ("male", "bust") else 1.0)
-        if gain == 0.0:
-            continue
-        rel = co - np.array(center)
-        if axes:
-            rel = rel @ np.array([list(a) for a in axes]).T
-        d2 = ((rel / np.array(radii)) ** 2).sum(axis=1)
-        offset += amp * gain * np.clip(1.0 - d2, 0.0, 1.0) ** 2
-    offset += outfit_offset(co)
-    co += normals * offset[:, None]
-    # Feet on the floor: the lowest point at 0, the soles flat.
-    co[:, 2] -= co[:, 2].min()
-    low = co[:, 2] < 0.8
-    co[low, 2] *= 0.2
-    mesh.vertices.foreach_set("co", co.ravel())
-    mesh.update()
-
-
-def add_eyes(obj):
-    """Two quad spheres, weighted to the head, joined into the body."""
-    verts, faces = [], []
-    for sign in (1.0, -1.0):
-        bm = bmesh.new()
-        bmesh.ops.create_cube(bm, size=2.0)
-        bmesh.ops.subdivide_edges(bm, edges=bm.edges[:], cuts=7, use_grid_fill=True)
-        centre = side_vector(EYE, sign)
-        start = len(verts)
-        bm.verts.index_update()
-        verts += [tuple(centre + v.co.normalized() * EYE_RADIUS) for v in bm.verts]
-        faces += [tuple(start + v.index for v in f.verts) for f in bm.faces]
-        bm.free()
-    eyes = hb.new_mesh_object("eyes", verts, faces)
-    eyes.vertex_groups.new(name="head").add(list(range(len(verts))), 1.0, 'REPLACE')
-    hb.deselect_all()
-    eyes.select_set(True)
-    obj.select_set(True)
-    bpy.context.view_layer.objects.active = obj
-    bpy.ops.object.join()
-
-
-def build_body(preset, name):
-    """The cage of a preset as a subdivided, sculpted mesh object with vertex groups (weights)."""
-    cage = build_cage(preset)
-    obj = hb.new_mesh_object(name, [tuple(v) for v in cage.verts], cage.faces)
+def cut_garment(body, name, mask, offsets, thickness=0.3):
+    """A garment object from the body: its covered faces, smoothed, never closer to the
+    (slightly smoothed) skin than `offsets`, with cloth thickness. Keeps weights and UVs."""
+    obj = body.copy()
+    obj.data = body.data.copy()
+    obj.name = obj.data.name = name
+    bpy.context.scene.collection.objects.link(obj)
+    for modifier in list(obj.modifiers):
+        if modifier.type != 'ARMATURE':
+            obj.modifiers.remove(modifier)
+    obj.data.materials.clear()
     bm = bmesh.new()
     bm.from_mesh(obj.data)
-    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    bm.verts.ensure_lookup_table()
+    offset_of = {v: offsets[v.index] for v in bm.verts}
+    bmesh.ops.delete(bm, geom=[f for f in bm.faces if not all(mask[v.index] for v in f.verts)], context='FACES')
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
+    # Hems: the cut follows the mesh grid; smooth the boundary along itself.
+    rim = [v for v in bm.verts if v.is_boundary]
+    for _ in range(25):
+        moved = {}
+        for v in rim:
+            ends = [e.other_vert(v) for e in v.link_edges if e.is_boundary]
+            if len(ends) == 2:
+                moved[v] = v.co * 0.5 + (ends[0].co + ends[1].co) * 0.25
+        for v, co in moved.items():
+            v.co = co
+    inner = [v for v in bm.verts if not v.is_boundary]
+    original = {v: v.co.copy() for v in bm.verts}
+    taubin(bm, inner, 20)                       # reference skin: big forms stay, nipples and navel go
+    bm.normal_update()
+    skin = {v: (v.co.copy(), v.normal.copy()) for v in bm.verts}
+    for v in bm.verts:
+        v.co = original[v]
+    for _ in range(40):                         # the cloth bridges valleys (spine, buttocks)
+        bmesh.ops.smooth_vert(bm, verts=inner, factor=0.5, use_axis_x=True, use_axis_y=True, use_axis_z=True)
+    for v in bm.verts:
+        co, normal = skin[v]
+        v.co += normal * max(0.0, offset_of[v] - (v.co - co).dot(normal))
     bm.to_mesh(obj.data)
     bm.free()
-    groups = {}
-    for index, weights in enumerate(cage.weights):
-        for bone, weight in weights.items():
-            if bone not in groups:
-                groups[bone] = obj.vertex_groups.new(name=bone)
-            groups[bone].add([index], weight, 'REPLACE')
-    hb.set_active(obj)
-    modifier = obj.modifiers.new("Subdivision", 'SUBSURF')
-    modifier.levels = SUBDIVISION
-    bpy.ops.object.modifier_apply(modifier=modifier.name)
-    sculpt(obj, preset)
-    add_eyes(obj)
+    solid = obj.modifiers.new("Cloth thickness", 'SOLIDIFY')
+    solid.thickness = thickness
+    solid.offset = -1.0
+    solid.use_rim = True
+    solid.use_even_offset = True
+    with bpy.context.temp_override(object=obj, active_object=obj):
+        bpy.ops.object.modifier_move_to_index(modifier=solid.name, index=0)
+        bpy.ops.object.modifier_apply(modifier=solid.name)
     return obj
+
+
+# --- Assembly: presets as shape keys --------------------------------------------------------
+
+def height(body):
+    return max(v.co.z for v in body.data.vertices)
+
+
+def scale_about_floor(objects, factor):
+    for obj in objects:
+        for v in obj.data.vertices:
+            v.co *= factor
+
+
+def delete_objects(objects):
+    for obj in objects:
+        data = obj.data
+        bpy.data.objects.remove(obj, do_unlink=True)
+        if data is not None and data.users == 0:
+            if isinstance(data, bpy.types.Mesh):
+                bpy.data.meshes.remove(data)
+            elif isinstance(data, bpy.types.Armature):
+                bpy.data.armatures.remove(data)
+
+
+def build_model():
+    """The neutral model (objects by slot and its rig) with the presets as shape keys."""
+    body, rig, proxies = build_human(PRESETS["neutral"])
+    plan = garment_plan(body, rig)
+    parts = {"body": body}
+    parts.update(proxies)
+    for garment, (mask, offsets) in plan.items():
+        parts[garment] = cut_garment(body, garment, mask, offsets)
+    neutral_height = height(body)
+    for obj in parts.values():
+        obj.shape_key_add(name="Basis", from_mix=False)
+    for preset in PRESET_KEYS:
+        other, other_rig, other_proxies = build_human(PRESETS[preset])
+        other_parts = {"body": other}
+        other_parts.update(other_proxies)
+        for garment, (mask, offsets) in plan.items():
+            other_parts[garment] = cut_garment(other, garment + "_" + preset, mask, offsets)
+        scale_about_floor(other_parts.values(), neutral_height / height(other))
+        for slot, obj in parts.items():
+            source = other_parts[slot]
+            if len(source.data.vertices) != len(obj.data.vertices):
+                raise RuntimeError("preset %s: %s has another topology" % (preset, slot))
+            key = obj.shape_key_add(name=preset, from_mix=False)
+            for vertex in source.data.vertices:
+                key.data[vertex.index].co = vertex.co
+            key.value = 0.0
+        delete_objects(list(other_parts.values()) + [other_rig])
+    return parts, rig
+
+
+# --- Rig ------------------------------------------------------------------------------------
+
+def hand_frame(arm, side):
+    """Directions of a hand in the rest pose: along the fingers, across (pinky -> index), palm normal."""
+    bones = arm.data.bones
+    wrist = bones["hand" + side].head_local
+    index, pinky = bones["index_01" + side].head_local, bones["pinky_01" + side].head_local
+    knuckles = (index + pinky) / 2.0
+    along = (knuckles - wrist).normalized()
+    across = (index - pinky).normalized()
+    palm = along.cross(across).normalized()
+    thumb = bones["thumb_01" + side].head_local
+    if (thumb - knuckles).dot(palm) < 0.0:      # the thumb sits on the palm side
+        palm = -palm
+    return wrist, knuckles, along, across, palm
+
+
+def finish_rig(arm, meshes):
+    """Root named like the mannequin, the shield's socket bone, every bone deforms, weights
+    only for bones (at most 4 per vertex). The sword's socket follows once the fist is known."""
+    hb.set_active(arm)
+    bpy.ops.object.mode_set(mode='EDIT')
+    edit = arm.data.edit_bones
+    if "Root" in edit:
+        edit["Root"].name = "root"
+    elbow, wrist_l = edit["lowerarm_l"].head.copy(), edit["hand_l"].head.copy()
+    _, _, _, _, palm_l = hand_frame(arm, "_l")
+    outside = -palm_l                                          # the back of the forearm
+    strap = elbow + (wrist_l - elbow) * 0.55 + outside * 4.4
+    shield = edit.new("shield_l")
+    shield.head, shield.tail = strap, strap + outside * 10.0   # +Y out of the shield's face
+    shield.parent = edit["lowerarm_l"]
+    shield.align_roll(elbow - wrist_l)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    for bone in arm.data.bones:
+        bone.use_deform = True          # also root and the sockets: the export keeps deform bones only
+    names = set(arm.data.bones.keys())
+    for obj in meshes:
+        for group in list(obj.vertex_groups):
+            if group.name not in names:
+                obj.vertex_groups.remove(group)
+        clean_weights(obj)
+        obj.parent = arm
+        obj.matrix_parent_inverse = Matrix.Identity(4)
+        for modifier in obj.modifiers:
+            if modifier.type == 'ARMATURE':
+                modifier.object = arm
+        if not any(m.type == 'ARMATURE' for m in obj.modifiers):
+            obj.modifiers.new("Armature", 'ARMATURE').object = arm
+
+
+def add_weapon_socket(arm):
+    """weapon_r in the middle of the right fist: where the curled fingers ring round the grip
+    (fists() applied; the hand itself does not turn, so the point holds in the rest pose too)."""
+    apply_pose(arm, fists())
+    rings = []
+    for name in FINGER_NAMES:
+        points = [arm.pose.bones["%s_0%d_r" % (name, n)].head for n in (1, 2, 3)] + [arm.pose.bones[name + "_03_r"].tail]
+        rings.append(sum(points, Vector()) / len(points))
+    apply_pose(arm, {})
+    grip = sum(rings, Vector()) / len(rings)
+    axis = (rings[0] - rings[-1]).normalized()                  # pinky -> index: the blade leaves above the thumb
+    _, _, _, _, palm = hand_frame(arm, "_r")
+    hb.set_active(arm)
+    bpy.ops.object.mode_set(mode='EDIT')
+    weapon = arm.data.edit_bones.new("weapon_r")
+    weapon.head, weapon.tail = grip, grip + axis * 12.0         # +Y along the blade
+    weapon.parent = arm.data.edit_bones["hand_r"]
+    weapon.align_roll(-palm)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    arm.data.bones["weapon_r"].use_deform = True
 
 
 def clean_weights(obj, max_influences=4):
     """At most four bones per vertex, weights add up to 1 (what Unreal expects)."""
-    current = [[(g.weight, g.group) for g in vertex.groups] for vertex in obj.data.vertices]   # read first, then change
+    current = [[(g.weight, g.group) for g in vertex.groups] for vertex in obj.data.vertices]
     for index, pairs in enumerate(current):
         best = sorted((pair for pair in pairs if pair[0] > 0.005), reverse=True)[:max_influences]
-        total = sum(weight for weight, _ in best)
-        keep = {group: weight / total for weight, group in best}
+        sum_ = sum(weight for weight, _ in best) or 1.0
+        keep = {group: weight / sum_ for weight, group in best}
         for _, group in pairs:
             if group in keep:
                 obj.vertex_groups[group].add([index], keep[group], 'REPLACE')
@@ -729,228 +359,73 @@ def clean_weights(obj, max_influences=4):
                 obj.vertex_groups[group].remove([index])
 
 
-def build_mesh():
-    obj = build_body("neutral", "SK_" + NAME)
-    obj.data.name = "SK_" + NAME
-    clean_weights(obj)
-    hb.shade_smooth(obj)
-    hb.set_active(obj)
-    bpy.ops.object.mode_set(mode='EDIT')
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.uv.smart_project(angle_limit=1.15, island_margin=0.004)
-    bpy.ops.object.mode_set(mode='OBJECT')
-    return obj
+# --- Materials and textures -----------------------------------------------------------------
+
+def mpfb_data(path):
+    _, LocationService, _ = mpfb()
+    return os.path.join(LocationService.get_user_data(), path)
 
 
-def build_shape_keys(obj):
-    """The presets have the same topology, so their vertices are the shape keys."""
-    obj.shape_key_add(name="Basis", from_mix=False)
-    for preset in PRESET_KEYS:
-        variant = build_body(preset, "preset_" + preset)
-        if len(variant.data.vertices) != len(obj.data.vertices):
-            raise RuntimeError("preset %s has another topology than the neutral body" % preset)
-        key = obj.shape_key_add(name=preset, from_mix=False)
-        for vertex in variant.data.vertices:
-            key.data[vertex.index].co = vertex.co
-        key.value = 0.0
-        mesh = variant.data
-        bpy.data.objects.remove(variant, do_unlink=True)
-        bpy.data.meshes.remove(mesh)
-
-
-# --- Texture --------------------------------------------------------------------------------
-SKIN = (0.80, 0.58, 0.45)
-SKIN_WARM = (0.84, 0.52, 0.44)
-HAIR = (0.17, 0.11, 0.07)
-LIPS = (0.66, 0.38, 0.34)
-SHIRT = (0.22, 0.40, 0.44)
-TROUSERS = (0.28, 0.24, 0.20)
-BELT = (0.13, 0.09, 0.06)
-BUCKLE = (0.66, 0.58, 0.40)
-BOOTS = (0.34, 0.22, 0.13)
-SOLE = (0.10, 0.08, 0.07)
-EYE_WHITE = (0.93, 0.92, 0.90)
-IRIS = (0.24, 0.42, 0.56)
-PUPIL = (0.03, 0.03, 0.04)
-
-
-def texture_colors(P):
-    """sRGB colour and tint mask for object positions P (N x 3) of the neutral body."""
-    r = regions(P)
-    x, y, z = P[:, 0], P[:, 1], P[:, 2]
-    ax = np.abs(x)
-    col = np.tile(np.array(SKIN), (len(P), 1))
-
-    def paint(mask, color, amount=1.0):
-        a = (np.asarray(mask, dtype=float) * amount)[:, None]
-        col[:] = col * (1.0 - a) + np.array(color) * a
-
-    face = (y < -5.0) & (z > 156.0) & (z < 176.0)
-    paint(face & (ax > 4.0) & (ax < 7.5) & (np.abs(z - 166.2) < 2.0), SKIN_WARM, 0.35)      # cheeks
-    paint(face & (ax < 1.6) & (z > 163.8) & (z < 167.0) & (y < -10.0), SKIN_WARM, 0.4)      # tip of the nose
-    lips = face & (((ax / 2.4) ** 2 + ((z - 161.3) / 0.95) ** 2) < 1.0) & (y < -8.0)
-    paint(lips, LIPS)
-    paint(lips & (np.abs(z - 161.3) < 0.1) & (ax < 2.2), (0.30, 0.15, 0.13))               # mouth line
-    s = np.clip((ax - 1.2) / 4.4, 0.0, 1.0)
-    brow = face & (ax > 1.2) & (ax < 5.6) & (np.abs(z - (171.6 + 0.6 * np.sin(np.pi * s))) < 0.34 - 0.14 * s)
-    paint(brow, HAIR)
-    fabric = 1.0 + 0.035 * np.sin(x * 1.9 + z * 0.7) * np.sin(y * 2.3 - z * 1.3)
-    paint(r["trousers"], TROUSERS)
-    paint(r["boots"], BOOTS)
-    paint(r["boots"] & (z > 24.5), (0.42, 0.29, 0.18))                                      # cuff
-    paint(r["boots"] & (z < 1.3), SOLE)
-    paint(r["shirt"], SHIRT)
-    paint(r["shirt"] & r["arm"] & (r["t"] > 11.8), (0.16, 0.30, 0.33))                     # sleeve hem
-    paint(r["shirt"] & ~r["arm"] & (z > r["collar"] - 0.9) & (ax < 7.5), (0.16, 0.30, 0.33))   # collar
-    paint(r["belt"], BELT)
-    paint(r["belt"] & (ax < 2.3) & (y < -7.0) & (z > 101.3) & (z < 103.7), BUCKLE)
-    clothes = r["shirt"] | r["trousers"] | r["boots"]
-    col[clothes] *= fabric[clothes, None]
-    paint(r["hair"], HAIR)
-    col[r["hair"] > 0.5] *= (1.0 + 0.08 * np.sin(z * 9.0 + x * 3.0))[r["hair"] > 0.5, None]   # strands
-    for sign in (1.0, -1.0):
-        centre = np.array(side_vector(EYE, sign))
-        rel = P - centre
-        eye = np.linalg.norm(rel, axis=1) < EYE_RADIUS + 0.08
-        flat = np.hypot(rel[:, 0], rel[:, 2])
-        front = rel[:, 1] < -0.6
-        dist = np.linalg.norm(rel, axis=1)
-        lash = ~eye & (dist < EYE_RADIUS + 0.45) & (rel[:, 2] > 0.25) & (rel[:, 1] < -0.2)
-        paint(lash, (0.12, 0.08, 0.06), 0.85)                                               # lash line
-        paint(eye, EYE_WHITE)
-        paint(eye & front & (flat < 0.72), IRIS)
-        paint(eye & front & (flat < 0.72) & (flat > 0.6), (0.10, 0.18, 0.25))
-        paint(eye & front & (flat < 0.3), PUPIL)
-    tint = r["shirt"].astype(float)
-    return np.clip(col, 0.0, 1.0), tint
-
-
-def build_material(obj):
-    """Bakes the object position of every texel, computes the colours from it, saves the PNG."""
-    scene = bpy.context.scene
-    scene.render.engine = 'CYCLES'
-    scene.cycles.device = 'CPU'
-    scene.cycles.samples = 1
-    material = hb.new_material("M_" + NAME)
-    nodes, links = material.node_tree.nodes, material.node_tree.links
-    output = next(n for n in nodes if n.type == 'OUTPUT_MATERIAL')
-    coords = nodes.new('ShaderNodeTexCoord')
-    encode = nodes.new('ShaderNodeVectorMath')
-    encode.operation = 'MULTIPLY_ADD'
-    encode.inputs[1].default_value = (1.0 / 400.0,) * 3
-    encode.inputs[2].default_value = (0.5,) * 3
-    links.new(coords.outputs['Object'], encode.inputs[0])
-    emission = nodes.new('ShaderNodeEmission')
-    links.new(encode.outputs['Vector'], emission.inputs['Color'])
-    links.new(emission.outputs['Emission'], output.inputs['Surface'])
-    size = TEXTURE_SIZE
-    positions = bpy.data.images.new("positions", size, size, alpha=True, float_buffer=True)
-    positions.pixels.foreach_set(np.zeros(size * size * 4, dtype=np.float32))
-    target = nodes.new('ShaderNodeTexImage')
-    target.image = positions
-    nodes.active = target
-    obj.data.materials.append(material)
-    hb.set_active(obj)
-    bpy.ops.object.bake(type='EMIT', margin=6)
-    pixels = np.empty(size * size * 4, dtype=np.float32)
-    positions.pixels.foreach_get(pixels)
-    pixels = pixels.reshape(-1, 4)
-    covered = pixels[:, 3] > 0.5
-    P = (pixels[covered, :3].astype(np.float64) - 0.5) * 400.0
-    colors, tint = texture_colors(P)
-    result = np.zeros((size * size, 4), dtype=np.float32)
-    result[:, :3] = SKIN
-    result[covered, :3] = colors
-    result[covered, 3] = tint
-    image = bpy.data.images.new("T_%s_color" % NAME, size, size, alpha=True)
-    image.pixels.foreach_set(result.ravel())
-    path = os.path.join(hb.ART_DIR, NAME, "T_%s_color.png" % NAME)
-    os.makedirs(os.path.dirname(path), exist_ok=True)
+def cloth_texture(path, color, seed):
+    """Undyed cloth: a calm, uneven tone and a fine grain (UVs are the body's, no seams)."""
+    n = CLOTH_TEXTURE_SIZE
+    y, x = np.mgrid[0:n, 0:n].astype(np.float32) / n
+    rng = np.random.default_rng(seed)
+    shade = np.ones((n, n), dtype=np.float32)
+    for _ in range(24):                                      # soft blotches, 5 to 60 % of the image
+        angle, phase = rng.uniform(0.0, math.pi), rng.uniform(0.0, 2.0 * math.pi)
+        frequency = rng.uniform(1.6, 20.0)
+        shade += 0.006 * np.sin(2.0 * math.pi * frequency * (x * math.cos(angle) + y * math.sin(angle)) + phase)
+    shade += rng.normal(0.0, 0.012, (n, n)).astype(np.float32)   # grain
+    rgba = np.ones((n, n, 4), dtype=np.float32)
+    for c in range(3):
+        rgba[:, :, c] = np.clip(color[c] * shade, 0.0, 1.0)
+    image = bpy.data.images.new(os.path.basename(path), n, n, alpha=True)
+    image.pixels.foreach_set(rgba[::-1].ravel())
     image.filepath_raw = path
     image.file_format = 'PNG'
     image.save()
-    bpy.data.images.remove(positions)
-    for node in (coords, encode, emission, target):
-        nodes.remove(node)
-    # Alpha is the tint mask, not transparency: keep colour and alpha independent.
-    image.alpha_mode = 'CHANNEL_PACKED'
-    texture = nodes.new('ShaderNodeTexImage')
-    texture.image = image
-    shader = nodes.new('ShaderNodeBsdfPrincipled')
-    shader.inputs['Roughness'].default_value = 0.65
-    links.new(texture.outputs['Color'], shader.inputs['Base Color'])
-    links.new(shader.outputs['BSDF'], output.inputs['Surface'])
-    print("build_humanoid: texture " + path)
+    bpy.data.images.remove(image)
 
 
-# --- Rig ------------------------------------------------------------------------------------
-
-def socket_bones():
-    """name -> (parent, head, tail, roll target) for what the hands hold (right hand, left forearm)."""
-    d, u, _ = arm_frame(FOREARM_DIR)
-    grip_r = side_vector(GRIP, -1.0)
-    blade_r = side_vector(-HV, -1.0)                       # forwards, out of the fist above the thumb
-    strap = ELBOW + d * 13.0 + u * 4.4                     # on the outside of the forearm
-    return {
-        "weapon_r": ("hand_r", grip_r, grip_r + blade_r * 12.0, side_vector(HU, -1.0)),
-        "shield_l": ("lowerarm_l", strap, strap + u * 10.0, -d),
-    }
-
-
-def bone_list():
-    front, up = Vector((0.0, -1.0, 0.0)), Vector((0.0, 0.0, 1.0))
-    bones = [   # name, parent, head, tail, direction the bone's Z axis looks to (roll)
-        ("root", None, Vector((0, 0, 0)), Vector((0, 8, 0)), up),
-        ("pelvis", "root", Vector((0, 0.6, 97)), Vector((0, 0.6, 104)), front),
-        ("spine_01", "pelvis", Vector((0, 0.6, 104)), Vector((0, 0.2, 117.5)), front),
-        ("spine_02", "spine_01", Vector((0, 0.2, 117.5)), Vector((0, 0, 131)), front),
-        ("spine_03", "spine_02", Vector((0, 0, 131)), Vector((0, 0.6, 151.5)), front),
-        ("neck_01", "spine_03", Vector((0, 0.6, 151.5)), Vector((0, 0.6, 158)), front),
-        ("head", "neck_01", Vector((0, 0.6, 158)), Vector((0, 0.6, 179)), front),
-    ]
-    for suffix, sign in (("_l", 1.0), ("_r", -1.0)):
-        p = lambda v: side_vector(v, sign)   # noqa: E731
-        back_of_hand = p(HU)
-        bones += [
-            ("clavicle" + suffix, "spine_03", p(Vector((2.5, -1.0, 149.0))), p(SHOULDER), front),
-            ("upperarm" + suffix, "clavicle" + suffix, p(SHOULDER), p(ELBOW), front),
-            ("lowerarm" + suffix, "upperarm" + suffix, p(ELBOW), p(WRIST), front),
-            ("hand" + suffix, "lowerarm" + suffix, p(WRIST), p(WRIST + HD * 9.5), back_of_hand),
-            ("thigh" + suffix, "pelvis", p(HIP), p(KNEE), front),
-            ("calf" + suffix, "thigh" + suffix, p(KNEE), p(ANKLE), front),
-            ("foot" + suffix, "calf" + suffix, p(ANKLE), p(BALL), up),
-            ("ball" + suffix, "foot" + suffix, p(BALL), p(TOE), up),
-        ]
-        joints = thumb_joints()
-        for n in range(3):
-            parent = "hand" + suffix if n == 0 else "thumb_0%d%s" % (n, suffix)
-            bones.append(("thumb_0%d%s" % (n + 1, suffix), parent, p(joints[n]), p(joints[n + 1]), back_of_hand))
-        for i in range(4):
-            name, joints = finger_joints(i)
-            for n in range(3):
-                parent = "hand" + suffix if n == 0 else "%s_0%d%s" % (name, n, suffix)
-                bones.append(("%s_0%d%s" % (name, n + 1, suffix), parent, p(joints[n]), p(joints[n + 1]), back_of_hand))
-    for name, (parent, head, tail, roll) in socket_bones().items():
-        bones.append((name, parent, head, tail, roll))
-    return bones
+def build_textures():
+    """T_humanoid_<slot>.png: MakeHuman textures (CC0) copied, cloth made here."""
+    os.makedirs(OUT_DIR, exist_ok=True)
+    sources = {"body": os.path.join(*SKIN)}
+    sources.update({slot: texture for slot, (_, _, texture) in PROXIES.items()})
+    paths = {}
+    for slot, source in sources.items():
+        paths[slot] = os.path.join(OUT_DIR, "T_%s_%s.png" % (NAME, slot))
+        shutil.copyfile(mpfb_data(source), paths[slot])
+    for slot, color, seed in (("shirt", SHIRT_COLOR, 1), ("trousers", TROUSERS_COLOR, 2)):
+        paths[slot] = os.path.join(OUT_DIR, "T_%s_%s.png" % (NAME, slot))
+        cloth_texture(paths[slot], color, seed)
+    print("build_humanoid: textures " + ", ".join(sorted(os.path.basename(p) for p in paths.values())))
+    return paths
 
 
-def build_rig(obj):
-    bones = bone_list()
-    arm = hb.build_armature("Armature", [(n, p, tuple(h), tuple(t)) for n, p, h, t, _ in bones])
-    hb.set_active(arm)
-    bpy.ops.object.mode_set(mode='EDIT')
-    for name, _, _, _, roll in bones:
-        arm.data.edit_bones[name].align_roll(roll)
-    bpy.ops.object.mode_set(mode='OBJECT')
-    for bone in arm.data.bones:
-        bone.use_deform = True      # also root and the sockets: the export keeps deform bones only
-    missing = [g.name for g in obj.vertex_groups if g.name not in arm.data.bones]
-    if missing:
-        raise RuntimeError("weights for unknown bones: %s" % missing)
-    obj.parent = arm
-    obj.modifiers.new("Armature", 'ARMATURE').object = arm
-    return arm
+def apply_materials(parts, textures):
+    """One material per slot, named like the slot (the FBX carries the names to Unreal)."""
+    for slot, obj in parts.items():
+        material = hb.new_material(slot)
+        nodes, links = material.node_tree.nodes, material.node_tree.links
+        output = next(n for n in nodes if n.type == 'OUTPUT_MATERIAL')
+        image = bpy.data.images.load(textures[slot], check_existing=True)
+        texture = nodes.new('ShaderNodeTexImage')
+        texture.image = image
+        shader = nodes.new('ShaderNodeBsdfPrincipled')
+        shader.inputs['Roughness'].default_value = 0.85 if slot in ("shirt", "trousers") else 0.55
+        links.new(texture.outputs['Color'], shader.inputs['Base Color'])
+        if slot in MASKED:
+            links.new(texture.outputs['Alpha'], shader.inputs['Alpha'])
+            material.surface_render_method = 'DITHERED'
+        else:
+            image.alpha_mode = 'CHANNEL_PACKED'
+        links.new(shader.outputs['BSDF'], output.inputs['Surface'])
+        obj.data.materials.clear()
+        obj.data.materials.append(material)
+        if slot != "body":
+            hb.shade_smooth(obj)
 
 
 # --- Stand-in longsword and round shield on the sockets (in the .blend only) ----------------
@@ -1009,9 +484,43 @@ def build_props(arm):
 #   "y": a hanging limb goes to the character's right (+) / left (-), so +y lifts the right
 #        arm sideways and lowers the left one;
 #   "z": turn to the character's left (+) / right (-);
-#   "curl": a finger or thumb bends towards the palm (around its own X axis).
+#   "curl": a finger or thumb bends towards the palm (axis worked out from the rest pose).
 AXES = {"x": Vector((1, 0, 0)), "y": Vector((0, 1, 0)), "z": Vector((0, 0, 1))}
-UPRIGHT = {"pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "head"}
+UPRIGHT = {"pelvis", "spine_01", "spine_02", "spine_03", "neck_01", "neck_02", "head"}
+CURL_AXES = {}          # bone -> axis in the armature's rest space
+SOLE_POINTS = []        # (bone, point in the rest pose) at heels, balls and toes
+
+
+def prepare_pose_data(arm, body):
+    """Curl axes of the fingers and the sole points of the feet, from the rest pose."""
+    CURL_AXES.clear()
+    for side in ("_l", "_r"):
+        _, _, along, _, palm = hand_frame(arm, side)
+        for name in ("thumb",) + FINGER_NAMES:
+            for n in (1, 2, 3):
+                bone = arm.data.bones.get("%s_0%d%s" % (name, n, side))
+                if bone is None:
+                    continue
+                direction = (bone.tail_local - bone.head_local).normalized()
+                if name == "thumb":         # across the palm, towards the middle finger
+                    towards = (arm.data.bones["middle_02" + side].head_local - bone.head_local).normalized()
+                else:
+                    towards = palm
+                axis = direction.cross(towards)
+                if axis.length > 1e-4:
+                    CURL_AXES[bone.name] = axis.normalized()
+    SOLE_POINTS.clear()
+    weights = vertex_weights(body)
+    for side in ("_l", "_r"):
+        foot = [(v.co.copy(), w) for v, w in zip(body.data.vertices, weights)
+                if total(w, ("foot" + side, "ball" + side)) > 0.5]
+        low = min(co.z for co, _ in foot)
+        sole = [(co, w) for co, w in foot if co.z < low + 1.5]
+        picks = (max(sole, key=lambda p: p[0].y), min(sole, key=lambda p: p[0].y),
+                 min(sole, key=lambda p: p[0].x), max(sole, key=lambda p: p[0].x))
+        for co, w in picks:
+            bone = "ball" + side if w.get("ball" + side, 0.0) > w.get("foot" + side, 0.0) else "foot" + side
+            SOLE_POINTS.append((bone, co))
 
 
 def apply_pose(arm, pose, pelvis_offset=(0.0, 0.0, 0.0), ground=False):
@@ -1024,7 +533,9 @@ def apply_pose(arm, pose, pelvis_offset=(0.0, 0.0, 0.0), ground=False):
         rotation = inherited.to_3x3()
         for axis, degrees in pose.get(pbone.name, ()):
             if axis == "curl":
-                rotation = rotation @ Matrix.Rotation(math.radians(-degrees), 3, 'X')
+                if pbone.name in CURL_AXES:
+                    turn = (inherited.to_3x3() @ rest.to_3x3().inverted()) @ CURL_AXES[pbone.name]
+                    rotation = Matrix.Rotation(math.radians(degrees), 3, turn) @ rotation
                 continue
             sign = -1.0 if axis == "x" and pbone.name not in UPRIGHT else 1.0
             rotation = Matrix.Rotation(math.radians(sign * degrees), 3, AXES[axis]) @ rotation
@@ -1040,10 +551,9 @@ def apply_pose(arm, pose, pelvis_offset=(0.0, 0.0, 0.0), ground=False):
 def lowest_sole(arm):
     """Height of the lowest sole point in the current pose (0 = on the floor)."""
     heights = []
-    for suffix, sign in (("_l", 1.0), ("_r", -1.0)):
-        for bone, point in SOLE_POINTS:
-            pbone = arm.pose.bones[bone + suffix]
-            heights.append((pbone.matrix @ pbone.bone.matrix_local.inverted() @ side_vector(point, sign)).z)
+    for bone, point in SOLE_POINTS:
+        pbone = arm.pose.bones[bone]
+        heights.append((arm.matrix_world @ pbone.matrix @ pbone.bone.matrix_local.inverted() @ point).z)
     return min(heights)
 
 
@@ -1051,10 +561,10 @@ def fists(amount=1.0):
     """Fingers closed round a grip (both hands)."""
     pose = {}
     for suffix in ("_l", "_r"):
-        for name, _, _ in FINGERS:
-            for n, degrees in ((1, 78), (2, 88), (3, 55)):
+        for name in FINGER_NAMES:
+            for n, degrees in ((1, 70), (2, 85), (3, 55)):
                 pose["%s_0%d%s" % (name, n, suffix)] = [("curl", degrees * amount)]
-        for n, degrees in ((1, 18), (2, 30), (3, 35)):
+        for n, degrees in ((1, 20), (2, 30), (3, 30)):
             pose["thumb_0%d%s" % (n, suffix)] = [("curl", degrees * amount)]
     return pose
 
@@ -1223,28 +733,20 @@ def build_animations(arm):
 
 # --- Report and previews --------------------------------------------------------------------
 
-def report(obj, arm):
-    mesh = obj.data
-    quads = sum(1 for p in mesh.polygons if len(p.vertices) == 4)
-    triangles = sum(1 for p in mesh.polygons if len(p.vertices) == 3)
-    bm = bmesh.new()
-    bm.from_mesh(mesh)
-    open_edges = sum(1 for e in bm.edges if not e.is_manifold)
-    poles = sum(1 for v in bm.verts if len(v.link_edges) > 5)
-    bm.free()
-    tree = mathutils.kdtree.KDTree(len(mesh.vertices))
-    for v in mesh.vertices:
-        tree.insert(v.co, v.index)
-    tree.balance()
-    lopsided = sum(1 for v in mesh.vertices if tree.find((-v.co.x, v.co.y, v.co.z))[2] > 0.01)
-    influences = max(len(v.groups) for v in mesh.vertices)
-    size = obj.dimensions
-    print("build_humanoid: size %.0f x %.0f x %.1f cm, %d vertices, %d faces (%d quads, %d triangles, %d n-gons, %d triangles in the game), "
-          "%d open edges, %d vertices with more than 5 edges, %d vertices without a mirror partner, at most %d bones per vertex"
-          % (size.x, size.y, size.z, len(mesh.vertices), len(mesh.polygons), quads, triangles, len(mesh.polygons) - quads - triangles,
-             2 * quads + triangles, open_edges, poles, lopsided, influences))
+def report(parts, arm):
+    vertices = sum(len(o.data.vertices) for o in parts.values())
+    triangles = 0
+    for obj in parts.values():
+        obj.data.calc_loop_triangles()
+        triangles += len(obj.data.loop_triangles)
+    influences = max(len(v.groups) for o in parts.values() for v in o.data.vertices)
+    body = parts["body"]
+    size = body.dimensions
+    print("build_humanoid: size %.0f x %.0f x %.1f cm, %d vertices, %d triangles in the game, at most %d bones per vertex, slots: %s"
+          % (size.x, size.y, size.z, vertices, triangles, influences,
+             ", ".join("%s (%d)" % (slot, len(o.data.vertices)) for slot, o in parts.items())))
     print("build_humanoid: %d bones (%s), shape keys: %s, actions: %s"
-          % (len(arm.data.bones), ", ".join(b.name for b in arm.data.bones), ", ".join(k.name for k in mesh.shape_keys.key_blocks[1:]),
+          % (len(arm.data.bones), ", ".join(b.name for b in arm.data.bones), ", ".join(k.name for k in body.data.shape_keys.key_blocks[1:]),
              ", ".join(sorted(a.name for a in bpy.data.actions))))
 
 
@@ -1263,51 +765,43 @@ def scale_legs(arm, factor):
         bpy.context.view_layer.update()
 
 
-def move_legs(arm, factor):
-    """The other way to shorten the legs: calf and foot moved along their offsets, nothing
-    scaled (what a pose with changed bone translations does). Rest pose only."""
-    for side in ("_l", "_r"):
-        thigh, calf, foot = (arm.data.bones[name + side] for name in ("thigh", "calf", "foot"))
-        knee = thigh.head_local + (calf.head_local - thigh.head_local) * factor
-        ankle = knee + (foot.head_local - calf.head_local) * factor
-        for bone, head in ((calf, knee), (foot, ankle)):
-            arm.pose.bones[bone.name].matrix = Matrix.Translation(head) @ bone.matrix_local.to_3x3().to_4x4()
-            bpy.context.view_layer.update()
-    arm.location.z = -lowest_sole(arm)
-    bpy.context.view_layer.update()
-
-
-def preview(obj, arm, props):
-    keys = obj.data.shape_keys.key_blocks
-
+def preview(parts, arm, props):
     def set_preset(preset):
-        for key in keys[1:]:
-            key.value = 1.0 if key.name == preset else 0.0
+        for obj in parts.values():
+            for key in obj.data.shape_keys.key_blocks[1:]:
+                key.value = 1.0 if key.name == preset else 0.0
 
-    def show_props(visible):
+    def show(props_visible, clothes_visible=True):
         for prop in props:
-            prop.hide_render = not visible
+            prop.hide_render = not props_visible
+        for slot in ("shirt", "trousers"):
+            parts[slot].hide_render = not clothes_visible
 
     turnaround = (("front", 0.0), ("front_left", -35.0), ("side", -90.0), ("back", 180.0))
     two = (("front_left", -35.0), ("side", -90.0))
     arm.animation_data.action = None
+    head = arm.data.bones["head"].head_local
 
-    # The three presets in the rest pose, without the props; faces close up.
-    show_props(False)
+    # The three presets in the rest pose, with and without clothes; faces close up.
+    show(False)
     apply_pose(arm, {})
     for preset in ("neutral",) + PRESET_KEYS:
         set_preset(preset)
         hb.render_preview("%s_rest_%s" % (NAME, preset), (0, 0, 92), 330, size=(600, 800), views=turnaround)
-        hb.render_preview("%s_face_%s" % (NAME, preset), (0, -2, 167), 62, size=(600, 600),
+        hb.render_preview("%s_face_%s" % (NAME, preset), (head.x, head.y - 2.0, head.z + 6.0), 55, size=(600, 600),
                           views=(("front", 0.0), ("front_left", -35.0), ("side", -90.0)))
     set_preset("neutral")
-    hand = WRIST + HD * 7.0
+    show(False, clothes_visible=False)
+    hb.render_preview("%s_rest_body" % NAME, (0, 0, 92), 330, size=(600, 800), views=(("front_left", -35.0), ("back", 180.0)))
+    show(False)
+    hand = arm.data.bones["hand_l"].head_local + (arm.data.bones["middle_01_l"].head_local - arm.data.bones["hand_l"].head_local) * 1.3
     hb.render_preview("%s_hand_open" % NAME, tuple(hand), 48, size=(600, 600), views=(("front_left", -35.0), ("side", -90.0)))
     apply_pose(arm, fists())
     hb.render_preview("%s_hand_fist" % NAME, tuple(hand), 48, size=(600, 600), views=(("front_left", -35.0), ("side", -90.0)))
-    show_props(True)
-    hb.render_preview("%s_hand_grip" % NAME, tuple(side_vector(hand, -1.0)), 60, size=(600, 600), views=(("front_right", 35.0), ("side_right", 90.0)))
-    show_props(False)
+    show(True)
+    hand_r = Vector((-hand.x, hand.y, hand.z))
+    hb.render_preview("%s_hand_grip" % NAME, tuple(hand_r), 60, size=(600, 600), views=(("front_right", 35.0), ("side_right", 90.0)))
+    show(False)
 
     # Deformation: shoulders, hips and knees bent far, also with the legs at 80 % length.
     for pose_name, pose in DEFORM_POSES.items():
@@ -1324,15 +818,12 @@ def preview(obj, arm, props):
     scale_legs(arm, 0.8)
     hb.render_preview("%s_rest_legs80" % NAME, (0, 0, 92), 330, size=(600, 800), views=(("front", 0.0), ("side", -90.0)))
     scale_legs(arm, 1.0)
-    move_legs(arm, 0.8)
-    hb.render_preview("%s_rest_legs80_moved" % NAME, (0, 0, 92), 330, size=(600, 800), views=(("front", 0.0), ("front_left", -35.0)))
-    arm.location.z = 0.0
     apply_pose(arm, {})
 
     # Key poses of the placeholder animations, with sword and shield.
-    show_props(True)
-    shots = (("Idle", 0), ("Move", 0), ("Move", 4), ("Windup", 8), ("Strike", 4), ("Windup2", 8), ("Strike2", 4), ("Charge", 0), ("HeavyStrike", 4), ("Recovery", 5),
-             ("Block", 4), ("Dodge", 5), ("Jump", 0), ("Death", 7), ("Death", 16))
+    show(True)
+    shots = (("Idle", 0), ("Move", 0), ("Move", 4), ("Windup", 8), ("Strike", 4), ("Windup2", 8), ("Strike2", 4), ("Charge", 0),
+             ("HeavyStrike", 4), ("Recovery", 5), ("Block", 4), ("Dodge", 5), ("Jump", 0), ("Death", 7), ("Death", 16))
     for action_name, frame in shots:
         arm.animation_data.action = bpy.data.actions[action_name]
         bpy.context.scene.frame_set(frame)
@@ -1349,19 +840,21 @@ def preview(obj, arm, props):
 
 def main():
     hb.reset_scene()
-    obj = build_mesh()
-    build_material(obj)
-    build_shape_keys(obj)
-    arm = build_rig(obj)
+    parts, arm = build_model()
+    finish_rig(arm, list(parts.values()))
+    textures = build_textures()
+    apply_materials(parts, textures)
+    prepare_pose_data(arm, parts["body"])
+    add_weapon_socket(arm)
     props = build_props(arm)
     build_animations(arm)
-    report(obj, arm)
+    report(parts, arm)
 
     hb.save_blend(os.path.join(NAME, NAME + ".blend"))
-    hb.export_model(NAME, arm, [obj])
+    hb.export_model(NAME, arm, list(parts.values()))
     hb.export_actions(NAME, arm)
     if "nopreview" not in hb.script_args():
-        preview(obj, arm, props)
+        preview(parts, arm, props)
     print("build_humanoid: done")
 
 

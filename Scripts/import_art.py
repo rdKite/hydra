@@ -5,6 +5,8 @@ folder Art/export/<name>/ it imports
   SK_<name>.fbx              -> SK_<name> (skeletal mesh), SK_<name>_Skeleton, physics asset
   Art/<name>/T_<name>_color.png -> T_<name>_color, and builds the material M_<name> from it
                                 (with the parameters Tint and Glow for the game)
+  or, if Art/<name>/materials.json exists, one texture and material per material slot
+  (M_<name>_<slot>; see build_slot_materials)
   A_<name>_<Action>.fbx      -> A_<name>_<Action> (animation sequence on that skeleton)
 Existing assets are replaced, so the script can be run again after every change in Blender.
 Animations made by the human take the same way: export them with
@@ -14,6 +16,7 @@ The log lists size and facing of every mesh, so scale and axes of the export can
 (Scripts/build_art.sh fails if they are off).
 """
 import glob
+import json
 import os
 
 import unreal
@@ -117,6 +120,69 @@ def build_material(name, destination, mesh):
     assets.save_loaded_asset(mesh)
 
 
+def build_slot_materials(name, destination, mesh, spec):
+    """One material per slot of the mesh, as Art/<name>/materials.json describes it:
+    {"slots": {"<slot>": {"texture": "T_<name>_<slot>.png", "tint": "<parameter>" (optional,
+    multiplies the colour; the game sets "Tint"), "masked": true (optional: alpha-tested,
+    two-sided cards such as eyelashes), "roughness": 0.6}}}. Every material has "Glow"."""
+    built = {}
+    for slot, entry in spec["slots"].items():
+        texture_name = os.path.splitext(entry["texture"])[0]
+        run_task(os.path.join(ROOT, "Art", name, entry["texture"]), destination, texture_name)
+        texture = assets.load_asset("%s/%s" % (destination, texture_name))
+        material_name = "M_%s_%s" % (name, slot)
+        material_path = "%s/%s" % (destination, material_name)
+        if assets.does_asset_exist(material_path):
+            material = assets.load_asset(material_path)
+            materials.delete_all_material_expressions(material)
+        else:
+            material = asset_tools.create_asset(material_name, destination, unreal.Material, unreal.MaterialFactoryNew())
+        sample = materials.create_material_expression(material, unreal.MaterialExpressionTextureSample, -600, 0)
+        sample.texture = texture
+        colour = sample
+        if entry.get("tint"):
+            tint = materials.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -600, -250)
+            tint.set_editor_property("parameter_name", entry["tint"])
+            tint.set_editor_property("default_value", unreal.LinearColor(1.0, 1.0, 1.0, 1.0))
+            colour = materials.create_material_expression(material, unreal.MaterialExpressionMultiply, -300, -100)
+            materials.connect_material_expressions(sample, "RGB", colour, "A")
+            materials.connect_material_expressions(tint, "", colour, "B")
+            materials.connect_material_property(colour, "", unreal.MaterialProperty.MP_BASE_COLOR)
+        else:
+            materials.connect_material_property(sample, "RGB", unreal.MaterialProperty.MP_BASE_COLOR)
+        if entry.get("masked"):
+            material.set_editor_property("blend_mode", unreal.BlendMode.BLEND_MASKED)
+            material.set_editor_property("two_sided", True)
+            materials.connect_material_property(sample, "A", unreal.MaterialProperty.MP_OPACITY_MASK)
+        glow = materials.create_material_expression(material, unreal.MaterialExpressionVectorParameter, -600, 500)
+        glow.set_editor_property("parameter_name", "Glow")
+        glow.set_editor_property("default_value", unreal.LinearColor(0.0, 0.0, 0.0, 1.0))
+        materials.connect_material_property(glow, "", unreal.MaterialProperty.MP_EMISSIVE_COLOR)
+        roughness = materials.create_material_expression(material, unreal.MaterialExpressionConstant, -400, 300)
+        roughness.r = entry.get("roughness", 0.6)
+        materials.connect_material_property(roughness, "", unreal.MaterialProperty.MP_ROUGHNESS)
+        materials.set_material_usage(material, unreal.MaterialUsage.MATUSAGE_SKELETAL_MESH)
+        materials.set_material_usage(material, unreal.MaterialUsage.MATUSAGE_MORPH_TARGETS)
+        materials.recompile_material(material)
+        assets.save_loaded_asset(material)
+        built[slot] = material
+    # The mesh's slots carry the Blender material names (body, shirt, ...).
+    slots = []
+    for slot in mesh.get_editor_property("materials"):
+        slot_name = str(slot.material_slot_name)
+        key = next((k for k in built if slot_name == k or slot_name.startswith(k + ".") or slot_name.startswith(k + "_")), None)
+        if key is None:
+            raise RuntimeError("import_art: %s has a material slot %s that materials.json does not describe" % (name, slot_name))
+        slots.append(unreal.SkeletalMaterial(material_interface=built[key], material_slot_name=slot.material_slot_name))
+    mesh.set_editor_property("materials", slots)
+    assets.save_loaded_asset(mesh)
+    # The single-material assets of an earlier version are no longer used.
+    for old in ("M_" + name, "T_%s_color" % name):
+        if assets.does_asset_exist("%s/%s" % (destination, old)):
+            assets.delete_asset("%s/%s" % (destination, old))
+    unreal.log("import_art: %s material slots: %s" % (name, ", ".join(str(s.material_slot_name) for s in slots)))
+
+
 def import_animations(name, destination, skeleton):
     imported = []
     for path in sorted(glob.glob(os.path.join(EXPORT, name, "A_%s_*.fbx" % name))):
@@ -142,6 +208,8 @@ def import_animations(name, destination, skeleton):
 def report(name, mesh):
     bounds = mesh.get_bounds()
     extent, origin = bounds.box_extent, bounds.origin
+    morphs = [str(m.get_name()) for m in mesh.get_editor_property("morph_targets")]
+    unreal.log("import_art: %s morph targets: %s" % (name, ", ".join(sorted(morphs)) or "none"))
     unreal.log("import_art: %s size_x=%.0f size_y=%.0f size_z=%.0f centre_x=%.1f centre_y=%.1f bottom_z=%.1f bones=%d"
                % (name, extent.x * 2, extent.y * 2, extent.z * 2, origin.x, origin.y, origin.z - extent.z, len(mesh.skeleton.get_reference_pose().get_bone_names())))
 
@@ -152,7 +220,12 @@ if not names:
 for model in names:
     dest = "/Game/Characters/" + model
     skeletal_mesh, model_skeleton = import_mesh(model, dest)
-    build_material(model, dest, skeletal_mesh)
+    slot_spec = os.path.join(ROOT, "Art", model, "materials.json")
+    if os.path.exists(slot_spec):
+        with open(slot_spec, encoding="utf-8") as handle:
+            build_slot_materials(model, dest, skeletal_mesh, json.load(handle))
+    else:
+        build_material(model, dest, skeletal_mesh)
     animations = import_animations(model, dest, model_skeleton)
     report(model, skeletal_mesh)
     unreal.log("import_art: %s animations: %s" % (model, ", ".join(animations)))

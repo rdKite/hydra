@@ -1,0 +1,11 @@
+{
+  "comment": "Material slots of the humanoid base model (Scripts/import_art.py builds M_humanoid_<slot>). Textures come from Art/scripts/build_humanoid.py. The game sets the parameter Tint (side colour) on every slot; only the shirt has it. TrousersTint is free for later (equipment colours).",
+  "slots": {
+    "body": {"texture": "T_humanoid_body.png", "roughness": 0.55},
+    "eyes": {"texture": "T_humanoid_eyes.png", "roughness": 0.2},
+    "eyebrows": {"texture": "T_humanoid_eyebrows.png", "masked": true, "roughness": 0.8},
+    "eyelashes": {"texture": "T_humanoid_eyelashes.png", "masked": true, "roughness": 0.8},
+    "shirt": {"texture": "T_humanoid_shirt.png", "tint": "Tint", "roughness": 0.85},
+    "trousers": {"texture": "T_humanoid_trousers.png", "tint": "TrousersTint", "roughness": 0.85}
+  }
+}
