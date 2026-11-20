@@ -11,6 +11,36 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-20 – humanoid base model from MakeHuman (parallel session)
+
+The human found the scripted stylised humanoid too clunky and not realistic enough (asked
+for a realistic or anime look, Fortnite screenshots as a benchmark for the detail – nothing
+of them was recreated), no clothes and no hair on the body (they come as equipment and hair
+styles), then for a plain, tintable shirt and trousers with a somewhat loose cut. A prototype
+with MPFB2 (MakeHuman for Blender) was approved by the human.
+- `Art/scripts/build_humanoid.py` rewritten on MPFB2: realistic body from the MakeHuman base
+  mesh (CC0), game engine rig (55 bones incl. `weapon_r` / `shield_l`, names as before),
+  skin, eyes, eyebrows, eyelashes (CC0 assets); shirt and trousers cut from the body (same
+  weights and UVs, loose, own slots); presets `male` / `female` as shape keys, scaled to the
+  neutral height; the 13 clips as before (incl. `Windup2` / `Strike2`). ~42k triangles.
+- `Scripts/import_art.py`: one material per slot from `Art/<name>/materials.json` (shirt:
+  `Tint`, trousers: `TrousersTint`, eyebrows / eyelashes masked); the model folder is emptied
+  and imported fresh (Unreal cannot merge a changed bone tree into the old skeleton).
+  Slime and wolf pup unchanged (single material).
+- `Scripts/setup_mpfb.sh`: installs MPFB 2.0.18 and the MakeHuman system assets (pinned
+  SHA-256) – a new one-time setup step per machine, no editor work.
+- Verified: build and FBX import (55 bones, morph targets `female` / `male`, 6 slots, 13
+  clips), `Scripts/shots_humanoid.sh` (shirt in the side colour, skin untouched, sword in the
+  fist), `Scripts/run_all.sh` all green.
+- Problems: the armature object must be named `Armature`, otherwise Unreal adds a 56th root
+  bone; Blender premultiplying is avoided with `CHANNEL_PACKED`; garment smoothing shrinks
+  limbs, so the stand-off is measured against a Taubin-smoothed skin.
+- Assumptions: the MakeHuman skin is a photo-based CC0 texture – the decision "textures
+  procedural only" is read as "no AI or hand painting of our own"; the bare body has no
+  underwear yet (shirt and trousers cover it); one skin texture for all presets.
+- Coordinated with the primary session (clips, tint on every slot, Unreal runs one at a time).
+- No intervention.
+
 ### 2026-11-20 – two light-attack clips, no evolution in combat (agent session)
 
 Pulled `main` and did the two agent items of M5 from the entry below.

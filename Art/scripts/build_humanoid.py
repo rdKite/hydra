@@ -292,6 +292,7 @@ def hand_frame(arm, side):
 def finish_rig(arm, meshes):
     """Root named like the mannequin, the shield's socket bone, every bone deforms, weights
     only for bones (at most 4 per vertex). The sword's socket follows once the fist is known."""
+    arm.name = arm.data.name = "Armature"     # any other name becomes an extra root bone in Unreal
     hb.set_active(arm)
     bpy.ops.object.mode_set(mode='EDIT')
     edit = arm.data.edit_bones

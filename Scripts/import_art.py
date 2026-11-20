@@ -8,7 +8,8 @@ folder Art/export/<name>/ it imports
   or, if Art/<name>/materials.json exists, one texture and material per material slot
   (M_<name>_<slot>; see build_slot_materials)
   A_<name>_<Action>.fbx      -> A_<name>_<Action> (animation sequence on that skeleton)
-Existing assets are replaced, so the script can be run again after every change in Blender.
+The model's folder is emptied first and imported fresh, so the script can be run again after
+every change in Blender (also when the bone tree changes).
 Animations made by the human take the same way: export them with
 Art/scripts/export_animations.py and run this again.
 
@@ -44,7 +45,15 @@ def run_task(filename, destination, name, options=None):
     return list(task.imported_object_paths)
 
 
+def clear_folder(destination):
+    """Fresh import: replacing a mesh in place fails when its bone tree changed (Unreal cannot
+    merge it into the existing skeleton). The game loads these assets by path only."""
+    for path in assets.list_assets(destination, recursive=True):
+        assets.delete_asset(path)
+
+
 def import_mesh(name, destination):
+    clear_folder(destination)
     ui = unreal.FbxImportUI()
     ui.import_mesh = True
     ui.import_as_skeletal = True

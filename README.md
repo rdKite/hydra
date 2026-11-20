@@ -39,6 +39,7 @@ Git Bash from the repository root.
 | `Scripts/summarize_metrics.sh` | summary of the newest metrics CSV: hits, blocked hits, dodges, stamina use per player, enemy type and wave |
 | `Scripts/run_all.sh` | tests and the four live runs |
 | `Scripts/build_art.sh` | Blender builds models, rigs and textures, Unreal imports them (needs Blender) |
+| `Scripts/setup_mpfb.sh` | once per machine: installs MPFB2 and the MakeHuman assets into Blender (needed for the humanoid) |
 
 Without the script, from any shell (after a build):
 
