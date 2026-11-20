@@ -181,6 +181,9 @@ with the game up to stage 3. (The stages map to the phases in the [roadmap](../r
   operators of private servers can adjust them even without a mod.
 - **Legal:** mod guidelines (who owns mods, what is allowed); possibly a platform such as
   mod.io or Steam Workshop.
+- **Bought assets and mods:** assets under a store license (e.g. the Fab Standard License)
+  may ship inside the game but not as source files – a mod kit must not contain them. Plan
+  the mod kit with our own or freely licensed assets (e.g. MakeHuman's CC0 assets).
 
 ## Dungeons
 

@@ -568,3 +568,16 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   it now: in the arena only while no enemy is alive (break between waves). The imprint is
   not affected. Testing an evolution in the middle of a fight is therefore not a playtest
   question.
+
+## 2026-11-20
+
+- **Target look for humanoids: stylized, in the direction of Palia** (wish of the human), not
+  the realistic MakeHuman body. Not decided how to get there; proposed: keep MakeHuman as the
+  technical base and stylize it through its proxy system, because it already does the
+  gender-fluid editor, skin colors and proportions, and proxies make armor and hair follow
+  every body shape. Fab packs were checked and do not fit the editor without heavy rework.
+  Next step: a test in the build session (stylized head as a proxy, painted skin shader,
+  pictures of all presets and short legs) before anything is bought or commissioned. The
+  plain look (2026-11-19) stays until then.
+- **Mods:** bought assets (store licenses) must not be part of a mod kit.
+

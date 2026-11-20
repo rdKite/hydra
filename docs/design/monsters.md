@@ -358,6 +358,11 @@ is for monsters only; humanoids have capabilities too).
 
 ### Look of humanoids: sliders, gender-fluid
 
+- **Target look (wish of the human, 2026-11-20): stylized, in the direction of Palia** –
+  instead of the realistic MakeHuman body of M5. The proposed path keeps MakeHuman as the
+  technical base and stylizes it through its **proxy system** (see open questions); it is
+  tested before anything is bought or commissioned.
+
 - The body is shaped with **sliders**. There are no fixed male and female models and no
   model per race: **one shared humanoid base model** with one skeleton for all races
   (Shifters included), shaped by shape keys (morph targets). Three **starting presets** –

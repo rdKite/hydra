@@ -36,6 +36,21 @@ The list of design questions, decided and open. `[x]` = decided (with the answer
       gain for strength and dexterity), wind-ups and reach per schematic (base damage follows
       from the cost), resistance points per armor schematic, caps of the situational factors, resistance curve
       constant, detection radius factors – in balancing.
+- [ ] **Stylized look for humanoids (Palia direction)** – how to get there without our own
+      sculpting:
+      - Fab character packs (CoreCharacters Starter Kit, Stylized Modular Characters with
+        body morphs, N-hance, justcreate3d): mostly separate male and female models with
+        different topology, fixed skin textures, clothing fitted per model – they do not
+        fit the gender-fluid editor without heavy rework. Character Creator (Reallusion):
+        its content may not be used in an in-game character creator.
+      - **Proposed path:** keep MakeHuman (one model, gender slider, blended skin colors,
+        proportions) and stylize it: a **stylized body and head as a MakeHuman proxy** (follows
+        every slider), **armor, clothing and hair as proxies** (MPFB's MakeClothes – they
+        follow every body shape by themselves), a painted-looking skin texture or shader.
+        Art is needed once (head and body), from a bought mesh or a commissioned artist; AI
+        3D tools at most for props, accessories and maybe hair (disclose on Steam).
+      - Risk: the stronger the stylization differs from the base body, the less cleanly a
+        proxy follows. A test in the build session decides (see decisions 2026-11-20).
 - [ ] Display of perceived enemies: minimap or compass? Decide with the user interface
       (Phase 2).
 - [ ] Instinct: size of the permanent bonus and the learning bonus, decrease over several
