@@ -20,10 +20,14 @@ One mesh and one skeleton for all humanoids (`docs/tech/blender-pipeline.md`), s
 game with placeholder animations made by script; the telegraph colours on the blade stay.
 `Scripts/shots_humanoid.sh` shows the three body presets and the body with legs at 80 %
 (idle, block, heavy attack charging) on one page: `Saved/Screenshots/Humanoid/index.html`.
-It is a stand-in: no face, mitten hands, plain colour (tinted per side).
+It is a stand-in, not a final character, at about the detail of a stylised third-person
+game: face, eyes, ears, hair volume, five-finger hands, a simple outfit, a texture baked by
+script (about 49 000 triangles, 55 bones). The outfit takes the colour of its side through a
+tint mask; face, hair and skin keep their colours.
 
 **Questions:** Are the proportions and the three presets a base you want to animate on?
-Is the rig (bone names of the Unreal mannequin, A-pose, no fingers) right for your tools?
+Is the rig (bone names of the Unreal mannequin, A-pose, finger bones, no twist or IK bones
+yet) right for your tools?
 
 ## 2. Which placeholder animations to replace first
 
