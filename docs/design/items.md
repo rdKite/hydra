@@ -54,6 +54,26 @@ components, like weapons (see [Crafting](#crafting-weapons-and-armor)).
 - **Material only from NPC monsters**, not from defeated players: whoever respawns does not
   really die and leaves no corpse.
 
+### Armor and body shapes
+
+One base model for every body (see character creation in
+[monsters.md](monsters.md#look-of-humanoids-sliders-gender-fluid)) means one armor model
+for every body too. Rules:
+
+- **Soft clothing follows the body fully** – cloth, leather, robes, gambesons take on the body
+  shape through the shape keys (or as proxies). A rather female body gets fitted clothing by
+  itself, with no extra work.
+- **Standard silhouette:** armor has a silhouette that looks good on every body.
+- **Rigid torso pieces** (breastplate, plate harness) get an extra **fitted shape key** that
+  follows the body's gender slider – no second model. Agents make it from the body shape by
+  script and smooth it so metal stays rigid instead of rubbery; an artist may refine visible
+  pieces. Arms, legs, helmet and boots hardly need it.
+- **Fitted schematic variants** for selected armor, e.g. a *tailored harness* next to the
+  *straight harness*, with their own silhouette and design – **open to everyone** as a style
+  choice, not locked by gender. One extra model per variant, only where it is wanted.
+- **Check matrix:** every new armor or clothing piece passes automatic pictures at the corners
+  – the three body presets × slim / heavy × human / dwarf – before it goes in.
+
 ### Components and schematics
 
 - **Two components:** a **base layer** (material, main values – like the blade) and a

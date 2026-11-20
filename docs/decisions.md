@@ -580,4 +580,10 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   pictures of all presets and short legs) before anything is bought or commissioned. The
   plain look (2026-11-19) stays until then.
 - **Mods:** bought assets (store licenses) must not be part of a mod kit.
+- **Armor and body shapes:** one armor model for every body (no per-gender models). Soft
+  clothing follows the body fully; armor has a silhouette that suits every body; rigid torso
+  pieces get a fitted shape key driven by the gender slider; selected armor also comes as a
+  fitted schematic variant (e.g. tailored harness), open to everyone; every piece passes an
+  automatic check matrix (presets × build × race). Reason: roughly halves armor work compared
+  with per-gender models, while fitted looks stay possible where wanted.
 

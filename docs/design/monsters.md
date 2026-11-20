@@ -382,7 +382,9 @@ is for monsters only; humanoids have capabilities too).
   neither hitbox nor stats. Only the **size slider** (body weight, see below) affects play.
 - **Armor follows every body shape:** the shape keys (and bone lengths) are transferred from
   the body to each armor model by script (Blender data transfer or surface deform) – the
-  main extra effort, solved in the pipeline, and only once for all races.
+  main extra effort, solved in the pipeline, and only once for all races. One armor model
+  instead of one per gender roughly halves the work on armor and clothing; fitted shapes are
+  added only where wanted (see body shapes in [items.md](items.md#armor-and-body-shapes)).
 - **Voice** (or pitch) is chosen separately from the body; if NPCs address the character,
   **pronouns** are chosen too (or NPCs use the name).
 
