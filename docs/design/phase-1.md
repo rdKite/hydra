@@ -536,6 +536,10 @@ Decision 2026-11-19 (full design: [progression.md](progression.md#skill-points-a
   Otherwise J and the debug panel do not offer it (the HUD says why); the open milestone
   stays. The dev command `HydraChoose evolve` (and the panel's set-form) may bypass the rule
   for tests. The imprint (K) is not affected.
+  *As built:* an enemy is a living AI character that is not passive; the server decides
+  (`HydraEvolveWaits` in the log when it refuses) and replicates "an enemy is alive", so
+  the HUD replaces the `[J] evolve …` line by "evolution into … waits – not in combat".
+  `HydraMilestoneKey evolve|imprint` does what the keys do (for scripted runs).
 - Slime → fire elemental slime requires the **first fire imprint** (§15).
 - After evolution:
   - **level resets to 0**; base values reset to the level but are higher in the new form;

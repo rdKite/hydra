@@ -20,7 +20,9 @@
 #    6    C: HydraSpawn ember_slime 3 passive
 #    9    H: waves on, then off
 #   10.2  H: body preset and leg length of every character (looks of the humanoid base model)
-#   11    quit
+#   11    H: no evolution in combat - spawns an active grunt, the evolve key is refused;
+#         removes the enemies, the evolve key is taken
+#   14    quit
 set -u
 source "$(dirname "$0")/env.sh"
 PYTHON="$UE/Engine/Binaries/ThirdParty/Python3/Win64/python.exe"
@@ -37,14 +39,15 @@ H+=";3.2:HydraSetImprint|2;3.5:HydraMilestone;4:HydraStats;4.3:HydraClearEnemies
 H+=";5.5:HydraSpendStamina|300;5.6:HydraReset;5.7:HydraStats"
 H+=";6:HydraPanel|1;6.2:HydraPanelKey|down;6.4:HydraPanelKey|right;6.5:HydraStats;6.6:HydraPanelKey|down;6.8:HydraPanelKey|right;7.5:HydraAttack|0;8.4:HydraPanel|0;8.6:HydraStats"
 H+=";9:HydraWaves|1;9.6:HydraWaves|0;10:HydraStats;10.2:HydraBody|male;10.3:HydraLegs|0.8;10.7:HydraStats"
+H+=";11:HydraTeleport|-1500|-1500|0;11.1:HydraSpawn|grunt|1|0;11.5:HydraStats;11.6:HydraMilestoneKey|evolve;12:HydraStats;12.2:HydraClearEnemies;12.6:HydraStats;12.7:HydraMilestoneKey|evolve;13.2:HydraStats"
 
-C="1:HydraStats;2:HydraStats;3:HydraSetLevel|20;3.3:HydraSetSkill|projectile|15|0.5;4:HydraStats;5.2:HydraStats;6:HydraSpawn|ember_slime|3|1;6.5:HydraStats;8.6:HydraStats;10:HydraStats;10.7:HydraStats"
+C="1:HydraStats;2:HydraStats;3:HydraSetLevel|20;3.3:HydraSetSkill|projectile|15|0.5;4:HydraStats;5.2:HydraStats;6:HydraSpawn|ember_slime|3|1;6.5:HydraStats;8.6:HydraStats;10:HydraStats;10.7:HydraStats;11.5:HydraStats;12.6:HydraStats;13.2:HydraStats"
 
-COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound -HydraWaitPlayers=2 -HydraQuit=11)
+COMMON=(-game -windowed -ResX=1280 -ResY=720 -unattended -nosplash -nosound -HydraWaitPlayers=2 -HydraQuit=14)
 export MSYS_NO_PATHCONV=1 MSYS2_ARG_CONV_EXCL='*'
 
 "$EDITOR" "$PROJ" "/Game/Maps/Arena?listen" "${COMMON[@]}" -WinX=0 -WinY=40 -log=DebugHost.log -HydraAIPassive \
-  -HydraShotDir=LiveDebug -HydraShotName=host -HydraShot=0.3,7.2,10.3 "-HydraExec=$H" > /dev/null 2>&1 &
+  -HydraShotDir=LiveDebug -HydraShotName=host -HydraShot=0.3,7.2,10.3,11.8 "-HydraExec=$H" > /dev/null 2>&1 &
 HOST=$!
 sleep 6
 "$EDITOR" "$PROJ" "127.0.0.1?Form=slime" "${COMMON[@]}" -WinX=640 -WinY=120 -log=DebugClient.log \

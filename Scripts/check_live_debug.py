@@ -114,8 +114,23 @@ def main(root):
             and (host.stats(10.7, H) or {}).get("body") == 1.0, "%s %s" % (b.get("body"), b.get("legs")))
     c.check("... and the client sees them (replicated)", bc.get("body") == 1.0 and bc.get("legs") == 0.8, "%s %s" % (bc.get("body"), bc.get("legs")))
     if os.path.exists(os.path.join(root, "Content", "Characters", "humanoid", "SK_humanoid.uasset")):
-        c.check("the humanoid is shown with the base model and its eleven clips (host and client)",
-                host.count("Form humanoid uses the model humanoid with 11 animations") >= 1 and client.count("Form humanoid uses the model humanoid with 11 animations") >= 1)
+        c.check("the humanoid is shown with the base model and its thirteen clips (host and client)",
+                host.count("Form humanoid uses the model humanoid with 13 animations") >= 1 and client.count("Form humanoid uses the model humanoid with 13 animations") >= 1)
+
+    print("--- no evolution in combat")
+    c.check("passive enemies are no combat: the open milestone offers the evolution, nothing waits",
+            s8.get("offer") == "evolve:fire_elemental_slime" and s8.get("enemy_alive") == 0.0 and s8.get("evolve_waits") == 0.0, "%s %s %s" % (s8.get("offer"), s8.get("enemy_alive"), s8.get("evolve_waits")))
+    w, wc = both(11.5, H)
+    c.check("an active enemy is alive: the evolution waits (server)", w.get("enemy_alive") == 1.0 and w.get("evolve_waits") == 1.0, "%s %s" % (w.get("enemy_alive"), w.get("evolve_waits")))
+    c.check("... and the client knows it too (replicated, for the HUD)", wc.get("enemy_alive") == 1.0 and (client.stats(11.5, C) or {}).get("enemy_alive") == 1.0)
+    c.check("the evolve key is refused while the enemy lives", host.count("HydraChoose who=%s choice=evolve refused" % H) == 1 and host.count("HydraEvolveWaits") == 1)
+    w2 = host.stats(12, H) or {}
+    c.check("... the form stays and the milestone stays open", w2.get("form") == "slime" and w2.get("milestones") == 1.0 and w2.get("offer") == "evolve:fire_elemental_slime", "%s %s" % (w2.get("form"), w2.get("milestones")))
+    f, fc = both(12.6, H)
+    c.check("the enemies are gone: nothing waits any more (server and client)", f.get("enemy_alive") == 0.0 and f.get("evolve_waits") == 0.0 and fc.get("enemy_alive") == 0.0)
+    c.check("now the evolve key is taken", host.count("HydraChoose who=%s choice=evolve taken" % H) == 1)
+    e2, e2c = both(13.2, H)
+    c.check("the host evolved, the milestone is used", e2.get("form") == "fire_elemental_slime" and e2.get("milestones") == 0.0 and e2c.get("form") == "fire_elemental_slime", "%s %s" % (e2.get("form"), e2.get("milestones")))
 
     print("--- screenshots")
     shots = os.path.join(root, "Saved", "Screenshots", "LiveDebug")

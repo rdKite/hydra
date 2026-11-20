@@ -2,6 +2,7 @@
 
 #include "Character/HydraCharacter.h"
 #include "Core/HydraDevSubsystem.h"
+#include "Core/HydraGameState.h"
 #include "Data/HydraValuesSubsystem.h"
 #include "Hydra.h"
 #include "Net/UnrealNetwork.h"
@@ -325,7 +326,13 @@ void UHydraProgressionComponent::ServerAddImprintProgress(float Amount)
 	}
 }
 
-bool UHydraProgressionComponent::ServerChoose(FName Choice)
+bool UHydraProgressionComponent::IsEvolutionWaiting() const
+{
+	const AHydraGameState* GS = GetWorld() ? GetWorld()->GetGameState<AHydraGameState>() : nullptr;
+	return GS && GS->IsEnemyAlive() && !GetEvolutionOffer().IsNone();
+}
+
+bool UHydraProgressionComponent::ServerChoose(FName Choice, bool bIgnoreCombat)
 {
 	AHydraCharacter* C = GetCharacter();
 	const UHydraValuesSubsystem* Subsystem = UHydraValuesSubsystem::GetSubsystem(this);
@@ -347,6 +354,12 @@ bool UHydraProgressionComponent::ServerChoose(FName Choice)
 	const FHydraFormDef* NewDef = Subsystem->GetDefinitions().FindForm(NewForm);
 	if (!NewDef)
 	{
+		return false;
+	}
+	// Never in combat: it waits until no enemy is alive; the milestone stays open.
+	if (!bIgnoreCombat && AHydraGameState::ComputeEnemyAlive(GetWorld()))
+	{
+		UE_LOG(LogHydra, Log, TEXT("HydraEvolveWaits t=%.2f who=%s form=%s reason=enemy_alive"), UHydraDevSubsystem::ClockOf(this), *C->GetLogId(), *NewForm.ToString());
 		return false;
 	}
 	// Evolution: level and skills start again; what the skills were lives on as instinct.

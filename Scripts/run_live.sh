@@ -59,7 +59,7 @@ DATA_DIR="$(cygpath -w "$LIVE/data")"
 "$PYTHON" "$(cygpath -w "$ROOT/Scripts/check_live.py")" --plain-start "$(cygpath -w "$LIVE/data/values.json")" > /dev/null
 
 H="1:HydraStats;1.5:HydraTeleport|0|440|90;2:HydraStats"
-H+=";2.5:HydraAttack|0;3.25:HydraRefill;3.3:HydraAttack|0;4.05:HydraRefill;4.1:HydraAttack|0;4.6:HydraStats;7:HydraStats;7.2:HydraAttack|0;8:HydraResetAll"
+H+=";2.5:HydraAttack|0;2.6:HydraStats;3.25:HydraRefill;3.3:HydraAttack|0;3.4:HydraStats;4.05:HydraRefill;4.1:HydraAttack|0;4.2:HydraStats;4.6:HydraStats;7:HydraStats;7.2:HydraAttack|0;7.32:HydraStats;8:HydraResetAll"
 H+=";8.5:HydraAttack|300;9.3:HydraStats;10:HydraResetAll;10.5:HydraAttack|3000;11:HydraStats;12.4:HydraJump;12.75:HydraStats"
 H+=";13:HydraResetAll;13:HydraTeleport|0|760|-90;13.6:HydraAttack|0;14.45:HydraRefill;14.5:HydraAttack|700;17:HydraStats;19.8:HydraStats"
 H+=";20:HydraResetAll;20:HydraTeleport|0|440|90;20.5:HydraAI|block|1;21:HydraStats;21.2:HydraAttack|0;22.15:HydraRefill;22.2:HydraAttack|300;23.2:HydraStats"
@@ -79,7 +79,7 @@ H+=";59:HydraResetAll;59:HydraTeleport|-1000|-1000|0;59:HydraLook|0|-10;59.3:Hyd
 H+=";61:HydraPrecise|0;61.1:HydraMove|0|-1|1;62.4:HydraStats"
 H+=";63:HydraResetAll;63:HydraTeleport|0|0|90;63.2:Hydra.AI|1;67:HydraStats;70.5:HydraStats"
 
-C="1:HydraStats;2:HydraStats;4.6:HydraStats;5:HydraAttack|0;5.4:HydraStats;6:HydraDodge;7:HydraStats;9:HydraBlock|1;9.5:HydraStats;10:HydraBlock|0"
+C="1:HydraStats;2:HydraStats;2.6:HydraStats;3.4:HydraStats;4.2:HydraStats;4.6:HydraStats;5:HydraAttack|0;5.4:HydraStats;6:HydraDodge;7:HydraStats;9:HydraBlock|1;9.5:HydraStats;10:HydraBlock|0"
 C+=";11:HydraStats;12.75:HydraStats;17:HydraStats;19.8:HydraStats;21:HydraStats;38.3:HydraStats"
 C+=";39.5:HydraTeleport|-900|-1000|180;41:Hydra.PacketLoss|0;43.5:HydraStats;44:HydraAutoAttack|170;46.8:HydraStats;48:HydraAttack|0;51:HydraStats;60.8:HydraStats;67:HydraStats"
 

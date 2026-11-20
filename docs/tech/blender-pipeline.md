@@ -56,8 +56,11 @@ Blender 5.2 is expected under `C:\Program Files\Blender Foundation\`; otherwise 
 
 The game finds a model by name: a form `<id>` with `/Game/Characters/<id>/SK_<id>` is shown
 with it, otherwise with the placeholder body. Animations are looked up as `A_<id>_<Name>`
-with the names Idle, Move, Windup, Charge, Strike, Recovery, Cast, CastCharge, CastRelease,
-Dodge, Death. Clips of actions are time-scaled to the action's duration from
+with the names Idle, Move, Windup, Windup2, Charge, Strike, Strike2, HeavyStrike, Recovery,
+Cast, CastCharge, CastRelease, Block, Dodge, Jump, Death. **Windup2 / Strike2** are the second
+pair for the light attack: the game alternates the pairs within a chain (first strike the
+first pair, the strike after a hit the second, and so on; a new chain starts with the first)
+and uses the first pair alone if a model lacks one of the second. Clips of actions are time-scaled to the action's duration from
 `values.json`, so their length in Blender does not change the gameplay timing.
 
 ## Humanoid base model (M5, Blender part)
@@ -127,7 +130,8 @@ base shape. They are exported as FBX blend shapes (checked by re-importing the F
 
 **Placeholder animations** (one action each, exported as `A_humanoid_<Name>.fbx`, 30 fps):
 Idle (40 frames, loop), Move (16, loop, runs on the spot), Windup (8), Strike (4, a slash
-from the right shoulder across to the left), Recovery (10), Charge (12, loop, sword drawn
+from the right shoulder across to the left), **Windup2** (8) and **Strike2** (4; the other
+side: cocked across the body at the left shoulder, a backhand slash to the right), Recovery (10), Charge (12, loop, sword drawn
 back at the hip), **HeavyStrike** (4, a thrust with a lunge – the heavy attack is a stab; the
 game falls back to Strike if a model has no HeavyStrike), Block (4, shield in front of the chest, body
 lowered; the last frame is held), Dodge (14), Jump (12, loop while in the air), Death (16,

@@ -232,6 +232,14 @@ def main(root):
     h4 = one("fourth light attack after the pause hits", host.find("HydraHit", 7.2, 7.9, attacker=H, target=AI))
     c.near("... with plain weapon damage again", h4.get("dmg"), light["damage"], 0.05)
     c.check("... as the first hit of a new chain", h4.get("chain") == 1.0)
+    if os.path.exists(os.path.join(root, "Content", "Characters", "humanoid", "A_humanoid_Windup2.uasset")):
+        # Two clips for the light attack, alternating within a chain (looks only).
+        first, second = ("Windup", "Strike"), ("Windup2", "Strike2")
+        clips = [val(host, t, H, "clip") for t in (2.6, 3.4, 4.2, 7.32)]
+        c.check("light attack clips alternate within the chain: first, second, first; a new chain starts with the first",
+                clips[0] in first and clips[1] in second and clips[2] in first and clips[3] in first, " ".join(str(x) for x in clips))
+        seen = [val(client, t, H, "clip") for t in (2.6, 3.4, 4.2)]
+        c.check("the client sees the same clips on the host's character", seen[0] in first and seen[1] in second and seen[2] in first, " ".join(str(x) for x in seen))
 
     print("--- client: attack, dodge and block are predicted locally and decided on the server")
     one("client's attack into the air is a miss on the server", host.find("HydraMiss", 5.0, 5.8, attacker=C))

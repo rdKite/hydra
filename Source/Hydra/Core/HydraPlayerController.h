@@ -176,9 +176,13 @@ public:
 	UFUNCTION(Server, Reliable)
 	void ServerChooseMilestone(FName Choice);
 
-	/** Same as the milestone keys: HydraChoose imprint | evolve. */
+	/** Dev: take a milestone choice, imprint | evolve. An evolution is taken even in combat (for tests). */
 	UFUNCTION(Exec)
 	void HydraChoose(const FString& Choice);
+
+	/** What the milestone keys do (J = evolve, K = imprint), with their rules: HydraMilestoneKey evolve | imprint. */
+	UFUNCTION(Exec)
+	void HydraMilestoneKey(const FString& Choice);
 
 	/** Dev: waves on (1) - the practice opponent leaves and the first wave comes - or off (0). */
 	UFUNCTION(Exec)

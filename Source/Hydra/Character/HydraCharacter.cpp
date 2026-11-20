@@ -421,7 +421,7 @@ void AHydraCharacter::ApplyFormLook()
 			Model->SetAnimInstanceClass(UHydraAnimInstance::StaticClass());
 			Model->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 			Model->VisibilityBasedAnimTickOption = EVisibilityBasedAnimTickOption::AlwaysTickPoseAndRefreshBones;
-			static const TCHAR* Names[] = { TEXT("Idle"), TEXT("Move"), TEXT("Windup"), TEXT("Charge"), TEXT("Strike"), TEXT("HeavyStrike"), TEXT("Recovery"),
+			static const TCHAR* Names[] = { TEXT("Idle"), TEXT("Move"), TEXT("Windup"), TEXT("Windup2"), TEXT("Charge"), TEXT("Strike"), TEXT("Strike2"), TEXT("HeavyStrike"), TEXT("Recovery"),
 				TEXT("Cast"), TEXT("CastCharge"), TEXT("CastRelease"), TEXT("Block"), TEXT("Dodge"), TEXT("Jump"), TEXT("Death") };
 			for (const TCHAR* Name : Names)
 			{
@@ -500,6 +500,19 @@ void AHydraCharacter::SetAction(EHydraAction Action, float DurationS)
 	NewState.Action = Action;
 	NewState.StartServerTime = GetServerTime();
 	NewState.DurationS = DurationS;
+	if (Action == EHydraAction::LightWindup)
+	{
+		// The light attack alternates its two clips within a chain: the first strike shows the
+		// first, the strike after a hit the second, and so on; a new chain starts with the first.
+		// (The server knows when the chain ran out; a client takes the replicated count.)
+		NewState.Variant = static_cast<uint8>((HasAuthority() ? GetChainHitsNow() : ChainCount) % 2);
+	}
+	else if (Action == EHydraAction::LightStrike)
+	{
+		// The strike belongs to the wind-up before it.
+		const FHydraActionState& Before = HasAuthority() ? ActionState : PredictedAction;
+		NewState.Variant = Before.Action == EHydraAction::LightWindup ? Before.Variant : 0;
+	}
 	if (HasAuthority())
 	{
 		ActionState = NewState;
@@ -910,11 +923,13 @@ void AHydraCharacter::UpdateMeshAnimation()
 	}
 	else
 	{
+		// The second pair of light-attack clips; a model without both uses the first pair.
+		const bool bSecond = Shown.Variant == 1 && FormAnimations.Contains(TEXT("Windup2")) && FormAnimations.Contains(TEXT("Strike2"));
 		switch (Shown.Action)
 		{
-		case EHydraAction::LightWindup: Wanted = TEXT("Windup"); bLoop = false; break;
+		case EHydraAction::LightWindup: Wanted = bSecond ? TEXT("Windup2") : TEXT("Windup"); bLoop = false; break;
 		case EHydraAction::HeavyCharge: Wanted = TEXT("Charge"); break;
-		case EHydraAction::LightStrike: Wanted = TEXT("Strike"); bLoop = false; break;
+		case EHydraAction::LightStrike: Wanted = bSecond ? TEXT("Strike2") : TEXT("Strike"); bLoop = false; break;
 		case EHydraAction::HeavyStrike: Wanted = FormAnimations.Contains(TEXT("HeavyStrike")) ? TEXT("HeavyStrike") : TEXT("Strike"); bLoop = false; break;
 		case EHydraAction::Recovery: Wanted = TEXT("Recovery"); bLoop = false; break;
 		case EHydraAction::CastWindup: Wanted = TEXT("Cast"); bLoop = false; break;

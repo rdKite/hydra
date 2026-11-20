@@ -1,10 +1,13 @@
 #include "Core/HydraGameState.h"
 
+#include "AI/HydraAIController.h"
+#include "Character/HydraCharacter.h"
 #include "Character/HydraCombatMath.h"
 #include "Core/HydraPlayerController.h"
 #include "Data/HydraValuesSubsystem.h"
 #include "Engine/NetDriver.h"
 #include "Engine/World.h"
+#include "EngineUtils.h"
 #include "HAL/IConsoleManager.h"
 #include "Hydra.h"
 #include "Net/UnrealNetwork.h"
@@ -18,6 +21,34 @@ void AHydraGameState::GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutL
 	DOREPLIFETIME(AHydraGameState, Wave);
 	DOREPLIFETIME(AHydraGameState, EnemiesLeft);
 	DOREPLIFETIME(AHydraGameState, NextWaveTime);
+	DOREPLIFETIME(AHydraGameState, bEnemyAlive);
+}
+
+AHydraGameState::AHydraGameState()
+{
+	PrimaryActorTick.bCanEverTick = true;
+}
+
+void AHydraGameState::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+	if (HasAuthority())
+	{
+		bEnemyAlive = ComputeEnemyAlive(GetWorld());
+	}
+}
+
+bool AHydraGameState::ComputeEnemyAlive(const UWorld* World)
+{
+	for (TActorIterator<AHydraCharacter> It(World); It; ++It)
+	{
+		const AHydraAIController* AI = It->IsAIControlledCharacter() ? Cast<AHydraAIController>(It->GetController()) : nullptr;
+		if (AI && !AI->IsPassive() && It->IsAlive())
+		{
+			return true;
+		}
+	}
+	return false;
 }
 
 void AHydraGameState::SetWaveState(bool bInWaves, int32 InWave, int32 InEnemiesLeft, float InNextWaveTime)

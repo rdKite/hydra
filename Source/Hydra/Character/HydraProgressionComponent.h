@@ -94,8 +94,15 @@ public:
 	/** Contact with fire (damage dealt or taken, already weighted). */
 	void ServerAddImprintProgress(float Amount);
 
-	/** The player's choice at a milestone: "imprint" or "evolve". False if it is not on offer. */
-	bool ServerChoose(FName Choice);
+	/**
+	 * The player's choice at a milestone: "imprint" or "evolve". False if it is not on offer.
+	 * An evolution is refused while an enemy is alive (never in combat; the milestone stays
+	 * open) unless bIgnoreCombat is set (dev command, for tests).
+	 */
+	bool ServerChoose(FName Choice, bool bIgnoreCombat = false);
+
+	/** An evolution is on offer but has to wait: an enemy is alive (same answer on server and client). */
+	bool IsEvolutionWaiting() const;
 
 	// Test tools (debug panel and dev commands): set the state directly.
 	void ServerSetLevel(int32 NewLevel);

@@ -25,6 +25,8 @@ class HYDRA_API AHydraGameState : public AGameStateBase
 public:
 	virtual void GetLifetimeReplicatedProps(TArray<FLifetimeProperty>& OutLifetimeProps) const override;
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaSeconds) override;
+	AHydraGameState();
 
 	/** Server: set the latency step in ms (-1 = next step from values.json). */
 	void SetLatencyStep(int32 StepMs);
@@ -42,6 +44,14 @@ public:
 	int32 GetWave() const { return Wave; }
 	int32 GetEnemiesLeft() const { return EnemiesLeft; }
 	float GetNextWaveTime() const { return NextWaveTime; }
+
+	/**
+	 * Is an enemy alive (phase-1.md section 17: no evolution in combat)? An enemy is a living
+	 * AI character that is not passive. Replicated, so the HUD of a client can say why the
+	 * evolution is not offered; the server asks ComputeEnemyAlive when it decides.
+	 */
+	bool IsEnemyAlive() const { return bEnemyAlive; }
+	static bool ComputeEnemyAlive(const UWorld* World);
 
 	/** Applies the replicated setting to this process's net driver. */
 	void ApplyLocal();
@@ -71,4 +81,7 @@ protected:
 
 	UPROPERTY(Replicated)
 	float NextWaveTime = 0.f;
+
+	UPROPERTY(Replicated)
+	bool bEnemyAlive = false;
 };

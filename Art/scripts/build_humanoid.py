@@ -1143,6 +1143,22 @@ def build_animations(arm):
     key_pose(arm, 0, slashed)
     key_pose(arm, 10, GUARD)
 
+    # Second light attack, the other side (the game alternates the two within a chain): the
+    # sword cocked across the body at the left shoulder, a backhand slash to the right.
+    cocked_left = over(GUARD, spine_02=[("z", 28)], spine_03=[("z", 10)], neck_01=[("z", -22)], head=[("z", -20)],
+                       upperarm_r=[("y", -30), ("x", 78), ("z", 42)], lowerarm_r=[("x", 105)], hand_r=[("x", 20)],
+                       upperarm_l=[("y", 30), ("x", 20)], lowerarm_l=[("x", 70), ("z", -20)])
+    slashed_right = over(GUARD, pelvis=[("z", 4)], spine_01=[("x", 12)], spine_02=[("z", -28)], spine_03=[("z", -10)], neck_01=[("z", 14)], head=[("z", 14)],
+                         thigh_l=[("x", 34)], calf_l=[("x", -40)],
+                         upperarm_r=[("y", -30), ("x", 64), ("z", -55)], lowerarm_r=[("x", 8)], hand_r=[],
+                         upperarm_l=[("y", 30), ("x", 36)])
+    start("Windup2", 8)
+    key_pose(arm, 0, GUARD)
+    key_pose(arm, 8, cocked_left)
+    start("Strike2", 4)
+    key_pose(arm, 0, cocked_left)
+    key_pose(arm, 4, slashed_right)
+
     # Heavy attack: the sword pulled back at the hip, point at the enemy (charge, a loop while
     # the button is held), then a long thrust with a lunge.
     drawn = over(GUARD, pelvis=[("z", -30)], spine_01=[("x", 10)], spine_02=[("z", -16)], neck_01=[("z", 23)], head=[("z", 23)],
@@ -1315,7 +1331,7 @@ def preview(obj, arm, props):
 
     # Key poses of the placeholder animations, with sword and shield.
     show_props(True)
-    shots = (("Idle", 0), ("Move", 0), ("Move", 4), ("Windup", 8), ("Strike", 4), ("Charge", 0), ("HeavyStrike", 4), ("Recovery", 5),
+    shots = (("Idle", 0), ("Move", 0), ("Move", 4), ("Windup", 8), ("Strike", 4), ("Windup2", 8), ("Strike2", 4), ("Charge", 0), ("HeavyStrike", 4), ("Recovery", 5),
              ("Block", 4), ("Dodge", 5), ("Jump", 0), ("Death", 7), ("Death", 16))
     for action_name, frame in shots:
         arm.animation_data.action = bpy.data.actions[action_name]

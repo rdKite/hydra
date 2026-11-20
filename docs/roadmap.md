@@ -112,10 +112,10 @@ skill growth before the playtest, so the playtest tests the rules that stay. Rul
 - [x] Decide which placeholder animations are replaced first by the human's own animations:
       the order in `docs/m5-preparation.md` (heavy attack first); the light attack gets
       **two clips** that alternate sides in a chain (decision 2026-11-20).
-- [ ] Two clips for the light attack (agent): alternate A / B within a chain, clip names
+- [x] Two clips for the light attack (agent): alternate A / B within a chain, clip names
       `Windup` / `Strike` and `Windup2` / `Strike2` (fallback to the first if the second is
       missing), placeholders for both sides; hit area unchanged.
-- [ ] No evolution in combat (agent; decision 2026-11-20): in the arena only while no enemy
+- [x] No evolution in combat (agent; decision 2026-11-20): in the arena only while no enemy
       is alive (break between waves; practice opponent passive). Rule: `phase-1.md` §17.
 - [ ] Playtest: Are combat and progression fun? Is it too complicated?
 

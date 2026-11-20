@@ -46,6 +46,8 @@ struct FHydraActionState
 	UPROPERTY() EHydraAction Action = EHydraAction::None;
 	UPROPERTY() float StartServerTime = 0.f;
 	UPROPERTY() float DurationS = 0.f;
+	/** Light attack: which of the two clips shows it (0 = Windup / Strike, 1 = Windup2 / Strike2). Looks only. */
+	UPROPERTY() uint8 Variant = 0;
 };
 
 /**
@@ -158,6 +160,9 @@ public:
 
 	/** The action to show in this process. */
 	const FHydraActionState& GetShownAction() const;
+
+	/** The clip the model plays right now (Idle, Windup, Windup2, ...); None without a model. */
+	FName GetPlayingAnimation() const { return PlayingAnimation; }
 
 	// --- Input (owning client, or the server for the AI) -----------------------------------
 

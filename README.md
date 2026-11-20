@@ -78,7 +78,8 @@ F5 reloads `data/*.json`, F6 next latency step, F8 packet loss on/off, `~` conso
 (fire awakened without earning it: the slime's bolt carries fire, leaves a fire field and
 causes burning), `HydraWaves 1` (switch a practice session to waves), `HydraXp <n>` and
 `HydraImprintProgress <n>` (dev: give yourself nXP or imprint progress), `HydraChoose
-evolve|imprint`. The humanoid's blade shows the telegraph: yellow in the wind-up,
+evolve|imprint` (dev: takes the choice, an evolution even in combat), `HydraMilestoneKey
+evolve|imprint` (what the keys J / K do: an evolution only while no enemy is alive). The humanoid's blade shows the telegraph: yellow in the wind-up,
 towards red while a heavy attack charges. `Hydra.AI 0` makes every AI stand still.
 
 **Waves and progression.** Enemies come in waves (`data/values.json`: `waves`, `enemies`).

@@ -11,6 +11,49 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-20 – two light-attack clips, no evolution in combat (agent session)
+
+Pulled `main` and did the two agent items of M5 from the entry below.
+
+**Two clips for the light attack.**
+- `FHydraActionState` carries a variant (looks only, replicated with the action): set when
+  the wind-up starts, `chain count % 2`; the strike takes the variant of its wind-up. The
+  anim update picks `Windup2` / `Strike2` for variant 1 if the model has both, else the
+  first pair. Hit area, timing and damage untouched.
+- Placeholders in `Art/scripts/build_humanoid.py`: `Windup2` (sword cocked across the body
+  at the left shoulder) and `Strike2` (backhand slash to the right), same lengths as the
+  first pair; preview renders looked at (the first end pose hung at the hip, corrected).
+  Re-imported: 13 clips. `Art/humanoid/humanoid.blend` kept as committed.
+- Assumption: "chain" is the glossary term – consecutive **hits**. A strike that misses or
+  is blocked does not advance it, so the next strike shows the same clip again; swinging
+  in the air always shows the first pair. Alternative if wanted: alternate on every light
+  strike in a row, hit or not.
+- Assumption: `Recovery` stays one clip (it starts from the end pose of the first strike;
+  after the second strike the 0.08 s cross-fade bridges the difference).
+
+**No evolution in combat** (`phase-1.md` §17).
+- `AHydraGameState` knows whether an enemy is alive (a living AI character that is not
+  passive; replicated). `UHydraProgressionComponent::ServerChoose` refuses an evolution
+  while one is; the milestone stays open. The HUD shows "evolution into … waits – not in
+  combat (when no enemy is alive)" instead of the `[J]` line. The imprint is not affected.
+- `HydraChoose` now goes through the dev command and bypasses the rule (as the design
+  says); new `HydraMilestoneKey evolve|imprint` does exactly what J / K do. The debug panel
+  has no evolve row (its set-form bypasses anyway), nothing to change there.
+- Assumption: a passive enemy (practice opponent with `Hydra.AI 0`, debug spawn "passive")
+  is not combat, also in wave mode.
+- The waves live run evolves with `HydraChoose` (bypass), so it needed no change; the
+  rule is checked in the debug live run (active grunt: refused, enemies removed: taken).
+
+**Verified:** `Scripts/run_all.sh` all green – 19 automation tests; live runs combat 166 (two new checks: the clips alternate first / second / first within the chain and a new chain starts with the first, on the host and as the client sees it), slime 83, waves 125, debug 52 (eight new checks for the evolution rule). Screenshot of the debug run looked at: the HUD line says the evolution waits.
+New stats fields for the checks: `clip`, `enemy_alive`, `evolve_waits`.
+
+**Coordination:** the Blender session was asked first; it is not editing
+`build_humanoid.py` now. It reports a MakeHuman/MPFB2 prototype the human liked (only in
+its scratchpad): if approved, it replaces the build script, the skeleton and the material
+slots, and it will carry over all clips including `Windup2` / `Strike2`.
+
+**Interventions:** none. **Left in M5:** the playtest (the human's).
+
 ### 2026-11-20 – animations, textures, no evolution in combat (design session)
 
 To do at the start of the next agent session (roadmap M5, the two agent items):

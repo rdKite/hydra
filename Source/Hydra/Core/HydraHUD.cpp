@@ -235,7 +235,11 @@ void AHydraHUD::DrawProgress()
 	if (!Evolution.IsNone())
 	{
 		const FHydraFormDef* Next = Values->GetDefinitions().FindForm(Evolution);
-		Offer += FString::Printf(TEXT("[J] evolve into %s (level and skills start again)"), Next ? *Next->name : *Evolution.ToString());
+		const FString NextName = Next ? Next->name : Evolution.ToString();
+		// Never in combat: while an enemy is alive the evolution waits, and the HUD says why.
+		Offer += P->IsEvolutionWaiting()
+			? FString::Printf(TEXT("evolution into %s waits - not in combat (when no enemy is alive)"), *NextName)
+			: FString::Printf(TEXT("[J] evolve into %s (level and skills start again)"), *NextName);
 	}
 	if (P->CanRaiseImprint())
 	{
