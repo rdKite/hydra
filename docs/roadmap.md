@@ -107,10 +107,16 @@ skill growth before the playtest, so the playtest tests the rules that stay. Rul
       CSV of a session, a debug panel – see `docs/design/phase-1.md` §27).
 - [x] **Decide the look** based on our own models: **plain** (variant 1 – no toon shading,
       no ink outlines; decision 2026-11-19).
-- [ ] With the plain look: how much texture work is needed (procedural only, or
-      hand-painted detail as well) – the look relies on textures and materials the most.
-- [ ] Decide which placeholder animations are replaced first by the human's own animations
-      (combat animations first: they carry the telegraphs).
+- [x] With the plain look: how much texture work is needed – **procedural only** for now
+      (decision 2026-11-20).
+- [x] Decide which placeholder animations are replaced first by the human's own animations:
+      the order in `docs/m5-preparation.md` (heavy attack first); the light attack gets
+      **two clips** that alternate sides in a chain (decision 2026-11-20).
+- [ ] Two clips for the light attack (agent): alternate A / B within a chain, clip names
+      `Windup` / `Strike` and `Windup2` / `Strike2` (fallback to the first if the second is
+      missing), placeholders for both sides; hit area unchanged.
+- [ ] No evolution in combat (agent; decision 2026-11-20): in the arena only while no enemy
+      is alive (break between waves; practice opponent passive). Rule: `phase-1.md` §17.
 - [ ] Playtest: Are combat and progression fun? Is it too complicated?
 
 **Not in Phase 1:** online play over real servers and a source-built engine, reserve, hand

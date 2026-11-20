@@ -10,9 +10,7 @@ what it is, how to look at it and which question it puts to the human.
 post-process material and the comparison script were removed after the decision; they are
 in the Git history up to commit `bd1da64`.
 
-**Still open:** how much texture detail should the models get with the plain look –
-procedural only, or hand-painted detail as well? The plain look relies on textures and
-materials the most.
+**Decided 2026-11-20:** textures stay **procedural only** for now.
 
 ### The humanoid base model
 
@@ -40,7 +38,7 @@ change the timing; its **readable silhouette** is what counts.
 | Rank | Clip (name for the import) | Why | What the placeholder lacks |
 |---|---|---|---|
 | 1 | **Charge** (heavy attack, looped while held) and **HeavyStrike** | the longest and most dangerous telegraph (400–1200 ms, up to 600 damage of 1,000 HP): it must be unmistakable from the front and the side, and show that it is a thrust | a clear pulled-back pose that differs from the light wind-up at a glance; weight in the thrust |
-| 2 | **Windup** and **Strike** (light attack) | the most frequent attack; 250 ms wind-up – short, so the first frames must already say "attack" and from which side the slash comes | anticipation in the first third; an arc that matches the hit area (70° to each side) |
+| 2 | **Windup** / **Strike** and **Windup2** / **Strike2** (light attack, two clips that alternate sides in a chain – decided 2026-11-20) | the most frequent attack; 250 ms wind-up – short, so the first frames must already say "attack" and from which side the slash comes | anticipation in the first third; an arc that matches the hit area (70° to each side) |
 | 3 | **Block** | shows the block arc: where the shield is, is where hits are stopped – flank and back are open | a stance that makes the covered side obvious; the shield clearly in front |
 | 4 | **Recovery** | the opening after an attack: the opponent must see that the attacker is still bound | a visible "overextended" moment before returning to the stance |
 | 5 | **Dodge** | pure movement without invulnerability: must read as a step, not a roll that suggests i-frames | direction of the step (the placeholder ducks on the spot) |
@@ -55,8 +53,8 @@ wind-up, towards red while a heavy attack charges).
 human"). An action named like a clip above replaces the placeholder at the next
 `Scripts/build_art.sh import`.
 
-**Question:** Is this the order you want to animate in? Should the humanoid's light attack
-get more than one clip (alternating sides in a chain)?
+**Decided 2026-11-20:** this order; the light attack gets two clips that alternate sides in
+a chain.
 
 ## 3. Playtest kit
 
@@ -74,8 +72,6 @@ get more than one clip (alternating sides in a chain)?
 - Holding the block costs 50 stamina per second and a blocked light hit 140 of about
   1,180. Is turtling punished enough, is blocking still worth it?
 - A heavy hit interrupts (25 % of the target's HP), a light one never does between equals.
-- The slime evolves at level 30 into a form that starts at level 0. Does that feel like a
-  step forward within a 10–15 minute session?
 - Three waves give the first level-up; hard enemy types give more skill points. Is the
   skill growth noticeable at all in one session?
 - Enemy mix: is wave 3 (two ember slimes and a grunt) fair for a humanoid without ranged

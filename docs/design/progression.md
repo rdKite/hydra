@@ -388,6 +388,9 @@ Two terms for two things – for monsters and humanoids alike:
 - **Evolution at every milestone** (every 10 levels), if the requirements are met (play
   style: skills, attributes, imprint; for rare forms e.g. the hardship rating). At the
   latest at the level cap of the current form.
+- **Never in combat:** an evolution can only be done out of combat with no enemies nearby
+  (like resting at the camp or nest, and like the first humanoid form with its editor). It
+  can wait until then; the milestone stays open.
 - **Rare forms are limited by their requirements** (imprints, values, hardship rating …),
   no longer by a level budget. Epic and legendary forms therefore need sufficiently hard
   requirements.

@@ -11,6 +11,20 @@ workarounds.
 
 ## Sessions
 
+### 2026-11-20 – animations, textures, no evolution in combat (design session)
+
+To do at the start of the next agent session (roadmap M5, the two agent items):
+1. **Two clips for the light attack:** alternate A / B within a chain (first light strike A,
+   second B, then A again; a new chain starts with A). Clip names `Windup` / `Strike` and
+   `Windup2` / `Strike2`; without the second pair the first is used. Placeholder clips for
+   both sides in `Art/scripts/build_humanoid.py` (mirrored). Hit area unchanged. Update the
+   clip list in `docs/tech/blender-pipeline.md`.
+2. **No evolution in combat** (`docs/design/phase-1.md` §17): offered only while no enemy is
+   alive; the HUD says why it is not offered; `HydraChoose evolve` and the debug panel may
+   bypass it. Adjust the waves live run if it evolves during a wave.
+3. Verify with `Scripts/run_all.sh`, commit, push. Do not start the playtest – that is the
+   human's.
+
 ### 2026-11-19 – humanoid base model, more detail (parallel session, Blender only)
 
 The human found the first stand-in too little like a real human and asked for roughly the

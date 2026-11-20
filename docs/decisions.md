@@ -555,3 +555,16 @@ plan lives in [roadmap.md](roadmap.md). Terms follow `GLOSSARY.md`.
   0.01** (guess): 0.038 came from the old cost formula and would cost more than a slime's
   whole bar. Rules: `phase-1.md` §5, §12, §14, §26.
 
+## 2026-11-20
+
+- **Animation order** as proposed in `docs/m5-preparation.md` (heavy attack, light attack,
+  block, recovery, dodge, stance and run, the rest). The **light attack gets two clips**
+  that alternate sides in a chain (`Windup` / `Strike`, `Windup2` / `Strike2`); the hit area
+  stays as it is.
+- **Textures: procedural only** for now (Blender scripts); AI image generation for
+  hand-painted detail stays deferred.
+- **No evolution in combat.** In the target state an evolution needs a moment out of combat
+  with no enemies nearby; it waits until then and the milestone stays open. Phase 1 builds
+  it now: in the arena only while no enemy is alive (break between waves). The imprint is
+  not affected. Testing an evolution in the middle of a fight is therefore not a playtest
+  question.

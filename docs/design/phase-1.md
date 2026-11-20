@@ -531,6 +531,11 @@ Decision 2026-11-19 (full design: [progression.md](progression.md#skill-points-a
 
 - Evolution happens at a milestone (every 10 levels) if the requirements are met, at the
   latest at the form's level cap. The player chooses body form and imprint together.
+- **Never in combat** (decision 2026-11-20): in the arena only while **no enemy is alive** –
+  in the break between waves, or in practice mode while the practice opponent is passive.
+  Otherwise J and the debug panel do not offer it (the HUD says why); the open milestone
+  stays. The dev command `HydraChoose evolve` (and the panel's set-form) may bypass the rule
+  for tests. The imprint (K) is not affected.
 - Slime → fire elemental slime requires the **first fire imprint** (§15).
 - After evolution:
   - **level resets to 0**; base values reset to the level but are higher in the new form;
