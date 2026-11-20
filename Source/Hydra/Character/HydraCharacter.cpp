@@ -436,10 +436,15 @@ void AHydraCharacter::ApplyFormLook()
 			if (GetNetMode() != NM_DedicatedServer)
 			{
 				const bool bFireBody = FormDef && FormDef->element_body == FName(TEXT("fire"));
-				if (UMaterialInstanceDynamic* Material = Model->CreateAndSetMaterialInstanceDynamic(0))
+				// Every material slot (a model may have several: body, clothes); a material without
+				// the parameters ignores them.
+				for (int32 Slot = 0; Slot < Model->GetNumMaterials(); ++Slot)
 				{
-					Material->SetVectorParameterValue(TEXT("Tint"), bFireBody ? HydraCharacterLook::FireBodyTint : FLinearColor::White);
-					Material->SetVectorParameterValue(TEXT("Glow"), bFireBody ? HydraCharacterLook::FireBodyGlow : FLinearColor::Black);
+					if (UMaterialInstanceDynamic* Material = Model->CreateAndSetMaterialInstanceDynamic(Slot))
+					{
+						Material->SetVectorParameterValue(TEXT("Tint"), bFireBody ? HydraCharacterLook::FireBodyTint : FLinearColor::White);
+						Material->SetVectorParameterValue(TEXT("Glow"), bFireBody ? HydraCharacterLook::FireBodyGlow : FLinearColor::Black);
+					}
 				}
 			}
 			UE_LOG(LogHydra, Log, TEXT("Form %s uses the model %s with %d animations"), *FormId.ToString(), *Form, FormAnimations.Num());
@@ -810,9 +815,13 @@ void AHydraCharacter::UpdateTint()
 	// The humanoid base model is plain: it takes the colour of its side like the placeholder body.
 	if (bModelHoldsItems)
 	{
-		if (UMaterialInstanceDynamic* Material = Cast<UMaterialInstanceDynamic>(GetMesh()->GetMaterial(0)))
+		// On every slot: only the materials with a Tint parameter (the shirt) take it.
+		for (int32 Slot = 0; Slot < GetMesh()->GetNumMaterials(); ++Slot)
 		{
-			Material->SetVectorParameterValue(TEXT("Tint"), FMath::Lerp(FLinearColor::White, BodyColor, 0.65f) * 1.25f);
+			if (UMaterialInstanceDynamic* Material = Cast<UMaterialInstanceDynamic>(GetMesh()->GetMaterial(Slot)))
+			{
+				Material->SetVectorParameterValue(TEXT("Tint"), FMath::Lerp(FLinearColor::White, BodyColor, 0.65f) * 1.25f);
+			}
 		}
 	}
 	Tint(BodyTorso, BodyColor);

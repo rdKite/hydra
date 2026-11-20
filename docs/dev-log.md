@@ -52,6 +52,19 @@ New stats fields for the checks: `clip`, `enemy_alive`, `evolve_waits`.
 its scratchpad): if approved, it replaces the build script, the skeleton and the material
 slots, and it will carry over all clips including `Windup2` / `Strike2`.
 
+**Afterwards, for the coming model with several material slots** (body, shirt, trousers –
+the Blender session's MPFB build): the side colour (`Tint`) and the element body (`Tint`,
+`Glow`) are set on every material slot of a model, not only the first; a material without
+the parameter ignores it. No visible change with today's one-slot models.
+- Problem: the slime live run failed one check ("client sees the slime's mana go down") in
+  some runs. Not a game bug: the client window's dev clock started 0.2 s after the host's,
+  so its measurement at 10.8 fell just behind the host's reset at 11.0. The reset moved to
+  11.25 in `Scripts/run_live_slime.sh`; three runs in a row green afterwards.
+- Problem: live runs also fail on timing while a Blender build runs on the machine (start
+  values missing). The two sessions now announce Blender and Unreal runs to each other.
+- Verified: 19 automation tests, live runs combat 166, waves 125, debug 52 (full run with
+  the change), slime 83 (three times after the fix of the script).
+
 **Interventions:** none. **Left in M5:** the playtest (the human's).
 
 ### 2026-11-20 – animations, textures, no evolution in combat (design session)
